@@ -1,0 +1,10 @@
+{
+  "id": "readest-highlights",
+  "name": "Readest Highlights",
+  "version": "1.0.0",
+  "minAppVersion": "1.12.7",
+  "description": "Import highlights and annotations from Readest into your vault.",
+  "author": "polybjorn",
+  "authorUrl": "https://github.com/polybjorn",
+  "isDesktopOnly": true
+}

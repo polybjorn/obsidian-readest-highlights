@@ -1,0 +1,72 @@
+.readest-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  margin-bottom: 16px;
+  padding-bottom: 0;
+}
+
+.readest-tab {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 8px 14px;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-weight: 500;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.readest-tab:hover {
+  color: var(--text-normal);
+  background: var(--background-modifier-hover);
+}
+
+.readest-tab.is-active {
+  color: var(--text-normal);
+  border-bottom-color: var(--interactive-accent);
+}
+
+.readest-pane {
+  display: none;
+}
+
+.readest-pane.is-active {
+  display: block;
+}
+
+.readest-section {
+  margin-bottom: 12px;
+}
+
+.readest-section + .readest-section {
+  margin-top: 24px;
+}
+
+.readest-extra-frontmatter {
+  width: 100%;
+}
+
+.readest-hidden-button {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.readest-disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.readest-books-dir-row .setting-item-info {
+  display: none;
+}
+
+.readest-books-dir-row .setting-item-control {
+  flex: 1;
+}
+
+.readest-books-dir-row .setting-item-control input[type="text"] {
+  flex: 1;
+  width: 100%;
+}
