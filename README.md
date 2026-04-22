@@ -10,6 +10,8 @@ Readest stores its library, progress, and annotations locally as JSON. This plug
 
 Works offline: no API tokens, no external services. The plugin reads Readest's JSON directly.
 
+![Example book note with imported highlights](docs/highlights-preview.png)
+
 ## Requirements
 
 Desktop Obsidian with access to a Readest Books folder. Readest's built-in sync (optional) is the easiest way to collect annotations from other devices into one folder, but any setup that exposes the folder to Obsidian works.
@@ -28,6 +30,8 @@ The plugin reads this folder from outside your Obsidian vault. Access is read-on
 
 Settings are split into four tabs.
 
+![Frontmatter settings tab](docs/frontmatter-settings.png)
+
 ### Setup
 
 - **Source**: one or more paths to Readest's Books folder. The first valid path is used, so you can list per-device locations for vaults synced across devices.
@@ -35,7 +39,7 @@ Settings are split into four tabs.
 
 ### Heading
 
-- **Heading level**: H1–H4 or None. Applied to both sync and append.
+- **Heading level**: H1-H4 or None. Applied to both sync and append.
 - **Sync heading / Append heading**: heading text (token-aware) shown above highlights in each mode.
 - **Preserve manual edits**: on re-sync, only rewrite the highlights section; other content stays. Disabled when heading level is None.
 
