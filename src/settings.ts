@@ -170,7 +170,7 @@ export class ReadestSettingTab extends PluginSettingTab {
     rows.forEach((value, index) => {
       const setting = new Setting(container).addText((text) =>
         text
-          .setPlaceholder("Path to Readest Books folder")
+          .setPlaceholder("Readest books folder path")
           .setValue(value)
           .onChange(async (v) => {
             const list = [...this.plugin.settings.booksDirs];
@@ -297,7 +297,7 @@ export class ReadestSettingTab extends PluginSettingTab {
 
     const source = this.createSection(setup, "Source");
     source.createEl("p", {
-      text: "Path to Readest's book folder. Add alternatives for vaults synced across devices; first valid path is used.",
+      text: "Readest's book folder path. Add alternatives for vaults synced across devices; first valid path is used.",
       cls: "setting-item-description",
     });
 
@@ -481,7 +481,7 @@ export class ReadestSettingTab extends PluginSettingTab {
         .setName("Extra fields")
         .setDesc("Free-form YAML appended inside frontmatter.")
         .addTextArea((t) => {
-          t.setPlaceholder("Rating: \nReview: ")
+          t.setPlaceholder("Rating: 5\nreview: thoughts")
             .setValue(this.plugin.settings.extraFrontmatter)
             .onChange(async (value) => {
               this.plugin.settings.extraFrontmatter = value;
@@ -498,7 +498,7 @@ export class ReadestSettingTab extends PluginSettingTab {
 
     new Setting(hl)
       .setName("Filter")
-      .setDesc("Which Readest annotations to include.")
+      .setDesc("Which annotations to include.")
       .addDropdown((d) =>
         d
           .addOption("all", "All annotations")
