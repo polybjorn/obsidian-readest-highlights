@@ -6,11 +6,11 @@
 
 Import highlights and annotations from [Readest](https://readest.com) into your Obsidian vault.
 
+![Example book note with imported highlights](docs/highlights-example.png)
+
 Readest stores its library, progress, and annotations locally as JSON. This plugin reads those files and renders the highlights into markdown notes, either as one note per book in a dedicated folder, or appended to whichever note you have open.
 
 Works offline: no API tokens, no external services. The plugin reads Readest's JSON directly.
-
-![Example book note with imported highlights](docs/highlights-preview.png)
 
 ## Requirements
 
@@ -30,7 +30,7 @@ The plugin reads this folder from outside your Obsidian vault. Access is read-on
 
 Settings are split into four tabs.
 
-![Frontmatter settings tab](docs/frontmatter-settings.png)
+![Setup settings tab](docs/setup-settings.png)
 
 ### Setup
 
