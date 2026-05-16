@@ -6,14 +6,9 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ## [1.0.1] - 2026-05-16
 
-### Changed
-
-- README clarifies plugin permissions (vault read/write, read-only Readest folder, no network) and re-sync overwrite behavior.
-
 ### Security
 
 - Release artifacts (`main.js`, `styles.css`, `manifest.json`) are now signed with GitHub build provenance attestations.
-- Override transitive `yaml` dev dependency to `^2.8.3` to clear scanner advisory.
 
 ## [1.0.0] - 2026-04-22
 
