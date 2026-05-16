@@ -58,6 +58,12 @@
   pointer-events: none;
 }
 
+.readest-indent {
+  padding-left: 20px;
+  margin-left: 24px;
+  border-left: 3px solid var(--interactive-accent);
+}
+
 .readest-books-dir-row .setting-item-info {
   display: none;
 }

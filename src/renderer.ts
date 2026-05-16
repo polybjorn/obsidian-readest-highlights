@@ -1,5 +1,6 @@
 import type { ParsedBook, ReadestAnnotation, ReadestLibraryBook } from "./types";
 import type {
+  GenreFormat,
   HeadingLevel,
   HighlightSeparator,
   HighlightStyle,
@@ -16,6 +17,10 @@ export interface FrontmatterOptions {
   includeIsbn: boolean;
   includeSeries: boolean;
   includeGenre: boolean;
+  genreFormat: GenreFormat;
+  cleanGenres: boolean;
+  uninvertGenres: boolean;
+  maxGenres: number;
   includeReadestHash: boolean;
   extra: string;
 }
@@ -63,6 +68,10 @@ export function optionsFromSettings(s: ReadestSettings): RenderOptions {
       includeIsbn: s.includeIsbn,
       includeSeries: s.includeSeries,
       includeGenre: s.includeGenre,
+      genreFormat: s.genreFormat,
+      cleanGenres: s.cleanGenres,
+      uninvertGenres: s.uninvertGenres,
+      maxGenres: s.maxGenres,
       includeReadestHash: s.includeReadestHash,
       extra: s.extraFrontmatter,
     },
@@ -93,6 +102,37 @@ function authorName(book: ReadestLibraryBook): string {
     if (name) return name;
   }
   return book.author ?? "";
+}
+
+function cleanLcshHeading(s: string): string {
+  let out = s.split(/\s+--\s+/)[0] ?? s;
+  out = out.replace(/\s*\([^)]*\)\s*$/, "");
+  return out.trim();
+}
+
+function uninvertHeading(s: string): string {
+  const split = s.match(/^(.+?)(\s+--\s+.*)$/);
+  const main = split?.[1] ?? s;
+  const decorator = split?.[2] ?? "";
+  const m = main.match(/^([^,]+),\s+(.+)$/);
+  if (!m) return s;
+  const head = m[1];
+  const tail = m[2];
+  if (!head || !tail) return s;
+  return `${tail} ${head}${decorator}`;
+}
+
+function dedupePreserveOrder(items: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const x of items) {
+    if (!x) continue;
+    const k = x.toLowerCase();
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(x);
+  }
+  return out;
 }
 
 function subjectList(book: ReadestLibraryBook): string[] {
@@ -369,20 +409,36 @@ export function renderFrontmatter(
 
   if (fm.tags.length) {
     lines.push("tags:");
-    for (const t of fm.tags) lines.push(`  - ${t}`);
+    for (const t of fm.tags) lines.push(`  - "${yamlQuote(t)}"`);
   }
 
   if (fm.authorFormat !== "off" && author) {
     const value =
-      fm.authorFormat === "wikilink" ? `"[[${author}]]"` : `"${author}"`;
+      fm.authorFormat === "wikilink"
+        ? `"[[${yamlQuote(author)}]]"`
+        : `"${yamlQuote(author)}"`;
     lines.push(`author: ${value}`);
   }
   if (fm.includeYear && year) lines.push(`year: ${year}`);
-  if (fm.includeIsbn && isbn) lines.push(`isbn: "${isbn}"`);
-  if (fm.includeSeries && series) lines.push(`series: "${series}"`);
+  if (fm.includeIsbn && isbn) lines.push(`isbn: "${yamlQuote(isbn)}"`);
+  if (fm.includeSeries && series)
+    lines.push(`series: "${yamlQuote(series)}"`);
   if (fm.includeGenre && subjects.length) {
-    lines.push("genre:");
-    for (const s of subjects) lines.push(`  - ${s}`);
+    let items = subjects;
+    if (fm.cleanGenres) items = items.map(cleanLcshHeading);
+    if (fm.uninvertGenres) items = items.map(uninvertHeading);
+    if (fm.cleanGenres || fm.uninvertGenres) items = dedupePreserveOrder(items);
+    if (fm.maxGenres > 0) items = items.slice(0, fm.maxGenres);
+    if (items.length) {
+      lines.push("genre:");
+      for (const s of items) {
+        const value =
+          fm.genreFormat === "wikilink"
+            ? `"[[${yamlQuote(s)}]]"`
+            : `"${yamlQuote(s)}"`;
+        lines.push(`  - ${value}`);
+      }
+    }
   }
   if (fm.includeReadestHash) lines.push(`readest-hash: ${book.hash}`);
 
@@ -395,6 +451,10 @@ export function renderFrontmatter(
 
 function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function yamlQuote(s: string): string {
+  return s.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
 export function renderSyncHeading(

@@ -8,6 +8,7 @@ export type HighlightStyle = "blockquote" | "plain" | "callout" | "bullet";
 export type HighlightSeparator = "rule" | "blank" | "pageHeading" | "none";
 export type HeadingLevel = 0 | 1 | 2 | 3 | 4;
 export type AuthorFormat = "off" | "plain" | "wikilink";
+export type GenreFormat = "plain" | "wikilink";
 export type NoteStyle = "attached" | "separated" | "callout";
 export type MetadataPlacement = "below" | "inline";
 export type AnnotationFilter =
@@ -41,6 +42,10 @@ export interface ReadestSettings {
   includeIsbn: boolean;
   includeSeries: boolean;
   includeGenre: boolean;
+  genreFormat: GenreFormat;
+  cleanGenres: boolean;
+  uninvertGenres: boolean;
+  maxGenres: number;
   includeReadestHash: boolean;
   extraFrontmatter: string;
 }
@@ -117,6 +122,10 @@ export const DEFAULT_SETTINGS: ReadestSettings = {
   includeIsbn: true,
   includeSeries: true,
   includeGenre: true,
+  genreFormat: "plain",
+  cleanGenres: true,
+  uninvertGenres: false,
+  maxGenres: 0,
   includeReadestHash: true,
   extraFrontmatter: "",
 };
@@ -417,9 +426,14 @@ export class ReadestSettingTab extends PluginSettingTab {
     const fm = fmPane;
 
     const fmDependent: Setting[] = [];
-    const applyFmDisabled = (enabled: boolean) => {
+    const genreDependent: Setting[] = [];
+    const applyVisibility = () => {
+      const fmOn = this.plugin.settings.includeFrontmatter;
+      const genreOn = this.plugin.settings.includeGenre;
       for (const s of fmDependent) {
-        s.settingEl.toggleClass("readest-disabled", !enabled);
+        const isGenreSub = genreDependent.includes(s);
+        const visible = fmOn && (!isGenreSub || genreOn);
+        s.settingEl.style.display = visible ? "" : "none";
       }
     };
 
@@ -432,7 +446,7 @@ export class ReadestSettingTab extends PluginSettingTab {
           .onChange(async (value) => {
             this.plugin.settings.includeFrontmatter = value;
             await this.plugin.saveSettings();
-            applyFmDisabled(value);
+            applyVisibility();
           }),
       );
 
@@ -471,7 +485,93 @@ export class ReadestSettingTab extends PluginSettingTab {
     fmDependent.push(this.addFieldToggle(fm, "Year", "includeYear"));
     fmDependent.push(this.addFieldToggle(fm, "ISBN", "includeIsbn"));
     fmDependent.push(this.addFieldToggle(fm, "Series", "includeSeries"));
-    fmDependent.push(this.addFieldToggle(fm, "Genre", "includeGenre"));
+
+    fmDependent.push(
+      new Setting(fm)
+        .setName("Genre")
+        .addToggle((t) =>
+          t
+            .setValue(this.plugin.settings.includeGenre)
+            .onChange(async (value) => {
+              this.plugin.settings.includeGenre = value;
+              await this.plugin.saveSettings();
+              applyVisibility();
+            }),
+        ),
+    );
+
+    const pushGenreSub = (s: Setting) => {
+      s.settingEl.addClass("readest-indent");
+      fmDependent.push(s);
+      genreDependent.push(s);
+    };
+
+    pushGenreSub(
+      new Setting(fm)
+        .setName("Genre format")
+        .setDesc("Plain text, or wiki-link for backlinks.")
+        .addDropdown((d) =>
+          d
+            .addOption("plain", "Plain text")
+            .addOption("wikilink", "Wiki-link")
+            .setValue(this.plugin.settings.genreFormat)
+            .onChange(async (value) => {
+              this.plugin.settings.genreFormat = value as GenreFormat;
+              await this.plugin.saveSettings();
+            }),
+        ),
+    );
+
+    pushGenreSub(
+      new Setting(fm)
+        .setName("Max genres")
+        .setDesc("Keep at most this many genres in source order. Zero means unlimited.")
+        .addText((text) =>
+          text
+            .setPlaceholder("0")
+            .setValue(String(this.plugin.settings.maxGenres))
+            .onChange(async (value) => {
+              const n = Math.max(0, Math.floor(Number(value) || 0));
+              this.plugin.settings.maxGenres = n;
+              await this.plugin.saveSettings();
+            }),
+        ),
+    );
+
+    pushGenreSub(
+      new Setting(fm)
+        .setName("Un-invert genres")
+        .setDesc(
+          "Swap inverted headings like \"state, the\" to \"the state\".",
+        )
+        .addToggle((t) =>
+          t
+            .setValue(this.plugin.settings.uninvertGenres)
+            .onChange(async (value) => {
+              this.plugin.settings.uninvertGenres = value;
+              await this.plugin.saveSettings();
+            }),
+        ),
+    );
+
+    pushGenreSub(
+      new Setting(fm)
+        .setName("Clean genre list")
+        .setDesc(
+          "Strip cataloging suffixes from genres, e.g. \"ethics -- early works to 1800\" becomes \"ethics\".",
+        )
+        .addToggle((t) =>
+          t
+            .setValue(this.plugin.settings.cleanGenres)
+            .onChange(async (value) => {
+              this.plugin.settings.cleanGenres = value;
+              await this.plugin.saveSettings();
+            }),
+        ),
+    );
+
+    applyVisibility();
+
     fmDependent.push(
       this.addFieldToggle(fm, "Readest hash", "includeReadestHash"),
     );
@@ -492,7 +592,6 @@ export class ReadestSettingTab extends PluginSettingTab {
         }),
     );
 
-    applyFmDisabled(this.plugin.settings.includeFrontmatter);
 
     const hl = this.createSection(renderPane, "Highlights");
 
