@@ -10,8 +10,6 @@ Import highlights and annotations from [Readest](https://readest.com) into your 
 
 Readest stores its library, progress, and annotations locally as JSON. This plugin reads those files and renders the highlights into markdown notes, either as one note per book in a dedicated folder, or appended to whichever note you have open.
 
-Works offline: no API tokens, no external services. The plugin reads Readest's JSON directly.
-
 ## Requirements
 
 Desktop Obsidian with access to a Readest Books folder. Readest's built-in sync (optional) is the easiest way to collect annotations from other devices into one folder, but any setup that exposes the folder to Obsidian works.
@@ -31,8 +29,6 @@ Desktop Obsidian with access to a Readest Books folder. Readest's built-in sync 
 | Append one book to current note... | Pick a book, appends its highlights to the active note. |
 
 ## Settings
-
-Settings are split into four tabs.
 
 ![Setup settings tab](docs/setup-settings.png)
 
@@ -65,4 +61,4 @@ Sync rewrites the highlights section of matched notes. With **Preserve manual ed
 
 ## Disclaimer
 
-Independent community plugin, not affiliated with Readest. Provided as-is; bug reports via [GitHub Issues](https://github.com/polybjorn/obsidian-readest-highlights/issues). Development was AI-assisted, reviewed by the author.
+Independent community plugin, not affiliated with Readest. Development was AI-assisted. Bug reports: [GitHub Issues](https://github.com/polybjorn/obsidian-readest-highlights/issues).

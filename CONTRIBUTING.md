@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for your interest. This is a small community plugin maintained by a single author; bug reports, small fixes, and well-scoped feature PRs are all welcome.
+This is a small community plugin maintained by a single author; bug reports, small fixes, and well-scoped feature PRs are all welcome.
 
 ## Development setup
 
@@ -28,8 +28,6 @@ Then enable the plugin in Obsidian's Community plugins settings. Re-run `npm run
 | `npm run build` | One-shot production build, runs `tsc --noEmit` first. |
 | `npm run lint` | ESLint with the Obsidian plugin ruleset. |
 | `npm test` | Run the test suite (`tsx --test tests/*.test.ts`). |
-
-All four must pass in CI before a PR can merge.
 
 ## Commit messages
 
