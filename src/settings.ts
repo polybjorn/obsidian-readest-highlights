@@ -183,7 +183,7 @@ export class ReadestSettingTab extends PluginSettingTab {
     rows.forEach((value, index) => {
       const setting = new Setting(container).addText((text) =>
         text
-          .setPlaceholder("Readest books folder path")
+          .setPlaceholder("Path to Readest's books folder")
           .setValue(value)
           .onChange(async (v) => {
             const list = [...this.plugin.settings.booksDirs];
@@ -316,7 +316,7 @@ export class ReadestSettingTab extends PluginSettingTab {
 
     const source = this.createSection(setup, "Source");
     source.createEl("p", {
-      text: "Readest's book folder path. Add alternatives for vaults synced across devices; first valid path is used.",
+      text: "Where Readest stores books. Leave empty to use the platform default; add alternatives for vaults synced across devices, first valid path is used.",
       cls: "setting-item-description",
     });
 
