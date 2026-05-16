@@ -1,6 +1,6 @@
 name: Bug report
 description: Report a problem with the plugin
-labels: ["bug"]
+labels: ["Bug"]
 body:
   - type: markdown
     attributes:
