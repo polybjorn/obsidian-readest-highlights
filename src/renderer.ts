@@ -198,7 +198,12 @@ export function bookFilename(
   template: string,
 ): string {
   const rendered = applyTemplate(template, book) || book.title || book.hash;
-  return `${sanitizeFilenamePart(rendered)}.md`;
+  const sanitized = sanitizeFilenamePart(rendered);
+  // Cap under common 255-byte filename limit, leaving room for ".md" and a
+  // possible " (xxxxxxxx)" collision suffix.
+  const capped =
+    sanitized.length > 200 ? sanitized.slice(0, 200).trim() : sanitized;
+  return `${capped}.md`;
 }
 
 function cleanText(text: string): string {
