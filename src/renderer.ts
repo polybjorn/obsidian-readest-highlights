@@ -69,17 +69,46 @@ export function optionsFromSettings(s: ReadestSettings): RenderOptions {
   };
 }
 
+function pickLocalized(v: unknown): string {
+  if (typeof v === "string") return v;
+  if (v && typeof v === "object") {
+    const m = v as Record<string, unknown>;
+    const preferred = m["en-US"] ?? m["en"];
+    if (typeof preferred === "string") return preferred;
+    for (const [k, val] of Object.entries(m)) {
+      if (k !== "null" && typeof val === "string") return val;
+    }
+    for (const val of Object.values(m)) {
+      if (typeof val === "string") return val;
+    }
+  }
+  return "";
+}
+
 function authorName(book: ReadestLibraryBook): string {
   const meta = book.metadata?.author;
   if (typeof meta === "string") return meta;
-  if (meta && typeof meta === "object" && meta.name) return meta.name;
+  if (meta && typeof meta === "object") {
+    const name = pickLocalized(meta.name);
+    if (name) return name;
+  }
   return book.author ?? "";
 }
 
 function subjectList(book: ReadestLibraryBook): string[] {
   const s = book.metadata?.subject;
   if (!s) return [];
-  return Array.isArray(s) ? s : [s];
+  const arr = Array.isArray(s) ? s : [s];
+  const out: string[] = [];
+  for (const item of arr) {
+    if (typeof item === "string") {
+      if (item.trim()) out.push(item.trim());
+    } else if (item && typeof item === "object") {
+      const name = pickLocalized(item.name);
+      if (name) out.push(name);
+    }
+  }
+  return out;
 }
 
 function publishedYear(book: ReadestLibraryBook): string {

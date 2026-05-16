@@ -17,13 +17,20 @@ export interface ReadestLibraryBook {
     description?: string;
     publisher?: string;
     published?: string;
-    subject?: string[] | string;
+    subject?:
+      | string
+      | string[]
+      | { name?: LocalizedString; code?: string; scheme?: string }[];
     isbn?: string;
     series?: string;
     seriesIndex?: number | string;
-    author?: { name?: string } | string;
+    author?:
+      | string
+      | { name?: LocalizedString; sortAs?: string; role?: string };
   };
 }
+
+export type LocalizedString = string | { [lang: string]: string };
 
 export interface ReadestAnnotation {
   bookHash: string;

@@ -28,8 +28,13 @@ import type { ParsedBook } from "./types";
 
 type SyncResult = { action: "created" | "updated" | "unchanged"; path: string };
 
+function errorMessage(e: unknown): string {
+  return e instanceof Error ? e.message : String(e);
+}
+
 export default class ReadestHighlightsPlugin extends Plugin {
   settings!: ReadestSettings;
+  private syncing = false;
 
   async onload() {
     await this.loadSettings();
@@ -74,17 +79,23 @@ export default class ReadestHighlightsPlugin extends Plugin {
   }
 
   async syncAll() {
+    if (this.syncing) {
+      new Notice("Readest: sync already running.");
+      return;
+    }
+    this.syncing = true;
     const notice = new Notice("Readest: syncing...", 0);
     try {
       const books = await this.loadBooks();
       await this.ensureFolder(this.settings.outputFolder);
       const hashIndex = this.buildHashIndex();
+      const usedPaths = new Set<string>();
 
       let created = 0;
       let updated = 0;
 
       for (const parsed of books) {
-        const result = await this.writeBookNote(parsed, hashIndex);
+        const result = await this.writeBookNote(parsed, hashIndex, usedPaths);
         if (result.action === "created") created++;
         else if (result.action === "updated") updated++;
       }
@@ -96,11 +107,17 @@ export default class ReadestHighlightsPlugin extends Plugin {
     } catch (e) {
       notice.hide();
       console.error("Readest sync failed", e);
-      new Notice(`Readest sync failed: ${(e as Error).message}`);
+      new Notice(`Readest sync failed: ${errorMessage(e)}`);
+    } finally {
+      this.syncing = false;
     }
   }
 
   async syncSingle() {
+    if (this.syncing) {
+      new Notice("Readest: sync already running.");
+      return;
+    }
     try {
       const books = await this.loadBooks();
       if (books.length === 0) {
@@ -113,25 +130,33 @@ export default class ReadestHighlightsPlugin extends Plugin {
         "Pick a book to sync...",
         (picked) => {
           void (async () => {
+            if (this.syncing) {
+              new Notice("Readest: sync already running.");
+              return;
+            }
+            this.syncing = true;
             try {
               await this.ensureFolder(this.settings.outputFolder);
               const result = await this.writeBookNote(
                 picked,
                 this.buildHashIndex(),
+                new Set<string>(),
               );
               new Notice(
                 `Readest: ${result.action} "${picked.book.title}" (${picked.annotations.length} highlights)`,
               );
             } catch (e) {
               console.error("Readest single sync failed", e);
-              new Notice(`Readest: ${(e as Error).message}`);
+              new Notice(`Readest: ${errorMessage(e)}`);
+            } finally {
+              this.syncing = false;
             }
           })();
         },
       ).open();
     } catch (e) {
       console.error("Readest picker failed", e);
-      new Notice(`Readest: ${(e as Error).message}`);
+      new Notice(`Readest: ${errorMessage(e)}`);
     }
   }
 
@@ -152,26 +177,31 @@ export default class ReadestHighlightsPlugin extends Plugin {
       ).open();
     } catch (e) {
       console.error("Readest picker failed", e);
-      new Notice(`Readest: ${(e as Error).message}`);
+      new Notice(`Readest: ${errorMessage(e)}`);
     }
   }
 
   async appendHighlights(file: TFile, parsed: ParsedBook) {
-    const opts = optionsFromSettings(this.settings);
-    const body = renderHighlightsBody(parsed.annotations, opts);
-    const level = this.settings.syncHeadingLevel;
-    await this.app.vault.process(file, (current) => {
-      if (level === 0) {
-        return current.trimEnd() + `\n\n${body}\n`;
-      }
-      const heading =
-        applyTemplate(this.settings.appendHeadingTemplate, parsed.book) ||
-        "Highlights";
-      return upsertAppendedSection(current, heading, body, level);
-    });
-    new Notice(
-      `Readest: appended ${parsed.annotations.length} highlights from "${parsed.book.title}"`,
-    );
+    try {
+      const opts = optionsFromSettings(this.settings);
+      const body = renderHighlightsBody(parsed.annotations, opts);
+      const level = this.settings.syncHeadingLevel;
+      await this.app.vault.process(file, (current) => {
+        if (level === 0) {
+          return current.trimEnd() + `\n\n${body}\n`;
+        }
+        const heading =
+          applyTemplate(this.settings.appendHeadingTemplate, parsed.book) ||
+          "Highlights";
+        return upsertAppendedSection(current, heading, body, level);
+      });
+      new Notice(
+        `Readest: appended ${parsed.annotations.length} highlights from "${parsed.book.title}"`,
+      );
+    } catch (e) {
+      console.error("Readest append failed", e);
+      new Notice(`Readest append failed: ${errorMessage(e)}`);
+    }
   }
 
   private async loadBooks(): Promise<ParsedBook[]> {
@@ -215,17 +245,32 @@ export default class ReadestHighlightsPlugin extends Plugin {
   private async writeBookNote(
     parsed: ParsedBook,
     hashIndex: Map<string, TFile>,
+    usedPaths: Set<string> = new Set(),
   ): Promise<SyncResult> {
     const opts = optionsFromSettings(this.settings);
     const filename = bookFilename(parsed.book, this.settings.filenameTemplate);
-    const templatedPath = normalizePath(
+    let templatedPath = normalizePath(
       `${this.settings.outputFolder}/${filename}`,
     );
 
     let matched: TFile | null = hashIndex.get(parsed.book.hash) ?? null;
     if (!matched) {
       const atPath = this.app.vault.getAbstractFileByPath(templatedPath);
-      if (atPath instanceof TFile) matched = atPath;
+      if (atPath instanceof TFile) {
+        const otherHash: unknown = this.app.metadataCache.getFileCache(atPath)
+          ?.frontmatter?.["readest-hash"];
+        const isCollision =
+          usedPaths.has(templatedPath) ||
+          (typeof otherHash === "string" && otherHash !== parsed.book.hash);
+        if (isCollision) {
+          const suffix = parsed.book.hash.slice(0, 8);
+          templatedPath = normalizePath(
+            `${this.settings.outputFolder}/${filename.replace(/\.md$/, "")} (${suffix}).md`,
+          );
+        } else {
+          matched = atPath;
+        }
+      }
     }
 
     if (matched) {
@@ -242,14 +287,20 @@ export default class ReadestHighlightsPlugin extends Plugin {
         changed = next !== current;
         return next;
       });
+      usedPaths.add(matched.path);
       return {
         action: changed ? "updated" : "unchanged",
         path: matched.path,
       };
     }
 
-    await this.app.vault.create(templatedPath, renderBookNote(parsed, opts));
-    return { action: "created", path: templatedPath };
+    const created = await this.app.vault.create(
+      templatedPath,
+      renderBookNote(parsed, opts),
+    );
+    hashIndex.set(parsed.book.hash, created);
+    usedPaths.add(created.path);
+    return { action: "created", path: created.path };
   }
 
   private async ensureFolder(path: string) {
