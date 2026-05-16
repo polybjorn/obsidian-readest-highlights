@@ -20,3 +20,6 @@ data.json
 
 # Exclude macOS Finder (System Explorer) View States
 .DS_Store
+
+# Per-machine assistant context (symlink to ~/Vault/Backups/repositories/_claude-files/)
+CLAUDE.md
