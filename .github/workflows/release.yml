@@ -43,9 +43,7 @@ jobs:
                   if [ -n "$notes" ]; then
                       prev=$(git tag --sort=-version:refname | grep -v "^${TAG}$" | head -1)
                       if [ -n "$prev" ]; then
-                          notes="${notes}
-
-**Full Changelog**: https://github.com/${REPO}/compare/${prev}...${TAG}"
+                          notes="${notes}"$'\n\n'"**Full Changelog**: https://github.com/${REPO}/compare/${prev}...${TAG}"
                       fi
                       gh release create "$TAG" \
                           --title "$TAG" \
