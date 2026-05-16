@@ -89,7 +89,8 @@ export default class ReadestHighlightsPlugin extends Plugin {
       const books = await this.loadBooks();
       await this.ensureFolder(this.settings.outputFolder);
       await this.layoutReady();
-      const hashIndex = this.buildHashIndex();
+      const { index: hashIndex, duplicateHashes } = this.buildHashIndex();
+      this.warnIfDuplicateHashes(duplicateHashes);
       const usedPaths = new Set<string>();
 
       let created = 0;
@@ -139,9 +140,11 @@ export default class ReadestHighlightsPlugin extends Plugin {
             try {
               await this.ensureFolder(this.settings.outputFolder);
               await this.layoutReady();
+              const { index, duplicateHashes } = this.buildHashIndex();
+              this.warnIfDuplicateHashes(duplicateHashes);
               const result = await this.writeBookNote(
                 picked,
-                this.buildHashIndex(),
+                index,
                 new Set<string>(),
               );
               new Notice(
@@ -222,26 +225,48 @@ export default class ReadestHighlightsPlugin extends Plugin {
     return loadBooksWithAnnotations(dir, { filter });
   }
 
-  private buildHashIndex(): Map<string, TFile> {
+  private buildHashIndex(): {
+    index: Map<string, TFile>;
+    duplicateHashes: string[];
+  } {
     const folderPath = normalizePath(this.settings.outputFolder);
     const index = new Map<string, TFile>();
+    const duplicateHashes: string[] = [];
     const root =
       folderPath === "/"
         ? this.app.vault.getRoot()
         : this.app.vault.getFolderByPath(folderPath);
-    if (!root) return index;
+    if (!root) return { index, duplicateHashes };
     const walk = (folder: TFolder) => {
       for (const child of folder.children) {
         if (child instanceof TFolder) walk(child);
         else if (child instanceof TFile && child.extension === "md") {
           const fm = this.app.metadataCache.getFileCache(child)?.frontmatter;
           const hash: unknown = fm?.["readest-hash"];
-          if (typeof hash === "string") index.set(hash, child);
+          if (typeof hash === "string") {
+            if (index.has(hash)) {
+              duplicateHashes.push(hash);
+            } else {
+              index.set(hash, child);
+            }
+          }
         }
       }
     };
     walk(root);
-    return index;
+    return { index, duplicateHashes };
+  }
+
+  private warnIfDuplicateHashes(duplicateHashes: string[]) {
+    if (duplicateHashes.length === 0) return;
+    console.warn(
+      "Readest: duplicate readest-hash values in output folder:",
+      duplicateHashes,
+    );
+    new Notice(
+      `Readest: ${duplicateHashes.length} note(s) share a book hash; sync may behave unpredictably. Check the developer console for details.`,
+      8000,
+    );
   }
 
   private async writeBookNote(
