@@ -1,6 +1,6 @@
 {
   "name": "obsidian-readest-highlights",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Import highlights and annotations from Readest into Obsidian.",
   "main": "main.js",
   "type": "module",

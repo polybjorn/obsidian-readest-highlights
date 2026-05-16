@@ -4,6 +4,12 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-05-16
+
+### Changed
+
+- Vaults synced across devices: the current platform's Readest default location is now always tried as a last-resort fallback when none of your listed paths match. When the fallback succeeds and you had at least one explicit entry, the discovered path is appended to your Source list so the next sync skips the lookup.
+
 ## [1.1.0] - 2026-05-16
 
 ### Added
@@ -47,7 +53,8 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 - Initial release.
 
-[Unreleased]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.1.0...HEAD
+[Unreleased]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.1.1...HEAD
+[1.1.1]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.1.0...1.1.1
 [1.1.0]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.0.3...1.1.0
 [1.0.3]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.0.2...1.0.3
 [1.0.2]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.0.1...1.0.2
