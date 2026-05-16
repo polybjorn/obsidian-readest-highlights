@@ -16,7 +16,11 @@ Works offline: no API tokens, no external services. The plugin reads Readest's J
 
 Desktop Obsidian with access to a Readest Books folder. Readest's built-in sync (optional) is the easiest way to collect annotations from other devices into one folder, but any setup that exposes the folder to Obsidian works.
 
-The plugin reads this folder from outside your Obsidian vault. Access is read-only; the plugin never modifies Readest's files or sends any data over the network.
+### What the plugin accesses
+
+- **Readest folder, read-only.** A path outside your vault, configured in Settings. The plugin never modifies Readest's files.
+- **Vault, read and write.** Scans notes for the `readest-hash` frontmatter field to match books to existing notes on re-sync, then creates or updates notes in the configured output folder.
+- **No network.** The plugin makes no outbound requests.
 
 ## Commands
 
@@ -57,6 +61,8 @@ Optional YAML block at the top of book notes. Pick which fields to include (tags
 
 On re-sync the plugin looks for an existing note with a matching `readest-hash` in its frontmatter before falling back to the filename template. Renaming a note in Obsidian or changing the filename template doesn't orphan old notes, as long as the Readest hash frontmatter field is kept on.
 
+Sync rewrites the highlights section of matched notes. With **Preserve manual edits** on, content outside that section stays. The option is force-disabled when heading level is None, in which case the whole note body is rewritten. Try **Sync one book** before **Sync all books** the first time.
+
 ## Disclaimer
 
-Independent community plugin, not affiliated with Readest. Development was AI-assisted.
+Independent community plugin, not affiliated with Readest. Provided as-is; bug reports via [GitHub Issues](https://github.com/polybjorn/obsidian-readest-highlights/issues). Development was AI-assisted, reviewed by the author.
