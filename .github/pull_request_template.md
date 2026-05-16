@@ -1,16 +1,12 @@
-## What
+<!-- What this PR changes and why. Closes #123 -->
 
-<!-- One or two sentences on what this PR changes. -->
+## Screenshots
 
-## Why
-
-<!-- The motivation. Link an issue if applicable: Closes #123 -->
+<!-- For UI changes. Delete this section otherwise. -->
 
 ## Test plan
 
-<!-- What you ran and observed. For UI changes, attach a screenshot. -->
+<!-- What you ran and observed. Skip items below that don't apply. -->
 
-- [ ] `npm run lint` passes
-- [ ] `npm test` passes
-- [ ] `npm run build` passes
 - [ ] Tested in a real Obsidian vault
+- [ ] Updated README / docs/
