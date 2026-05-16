@@ -519,7 +519,7 @@ export class ReadestSettingTab extends PluginSettingTab {
 
     pushGenreSub(
       new Setting(fm)
-        .setName("Genre format")
+        .setName("Format")
         .setDesc("Plain text, or wiki-link for backlinks.")
         .addDropdown((d) =>
           d
@@ -551,7 +551,7 @@ export class ReadestSettingTab extends PluginSettingTab {
 
     pushGenreSub(
       new Setting(fm)
-        .setName("Un-invert genres")
+        .setName("Natural order")
         .setDesc(
           "Swap inverted headings like \"state, the\" to \"the state\".",
         )
@@ -567,7 +567,7 @@ export class ReadestSettingTab extends PluginSettingTab {
 
     pushGenreSub(
       new Setting(fm)
-        .setName("Clean genre list")
+        .setName("Clean names")
         .setDesc(
           "Strip cataloging suffixes from genres, e.g. \"ethics -- early works to 1800\" becomes \"ethics\".",
         )
