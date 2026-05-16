@@ -8,6 +8,10 @@ updates:
     commit-message:
       prefix: chore
       include: scope
+    ignore:
+      # Pinned to 0.1.9: 0.3.0 applies a type-info-requiring rule to non-TS files
+      # (upstream config bug). Revisit when the plugin stabilizes.
+      - dependency-name: eslint-plugin-obsidianmd
     groups:
       dev-dependencies:
         dependency-type: development
