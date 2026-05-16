@@ -1,4 +1,4 @@
-import { App, PluginSettingTab, Setting } from "obsidian";
+import { App, Notice, PluginSettingTab, Setting } from "obsidian";
 import { access } from "fs/promises";
 import { homedir } from "os";
 import { join } from "path";
@@ -148,18 +148,22 @@ interface ElectronRemote {
   };
 }
 
-async function pickDirectory(defaultPath?: string): Promise<string | null> {
+type PickResult =
+  | { available: true; path: string | null }
+  | { available: false };
+
+async function pickDirectory(defaultPath?: string): Promise<PickResult> {
   const req = (window as { require?: (m: string) => unknown }).require;
-  if (!req) return null;
+  if (!req) return { available: false };
   const electron = req("electron") as { remote?: ElectronRemote };
   const dialog = electron.remote?.dialog;
-  if (!dialog) return null;
+  if (!dialog) return { available: false };
   const result = await dialog.showOpenDialog({
     properties: ["openDirectory"],
     defaultPath,
   });
-  if (result.canceled) return null;
-  return result.filePaths[0] ?? null;
+  if (result.canceled) return { available: true, path: null };
+  return { available: true, path: result.filePaths[0] ?? null };
 }
 
 export class ReadestSettingTab extends PluginSettingTab {
@@ -196,13 +200,19 @@ export class ReadestSettingTab extends PluginSettingTab {
           .setIcon("folder")
           .setTooltip("Browse")
           .onClick(async () => {
-            const picked = await pickDirectory(
+            const result = await pickDirectory(
               this.plugin.settings.booksDirs[index] || defaultActivePath(),
             );
-            if (!picked) return;
+            if (!result.available) {
+              new Notice(
+                "Readest: file picker unavailable; enter path manually.",
+              );
+              return;
+            }
+            if (!result.path) return;
             const list = [...this.plugin.settings.booksDirs];
             while (list.length <= index) list.push("");
-            list[index] = picked;
+            list[index] = result.path;
             this.plugin.settings.booksDirs = list;
             await this.plugin.saveSettings();
             this.renderBooksDirs(container);
