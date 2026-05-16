@@ -90,7 +90,7 @@ Single toggles. Each adds the corresponding field to frontmatter when its value 
 
 ### Genre
 
-Master toggle for the genre field. Genres come from the book's metadata as exposed by Readest. The field is free-form and varies by source: some catalogs use inverted headings like `Philosophy, Ancient` with qualifier suffixes like ` -- Early works to 1800`, while others use plain tags. The sub-options below normalize the more structured forms.
+Master toggle for the genre field. Genres come from the book's metadata as exposed by Readest. The field is free-form and varies by source, so the sub-options below normalize the more structured forms.
 
 When on, four sub-options appear:
 
