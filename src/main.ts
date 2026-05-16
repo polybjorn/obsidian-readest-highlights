@@ -5,6 +5,7 @@ import {
   Notice,
   Plugin,
   TFile,
+  TFolder,
   normalizePath,
 } from "obsidian";
 import { loadBooksWithAnnotations } from "./readest";
@@ -190,15 +191,24 @@ export default class ReadestHighlightsPlugin extends Plugin {
   }
 
   private buildHashIndex(): Map<string, TFile> {
-    const folder = normalizePath(this.settings.outputFolder);
-    const prefix = folder === "/" ? "" : `${folder}/`;
+    const folderPath = normalizePath(this.settings.outputFolder);
     const index = new Map<string, TFile>();
-    for (const file of this.app.vault.getMarkdownFiles()) {
-      if (!file.path.startsWith(prefix)) continue;
-      const fm = this.app.metadataCache.getFileCache(file)?.frontmatter;
-      const hash: unknown = fm?.["readest-hash"];
-      if (typeof hash === "string") index.set(hash, file);
-    }
+    const root =
+      folderPath === "/"
+        ? this.app.vault.getRoot()
+        : this.app.vault.getFolderByPath(folderPath);
+    if (!root) return index;
+    const walk = (folder: TFolder) => {
+      for (const child of folder.children) {
+        if (child instanceof TFolder) walk(child);
+        else if (child instanceof TFile && child.extension === "md") {
+          const fm = this.app.metadataCache.getFileCache(child)?.frontmatter;
+          const hash: unknown = fm?.["readest-hash"];
+          if (typeof hash === "string") index.set(hash, child);
+        }
+      }
+    };
+    walk(root);
     return index;
   }
 
