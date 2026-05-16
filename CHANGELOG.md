@@ -4,6 +4,12 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-05-16
+
+### Security
+
+- Bumped vulnerable transitive dev dependencies (`ajv`, `flatted`, `minimatch`, `brace-expansion`, `fast-uri`) flagged by `npm audit` and the Obsidian community plugin scorecard. Dev-only, no runtime change.
+
 ## [1.0.1] - 2026-05-16
 
 ### Security
@@ -14,6 +20,7 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 - Initial release.
 
-[Unreleased]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.0.1...HEAD
+[Unreleased]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.0.2...HEAD
+[1.0.2]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.0.1...1.0.2
 [1.0.1]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.0.0...1.0.1
 [1.0.0]: https://github.com/polybjorn/obsidian-readest-highlights/releases/tag/1.0.0
