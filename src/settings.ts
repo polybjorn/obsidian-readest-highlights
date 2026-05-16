@@ -590,7 +590,9 @@ export class ReadestSettingTab extends PluginSettingTab {
     fmDependent.push(
       new Setting(fm)
         .setName("Extra fields")
-        .setDesc("Free-form YAML appended inside frontmatter.")
+        .setDesc(
+          "Free-form YAML appended inside frontmatter. Lines containing only '---' are stripped to keep the block valid.",
+        )
         .addTextArea((t) => {
           t.setPlaceholder("Rating: 5\nreview: thoughts")
             .setValue(this.plugin.settings.extraFrontmatter)

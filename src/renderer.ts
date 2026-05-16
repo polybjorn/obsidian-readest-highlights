@@ -447,7 +447,11 @@ export function renderFrontmatter(
   }
   if (fm.includeReadestHash) lines.push(`readest-hash: ${book.hash}`);
 
-  const extra = fm.extra.trim();
+  const extra = fm.extra
+    .split("\n")
+    .filter((l) => l.trim() !== "---")
+    .join("\n")
+    .trim();
   if (extra) lines.push(extra);
 
   lines.push("---");
