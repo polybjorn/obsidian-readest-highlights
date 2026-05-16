@@ -49,13 +49,13 @@ Optional YAML block at the top of book notes. Pick which fields to include (tags
 
 ### Rendering
 
-- **Highlights**: filter (all / only highlights / only underlines / only with notes / marked), style (blockquote, plain, callout, bullet), and separator (horizontal rule, blank line, page heading, none).
+- **Highlights**: filter (all annotations / only highlights / only underlines / only with notes / only highlights and underlines), style (blockquote, plain, callout, bullet), and separator (horizontal rule, blank line, group under page headings, none).
 - **Metadata**: page number and color toggles, inline or below-highlight placement. Underlined annotations render as `<u>…</u>` so they stay visually distinct (toggleable).
 - **Notes**: include personal notes attached to highlights, placed inside the highlight, separated below, or in a `> [!note]` callout.
 
 ## Re-sync behavior
 
-On re-sync the plugin looks for an existing note with a matching `readest-hash` in its frontmatter before falling back to the filename template. Renaming a note in Obsidian or changing the filename template doesn't orphan old notes, as long as the Readest hash frontmatter field is kept on.
+On re-sync the plugin looks for an existing note with a matching `readest-hash` in its frontmatter before falling back to the filename template. Renaming a note in Obsidian or changing the filename template doesn't orphan old notes, as long as the Readest hash frontmatter field stays enabled.
 
 Sync rewrites the highlights section of matched notes. With **Preserve manual edits** on, content outside that section stays. The option is force-disabled when heading level is None, in which case the whole note body is rewritten. Try **Sync one book** before **Sync all books** the first time.
 
