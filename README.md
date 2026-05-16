@@ -4,11 +4,9 @@
 ![obsidian](https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/polybjorn/obsidian-readest-highlights/main/manifest.json&query=$.minAppVersion&label=obsidian&color=7c3aed&logo=obsidian&logoColor=white&prefix=%E2%89%A5)
 ![CI](https://github.com/polybjorn/obsidian-readest-highlights/actions/workflows/ci.yml/badge.svg)
 
-Import highlights and annotations from [Readest](https://readest.com) into your Obsidian vault.
+[Readest](https://readest.com) stores its library, progress, and annotations locally as JSON. This plugin reads those files and renders the highlights into your Obsidian vault, either as one note per book in a dedicated folder, or appended to whichever note you have open.
 
 ![Example book note with imported highlights](docs/highlights-example.png)
-
-Readest stores its library, progress, and annotations locally as JSON. This plugin reads those files and renders the highlights into markdown notes, either as one note per book in a dedicated folder, or appended to whichever note you have open.
 
 ## Requirements
 
