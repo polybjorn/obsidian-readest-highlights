@@ -1,0 +1,58 @@
+name: Bug report
+description: Report a problem with the plugin
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Please fill in as much as you can; sparse reports are slow to act on.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What did you do, what did you expect, what actually happened?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+  - type: input
+    id: plugin-version
+    attributes:
+      label: Plugin version
+      description: From Obsidian's community plugins list, or `manifest.json`.
+      placeholder: "1.0.1"
+    validations:
+      required: true
+  - type: input
+    id: obsidian-version
+    attributes:
+      label: Obsidian version
+      placeholder: "1.12.7"
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: "macOS 14.5, Windows 11, Ubuntu 24.04..."
+    validations:
+      required: true
+  - type: textarea
+    id: settings
+    attributes:
+      label: Relevant settings
+      description: Source path style (local / synced), output folder, frontmatter fields, anything non-default.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Console output
+      description: Open Obsidian's developer console (Ctrl/Cmd+Shift+I) and paste any errors. Strip personal paths.
+      render: text
