@@ -40,13 +40,14 @@ body:
     attributes:
       label: Plugin version
       description: From Obsidian's community plugins list, or `manifest.json`.
+      placeholder: "1.x.x"
     validations:
       required: true
   - type: input
     id: obsidian-version
     attributes:
       label: Obsidian version
-      placeholder: "1.12.7"
+      placeholder: "1.x.x"
     validations:
       required: true
   - type: input
@@ -54,12 +55,14 @@ body:
     attributes:
       label: Readest version
       description: From Readest's About panel.
+      placeholder: "0.x.x"
     validations:
       required: true
   - type: input
     id: os
     attributes:
       label: Operating system
+      description: If you've reproduced on multiple OSes, list them all. If you genuinely believe OS isn't relevant, write "any".
       placeholder: "macOS 14.5, Windows 11, Ubuntu 24.04..."
     validations:
       required: true
