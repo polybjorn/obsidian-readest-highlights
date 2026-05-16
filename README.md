@@ -34,7 +34,7 @@ Desktop Obsidian with access to a Readest Books folder. Readest's built-in sync 
 
 ### Setup
 
-- **Source**: one or more paths to Readest's Books folder. The first valid path is used, so you can list per-device locations for vaults synced across devices.
+- **Source**: one or more paths to Readest's Books folder. The first valid path is used, so you can list per-device locations for vaults synced across devices. Can be left empty if Readest uses its default Books folder on your platform (macOS, Windows, Linux); otherwise enter the path.
 - **Output**: vault folder and filename template. Templates accept tokens `{title}`, `{author}`, `{year}`, `{series}`, `{seriesIndex}`, `{isbn}`, `{hash}`.
 
 ### Heading
