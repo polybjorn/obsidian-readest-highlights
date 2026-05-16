@@ -9,7 +9,6 @@ All notable changes to this project are documented here. Format based on [Keep a
 ### Changed
 
 - README clarifies plugin permissions (vault read/write, read-only Readest folder, no network) and re-sync overwrite behavior.
-- Disclaimer points to GitHub Issues for bug reports.
 
 ### Security
 
