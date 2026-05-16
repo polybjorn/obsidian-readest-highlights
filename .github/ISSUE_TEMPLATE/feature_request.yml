@@ -2,6 +2,13 @@ name: Feature request
 description: Suggest an enhancement
 labels: ["Enhancement"]
 body:
+  - type: checkboxes
+    id: search
+    attributes:
+      label: Search
+      options:
+        - label: I have searched existing issues and this has not already been requested.
+          required: true
   - type: textarea
     id: problem
     attributes:
@@ -21,3 +28,12 @@ body:
     attributes:
       label: Alternatives considered
       description: Workarounds you've tried, or other ways the plugin could solve this.
+  - type: dropdown
+    id: contribution
+    attributes:
+      label: Would you be willing to contribute a PR?
+      description: No pressure, just helpful for planning.
+      options:
+        - "No"
+        - "Maybe"
+        - "Yes"
