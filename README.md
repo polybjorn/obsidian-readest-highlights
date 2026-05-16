@@ -61,4 +61,4 @@ Sync rewrites the highlights section of matched notes. With **Preserve manual ed
 
 ## Disclaimer
 
-Independent community plugin, not affiliated with Readest. Development was AI-assisted. Bug reports: [GitHub Issues](https://github.com/polybjorn/obsidian-readest-highlights/issues).
+Independent community plugin, not affiliated with Readest. Development was AI-assisted.
