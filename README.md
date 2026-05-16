@@ -16,8 +16,8 @@ Desktop Obsidian with access to a Readest Books folder. Readest's built-in sync 
 
 ### What the plugin accesses
 
-- **Readest folder, read-only.** A path outside your vault, configured in Settings. The plugin never modifies Readest's files.
-- **Vault, read and write.** Scans notes for the `readest-hash` frontmatter field to match books to existing notes on re-sync, then creates or updates notes in the configured output folder.
+- **Readest folder, read-only.** A path outside your vault, configured in Settings. The plugin only reads `library.json` and each book's `config.json`, and never writes to this folder. Reading outside the vault requires the Node `fs` module because Obsidian's vault API does not cover external paths.
+- **Vault, read and write.** Scans notes for the `readest-hash` frontmatter field inside your output folder to match books to existing notes on re-sync, then creates or updates notes there.
 - **No network.** The plugin makes no outbound requests.
 
 ## Commands
