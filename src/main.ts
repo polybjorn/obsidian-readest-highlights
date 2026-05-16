@@ -305,8 +305,13 @@ export default class ReadestHighlightsPlugin extends Plugin {
 
   private async ensureFolder(path: string) {
     const normalized = normalizePath(path);
-    if (!this.app.vault.getAbstractFileByPath(normalized)) {
+    const existing = this.app.vault.getAbstractFileByPath(normalized);
+    if (!existing) {
       await this.app.vault.createFolder(normalized);
+    } else if (!(existing instanceof TFolder)) {
+      throw new Error(
+        `Output folder path "${normalized}" is a file, not a folder.`,
+      );
     }
   }
 }
