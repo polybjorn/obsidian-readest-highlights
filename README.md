@@ -6,7 +6,7 @@
 
 [Readest](https://readest.com) stores its library, progress, and annotations locally as JSON. This plugin reads those files and renders the highlights into your Obsidian vault, either as one note per book in a dedicated folder, or appended to whichever note you have open.
 
-![Example book note with imported highlights](docs/highlights-example.png)
+![A book note synced from Readest](docs/book-note.png)
 
 **Docs:** [Install](docs/install.md), [Settings reference](docs/settings.md)
 
