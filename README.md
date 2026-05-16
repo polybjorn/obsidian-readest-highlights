@@ -1,7 +1,6 @@
 # Obsidian Readest Highlights
 
 [![downloads](https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/obsidianmd/obsidian-releases/HEAD/community-plugin-stats.json&query=$['readest-highlights'].downloads&label=downloads&color=7c3aed&logo=obsidian&logoColor=white)](https://community.obsidian.md/plugins/readest-highlights)
-![obsidian](https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/polybjorn/obsidian-readest-highlights/main/manifest.json&query=$.minAppVersion&label=obsidian&color=7c3aed&logo=obsidian&logoColor=white&prefix=%E2%89%A5)
 ![manifest version](https://img.shields.io/github/manifest-json/v/polybjorn/obsidian-readest-highlights)
 ![CI](https://github.com/polybjorn/obsidian-readest-highlights/actions/workflows/ci.yml/badge.svg)
 
