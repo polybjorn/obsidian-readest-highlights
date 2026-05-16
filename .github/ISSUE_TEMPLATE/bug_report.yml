@@ -6,13 +6,13 @@ body:
     attributes:
       value: |
         Thanks for reporting. Please fill in as much as you can; sparse reports are slow to act on.
-  - type: textarea
-    id: what-happened
+  - type: checkboxes
+    id: search
     attributes:
-      label: What happened
-      description: What did you do, what did you expect, what actually happened?
-    validations:
-      required: true
+      label: Search
+      options:
+        - label: I have searched existing issues and this has not already been reported.
+          required: true
   - type: textarea
     id: steps
     attributes:
@@ -23,12 +23,23 @@ body:
         3. ...
     validations:
       required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
   - type: input
     id: plugin-version
     attributes:
       label: Plugin version
       description: From Obsidian's community plugins list, or `manifest.json`.
-      placeholder: "1.0.1"
     validations:
       required: true
   - type: input
@@ -36,6 +47,13 @@ body:
     attributes:
       label: Obsidian version
       placeholder: "1.12.7"
+    validations:
+      required: true
+  - type: input
+    id: readest-version
+    attributes:
+      label: Readest version
+      description: From Readest's About panel.
     validations:
       required: true
   - type: input
