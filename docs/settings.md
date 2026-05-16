@@ -90,9 +90,7 @@ Single toggles. Each adds the corresponding field to frontmatter when its value 
 
 ### Genre
 
-Master toggle for the genre field. Genres come from the book's metadata as exposed by Readest. The field is free-form and varies by source, so the sub-options below normalize the more structured forms.
-
-When on, four sub-options appear:
+Master toggle for the genre field. Genres come from the book's metadata as exposed by Readest. The field is free-form and varies by source, so the four sub-options below normalize the more structured forms.
 
 #### Format
 
