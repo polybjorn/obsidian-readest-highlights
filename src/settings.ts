@@ -327,7 +327,8 @@ export class ReadestSettingTab extends PluginSettingTab {
           .setPlaceholder("Readest")
           .setValue(this.plugin.settings.outputFolder)
           .onChange(async (value) => {
-            this.plugin.settings.outputFolder = value.trim();
+            this.plugin.settings.outputFolder =
+              value.trim() || DEFAULT_SETTINGS.outputFolder;
             await this.plugin.saveSettings();
           }),
       );
