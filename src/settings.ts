@@ -87,8 +87,11 @@ async function pathHasLibrary(p: string): Promise<boolean> {
 }
 
 export async function resolveBooksDir(s: ReadestSettings): Promise<string> {
-  const candidates = s.booksDirs.filter((p) => p.length > 0);
-  if (candidates.length === 0) candidates.push(defaultActivePath());
+  const userPaths = s.booksDirs.filter((p) => p.length > 0);
+  const fallback = defaultActivePath();
+  const candidates = userPaths.includes(fallback)
+    ? userPaths
+    : [...userPaths, fallback];
 
   for (const candidate of candidates) {
     if (await pathHasLibrary(candidate)) return candidate;

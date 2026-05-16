@@ -222,7 +222,16 @@ export default class ReadestHighlightsPlugin extends Plugin {
               ? (a: { style: string | null }) => a.style !== null
               : undefined;
     const dir = await resolveBooksDir(this.settings);
+    await this.rememberBooksDir(dir);
     return loadBooksWithAnnotations(dir, { filter });
+  }
+
+  private async rememberBooksDir(dir: string) {
+    const userPaths = this.settings.booksDirs.filter((p) => p.length > 0);
+    if (userPaths.length === 0) return;
+    if (userPaths.includes(dir)) return;
+    this.settings.booksDirs = [...userPaths, dir];
+    await this.saveSettings();
   }
 
   private buildHashIndex(): {
