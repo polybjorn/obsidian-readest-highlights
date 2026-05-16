@@ -4,6 +4,12 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ## [Unreleased]
 
+## [1.0.3] - 2026-05-16
+
+### Changed
+
+- Scoped vault traversal to the configured output folder instead of walking every markdown file in the vault. Same behavior, less access, faster on large vaults.
+
 ## [1.0.2] - 2026-05-16
 
 ### Security
@@ -20,7 +26,8 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 - Initial release.
 
-[Unreleased]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.0.2...HEAD
+[Unreleased]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.0.3...HEAD
+[1.0.3]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.0.2...1.0.3
 [1.0.2]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.0.1...1.0.2
 [1.0.1]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.0.0...1.0.1
 [1.0.0]: https://github.com/polybjorn/obsidian-readest-highlights/releases/tag/1.0.0
