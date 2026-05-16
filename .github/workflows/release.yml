@@ -15,6 +15,8 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v6
+              with:
+                  fetch-depth: 0
             - uses: actions/setup-node@v6
               with:
                   node-version: 22.x
@@ -29,8 +31,29 @@ jobs:
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                   TAG: ${{ github.ref_name }}
+                  REPO: ${{ github.repository }}
               run: |
-                  gh release create "$TAG" \
-                      --title "$TAG" \
-                      --generate-notes \
-                      main.js manifest.json styles.css
+                  notes=$(awk -v ver="$TAG" '
+                    $0 ~ "^## \\[" ver "\\]" { found=1; next }
+                    found && /^## \[/ { exit }
+                    found && /^\[.*\]:/ { exit }
+                    found { print }
+                  ' CHANGELOG.md | awk 'NF{found=1} found' | tac | awk 'NF{found=1} found' | tac)
+
+                  if [ -n "$notes" ]; then
+                      prev=$(git tag --sort=-version:refname | grep -v "^${TAG}$" | head -1)
+                      if [ -n "$prev" ]; then
+                          notes="${notes}
+
+**Full Changelog**: https://github.com/${REPO}/compare/${prev}...${TAG}"
+                      fi
+                      gh release create "$TAG" \
+                          --title "$TAG" \
+                          --notes "$notes" \
+                          main.js manifest.json styles.css
+                  else
+                      gh release create "$TAG" \
+                          --title "$TAG" \
+                          --generate-notes \
+                          main.js manifest.json styles.css
+                  fi
