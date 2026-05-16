@@ -88,6 +88,7 @@ export default class ReadestHighlightsPlugin extends Plugin {
     try {
       const books = await this.loadBooks();
       await this.ensureFolder(this.settings.outputFolder);
+      await this.layoutReady();
       const hashIndex = this.buildHashIndex();
       const usedPaths = new Set<string>();
 
@@ -137,6 +138,7 @@ export default class ReadestHighlightsPlugin extends Plugin {
             this.syncing = true;
             try {
               await this.ensureFolder(this.settings.outputFolder);
+              await this.layoutReady();
               const result = await this.writeBookNote(
                 picked,
                 this.buildHashIndex(),
@@ -301,6 +303,12 @@ export default class ReadestHighlightsPlugin extends Plugin {
     hashIndex.set(parsed.book.hash, created);
     usedPaths.add(created.path);
     return { action: "created", path: created.path };
+  }
+
+  private layoutReady(): Promise<void> {
+    return new Promise((resolve) => {
+      this.app.workspace.onLayoutReady(() => resolve());
+    });
   }
 
   private async ensureFolder(path: string) {
