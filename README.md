@@ -8,7 +8,7 @@
 
 ![A book note synced from Readest](docs/book-note.png)
 
-**Docs:** [Install](docs/install.md), [Settings reference](docs/settings.md)
+**Docs:** [Install](https://github.com/polybjorn/obsidian-readest-highlights/blob/main/docs/install.md), [Settings reference](https://github.com/polybjorn/obsidian-readest-highlights/blob/main/docs/settings.md)
 
 ## Requirements
 
