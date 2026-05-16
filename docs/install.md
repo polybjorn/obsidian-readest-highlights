@@ -1,5 +1,7 @@
 # Installation
 
+Available in [Obsidian community plugins](https://community.obsidian.md/plugins/readest-highlights).
+
 ## Community plugins browser (recommended)
 
 1. Open Obsidian.
