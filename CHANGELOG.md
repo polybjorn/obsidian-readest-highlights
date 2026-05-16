@@ -12,13 +12,7 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ## [1.0.0] - 2026-04-22
 
-### Added
-
-- Initial release. Import highlights and annotations from Readest into Obsidian.
-- Sync to folder (one note per book) or append to current note.
-- Filename templates with `{title}`, `{author}`, `{year}`, `{series}`, `{seriesIndex}`, `{isbn}`, `{hash}` tokens.
-- Configurable heading level, frontmatter fields, highlight rendering (blockquote / plain / callout / bullet), and metadata placement.
-- Re-sync by `readest-hash` frontmatter, with optional preservation of manual edits outside the highlights section.
+- Initial release.
 
 [Unreleased]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.0.1...HEAD
 [1.0.1]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.0.0...1.0.1
