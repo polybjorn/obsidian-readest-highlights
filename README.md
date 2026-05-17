@@ -1,8 +1,6 @@
 # Obsidian Readest Highlights
 
-[![downloads](https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/obsidianmd/obsidian-releases/HEAD/community-plugin-stats.json&query=$['readest-highlights'].downloads&label=downloads&color=7c3aed&logo=obsidian&logoColor=white)](https://community.obsidian.md/plugins/readest-highlights)
-![manifest version](https://img.shields.io/github/manifest-json/v/polybjorn/obsidian-readest-highlights)
-![CI](https://github.com/polybjorn/obsidian-readest-highlights/actions/workflows/ci.yml/badge.svg)
+[![Obsidian plugin downloads](https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/obsidianmd/obsidian-releases/HEAD/community-plugin-stats.json&query=$['readest-highlights'].downloads&label=Obsidian%20plugin&color=7c3aed&logo=obsidian&logoColor=white&suffix=%20downloads)](https://community.obsidian.md/plugins/readest-highlights)
 
 [Readest](https://readest.com) stores its library, progress, and annotations locally as JSON. This plugin reads those files and renders the highlights into your Obsidian vault.
 
