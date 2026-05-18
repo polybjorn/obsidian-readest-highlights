@@ -44,6 +44,35 @@ const libraryEntry = (hash: string, extra: object = {}) => ({
   ...extra,
 });
 
+// --- parse error reporting ---
+
+void test("malformed library.json throws error mentioning the path", async (t) => {
+  const dir = await tempDir(t);
+  await writeFile(join(dir, "library.json"), "{ not valid json");
+  await assert.rejects(
+    () => loadBooksWithAnnotations(dir),
+    (e: Error) =>
+      e.message.includes("library.json") &&
+      e.message.startsWith("Failed to parse"),
+  );
+});
+
+void test("malformed config.json throws error mentioning the path", async (t) => {
+  const dir = await tempDir(t);
+  await writeFile(
+    join(dir, "library.json"),
+    JSON.stringify([libraryEntry("h1")]),
+  );
+  await mkdir(join(dir, "h1"));
+  await writeFile(join(dir, "h1", "config.json"), "{ not valid json");
+  await assert.rejects(
+    () => loadBooksWithAnnotations(dir),
+    (e: Error) =>
+      e.message.includes(join("h1", "config.json")) &&
+      e.message.startsWith("Failed to parse"),
+  );
+});
+
 // --- book and annotation filtering ---
 
 void test("onlyWithAnnotations: false keeps books with no annotations", async (t) => {

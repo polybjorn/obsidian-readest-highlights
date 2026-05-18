@@ -15,13 +15,22 @@ function isEnoent(e: unknown): boolean {
   );
 }
 
+function parseJsonFile<T>(raw: string, path: string): T {
+  try {
+    return JSON.parse(raw) as T;
+  } catch (e) {
+    const reason = e instanceof Error ? e.message : String(e);
+    throw new Error(`Failed to parse ${path}: ${reason}`);
+  }
+}
+
 export async function readLibrary(
   booksDir: string,
 ): Promise<ReadestLibraryBook[]> {
   const libraryPath = join(booksDir, "library.json");
   try {
     const raw = await readFile(libraryPath, "utf-8");
-    return JSON.parse(raw) as ReadestLibraryBook[];
+    return parseJsonFile<ReadestLibraryBook[]>(raw, libraryPath);
   } catch (e) {
     if (isEnoent(e)) {
       throw new Error(`library.json not found at ${libraryPath}`);
@@ -37,7 +46,7 @@ export async function readBookConfig(
   const configPath = join(booksDir, hash, "config.json");
   try {
     const raw = await readFile(configPath, "utf-8");
-    return JSON.parse(raw) as ReadestBookConfig;
+    return parseJsonFile<ReadestBookConfig>(raw, configPath);
   } catch (e) {
     if (isEnoent(e)) return null;
     throw e;
