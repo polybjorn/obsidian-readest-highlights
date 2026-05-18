@@ -4,6 +4,8 @@ import {
   applyTemplate,
   bookFilename,
   renderBookNote,
+  renderFrontmatter,
+  renderHighlightsBody,
   replaceHighlightsSection,
   upsertAppendedSection,
 } from "../src/renderer";
@@ -167,4 +169,131 @@ void test("replaceHighlightsSection includes the count line when enabled", () =>
     showHighlightCount: true,
   });
   assert.match(out, /## Highlights\n\nTotal highlights: 2\n\n>/);
+});
+
+// --- frontmatter ---
+
+void test("renderFrontmatter returns empty string when disabled", () => {
+  assert.equal(renderFrontmatter(book, opts.frontmatter), "");
+});
+
+void test("renderFrontmatter writes tags, author, year, isbn, series", () => {
+  const out = renderFrontmatter(book, {
+    ...opts.frontmatter,
+    enabled: true,
+    tags: ["Book", "Fantasy"],
+    authorFormat: "plain",
+    includeYear: true,
+    includeIsbn: true,
+    includeSeries: true,
+  });
+  assert.match(out, /^---$/m);
+  assert.match(out, /tags:\n {2}- "Book"\n {2}- "Fantasy"/);
+  assert.match(out, /author: "Patrick Rothfuss"/);
+  assert.match(out, /year: 2007/);
+  assert.match(out, /isbn: "9780756404741"/);
+  assert.match(out, /series: "Kingkiller Chronicle"/);
+});
+
+void test("renderFrontmatter wraps author in wikilink format", () => {
+  const out = renderFrontmatter(book, {
+    ...opts.frontmatter,
+    enabled: true,
+    authorFormat: "wikilink",
+  });
+  assert.match(out, /author: "\[\[Patrick Rothfuss\]\]"/);
+});
+
+// --- renderBookNote composition ---
+
+void test("renderBookNote composes frontmatter + heading + body with trailing newline", () => {
+  const out = renderBookNote(
+    { book, annotations: [makeAnnotation("1", { text: "quote" })] },
+    {
+      ...opts,
+      frontmatter: { ...opts.frontmatter, enabled: true, authorFormat: "plain" },
+    },
+  );
+  assert.match(out, /^---\n/);
+  assert.match(out, /author: "Patrick Rothfuss"/);
+  assert.match(out, /---\n\n## Highlights\n\n> quote/);
+  assert.ok(out.endsWith("\n"), "output should end with a newline");
+});
+
+// --- renderHighlightsBody separators ---
+
+void test("renderHighlightsBody pageHeading separator groups annotations under page headings", () => {
+  const annos = [
+    makeAnnotation("a", { page: 1, text: "first on page 1" }),
+    makeAnnotation("b", { page: 1, text: "second on page 1" }),
+    makeAnnotation("c", { page: 5, text: "on page 5" }),
+  ];
+  const out = renderHighlightsBody(annos, {
+    ...opts,
+    separator: "pageHeading",
+    showPage: false,
+  });
+  assert.match(out, /### Page 1/);
+  assert.match(out, /### Page 5/);
+  assert.ok(
+    out.indexOf("### Page 1") < out.indexOf("### Page 5"),
+    "page 1 should appear before page 5",
+  );
+});
+
+void test("renderHighlightsBody rule separator inserts --- between annotations", () => {
+  const out = renderHighlightsBody(
+    [
+      makeAnnotation("a", { text: "first" }),
+      makeAnnotation("b", { text: "second" }),
+    ],
+    { ...opts, separator: "rule", showPage: false },
+  );
+  assert.match(out, /first\n\n---\n\n> second/);
+});
+
+// --- highlight style variants ---
+
+void test("highlightStyle bullet uses '- ' prefix", () => {
+  const out = renderHighlightsBody(
+    [makeAnnotation("a", { text: "quote text" })],
+    { ...opts, style: "bullet", showPage: false },
+  );
+  assert.match(out, /^- quote text/m);
+});
+
+void test("highlightStyle callout wraps text in > [!quote] block", () => {
+  const out = renderHighlightsBody(
+    [makeAnnotation("a", { text: "quote text" })],
+    { ...opts, style: "callout", showPage: false },
+  );
+  assert.match(out, /> \[!quote\]/);
+  assert.match(out, /> quote text/);
+});
+
+// --- note placement and metadata ---
+
+void test("noteStyle callout renders notes in a separate > [!note] block", () => {
+  const out = renderHighlightsBody(
+    [makeAnnotation("a", { text: "quote", note: "my thought" })],
+    { ...opts, noteStyle: "callout", showPage: false },
+  );
+  assert.match(out, /> \[!note\]/);
+  assert.match(out, /> my thought/);
+});
+
+void test("noteStyle separated places notes after the highlight as **Note:**", () => {
+  const out = renderHighlightsBody(
+    [makeAnnotation("a", { text: "quote", note: "my thought" })],
+    { ...opts, noteStyle: "separated", showPage: false },
+  );
+  assert.match(out, /> quote\n\n\*\*Note:\*\* my thought/);
+});
+
+void test("metadataPlacement inline appends metadata to the last text line", () => {
+  const out = renderHighlightsBody(
+    [makeAnnotation("a", { text: "quote", page: 42 })],
+    { ...opts, metadataPlacement: "inline", showPage: true },
+  );
+  assert.match(out, /> quote \*\(page 42\)\*/);
 });
