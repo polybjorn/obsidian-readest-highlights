@@ -7,6 +7,8 @@ import type {
   ReadestLibraryBook,
 } from "./types";
 
+export const SUPPORTED_SCHEMA_VERSION = 1;
+
 function isEnoent(e: unknown): boolean {
   return (
     typeof e === "object" &&
@@ -59,10 +61,12 @@ export async function loadBooksWithAnnotations(
     includeDeleted = false,
     onlyWithAnnotations = true,
     filter,
+    onUnsupportedSchema,
   }: {
     includeDeleted?: boolean;
     onlyWithAnnotations?: boolean;
     filter?: (a: ReadestAnnotation) => boolean;
+    onUnsupportedSchema?: (found: number, supported: number) => void;
   } = {},
 ): Promise<ParsedBook[]> {
   const library = await readLibrary(booksDir);
@@ -77,8 +81,13 @@ export async function loadBooksWithAnnotations(
   );
 
   const results: ParsedBook[] = [];
+  let highestUnsupported = 0;
 
   for (const { book, config } of pairs) {
+    const version = config?.schemaVersion;
+    if (typeof version === "number" && version > SUPPORTED_SCHEMA_VERSION) {
+      if (version > highestUnsupported) highestUnsupported = version;
+    }
     let annotations = (config?.booknotes ?? []).filter(
       (a): a is ReadestAnnotation => !a.deletedAt,
     );
@@ -86,6 +95,13 @@ export async function loadBooksWithAnnotations(
     if (onlyWithAnnotations && annotations.length === 0) continue;
     annotations.sort((a, b) => (a.page ?? 0) - (b.page ?? 0));
     results.push({ book, annotations });
+  }
+
+  if (highestUnsupported > 0) {
+    console.warn(
+      `[readest-highlights] Encountered config schemaVersion ${highestUnsupported}, supported is ${SUPPORTED_SCHEMA_VERSION}. Update the plugin.`,
+    );
+    onUnsupportedSchema?.(highestUnsupported, SUPPORTED_SCHEMA_VERSION);
   }
 
   return results;

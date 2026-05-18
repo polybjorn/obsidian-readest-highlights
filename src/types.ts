@@ -48,6 +48,7 @@ export interface ReadestAnnotation {
 }
 
 export interface ReadestBookConfig {
+  schemaVersion?: number;
   bookHash: string;
   booknotes?: ReadestAnnotation[];
   progress?: [number, number];

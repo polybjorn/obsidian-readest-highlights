@@ -3,7 +3,10 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { loadBooksWithAnnotations } from "../src/readest";
+import {
+  loadBooksWithAnnotations,
+  SUPPORTED_SCHEMA_VERSION,
+} from "../src/readest";
 
 async function tempDir(t: TestContext): Promise<string> {
   const dir = await mkdtemp(join(tmpdir(), "readest-test-"));
@@ -42,6 +45,93 @@ const libraryEntry = (hash: string, extra: object = {}) => ({
   title: `Book ${hash}`,
   createdAt: 0,
   ...extra,
+});
+
+// --- schema version detection ---
+
+void test("schemaVersion newer than supported triggers onUnsupportedSchema", async (t) => {
+  const dir = await makeBooksDir(
+    t,
+    {
+      h1: {
+        bookHash: "h1",
+        schemaVersion: SUPPORTED_SCHEMA_VERSION + 1,
+        booknotes: [{ ...baseAnnotation, bookHash: "h1", id: "a1" }],
+      },
+    },
+    [libraryEntry("h1")],
+  );
+  let seenFound: number | undefined;
+  let seenSupported: number | undefined;
+  const books = await loadBooksWithAnnotations(dir, {
+    onUnsupportedSchema: (found, supported) => {
+      seenFound = found;
+      seenSupported = supported;
+    },
+  });
+  assert.equal(seenFound, SUPPORTED_SCHEMA_VERSION + 1);
+  assert.equal(seenSupported, SUPPORTED_SCHEMA_VERSION);
+  assert.equal(books.length, 1);
+});
+
+void test("schemaVersion equal to supported does not warn", async (t) => {
+  const dir = await makeBooksDir(
+    t,
+    {
+      h1: {
+        bookHash: "h1",
+        schemaVersion: SUPPORTED_SCHEMA_VERSION,
+        booknotes: [{ ...baseAnnotation, bookHash: "h1", id: "a1" }],
+      },
+    },
+    [libraryEntry("h1")],
+  );
+  let called = false;
+  await loadBooksWithAnnotations(dir, {
+    onUnsupportedSchema: () => {
+      called = true;
+    },
+  });
+  assert.equal(called, false);
+});
+
+void test("missing schemaVersion (legacy config) does not warn", async (t) => {
+  const dir = await makeBooksDir(
+    t,
+    { h1: { bookHash: "h1", booknotes: [{ ...baseAnnotation, bookHash: "h1", id: "a1" }] } },
+    [libraryEntry("h1")],
+  );
+  let called = false;
+  await loadBooksWithAnnotations(dir, {
+    onUnsupportedSchema: () => {
+      called = true;
+    },
+  });
+  assert.equal(called, false);
+});
+
+void test("highest unsupported version is reported when multiple books exceed", async (t) => {
+  const dir = await makeBooksDir(
+    t,
+    {
+      h1: {
+        bookHash: "h1",
+        schemaVersion: SUPPORTED_SCHEMA_VERSION + 1,
+        booknotes: [{ ...baseAnnotation, bookHash: "h1", id: "a1" }],
+      },
+      h2: {
+        bookHash: "h2",
+        schemaVersion: SUPPORTED_SCHEMA_VERSION + 3,
+        booknotes: [{ ...baseAnnotation, bookHash: "h2", id: "a2" }],
+      },
+    },
+    [libraryEntry("h1"), libraryEntry("h2")],
+  );
+  const seen: number[] = [];
+  await loadBooksWithAnnotations(dir, {
+    onUnsupportedSchema: (found) => seen.push(found),
+  });
+  assert.deepEqual(seen, [SUPPORTED_SCHEMA_VERSION + 3]);
 });
 
 // --- parse error reporting ---

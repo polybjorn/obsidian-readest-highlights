@@ -223,7 +223,15 @@ export default class ReadestHighlightsPlugin extends Plugin {
               : undefined;
     const dir = await resolveBooksDir(this.settings);
     await this.rememberBooksDir(dir);
-    return loadBooksWithAnnotations(dir, { filter });
+    return loadBooksWithAnnotations(dir, {
+      filter,
+      onUnsupportedSchema: (found, supported) => {
+        new Notice(
+          `Readest: config schema v${found} is newer than supported (v${supported}). Update the Readest Highlights plugin.`,
+          10000,
+        );
+      },
+    });
   }
 
   private async rememberBooksDir(dir: string) {
