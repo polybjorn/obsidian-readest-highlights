@@ -46,5 +46,6 @@ Types: `feat`, `fix`, `chore`, `docs`, `style`, `refactor`, `test`, `ci`, `build
 - Branch from `main`.
 - Keep the change focused; one PR per concern.
 - Include a test plan in the PR description (what you ran, what you observed). For UI changes, a screenshot helps.
-- New features that change settings should update the relevant README section in the same PR.
+- New or changed user-visible behavior should come with tests in `tests/`. `tests/readest.test.ts` covers the on-disk reader (uses tmpdir fixtures); `tests/renderer.test.ts` covers rendering (uses inline fixtures).
+- Changes that add, rename, or remove a setting, command, or output behavior should update `docs/settings.md` (settings) or `README.md` (commands / requirements) in the same PR.
 - For changes that touch UI, settings, rendering, or the build, test the plugin against a real Obsidian vault before opening the PR. CI runs lint, tests, and build, but does not load the bundle in Obsidian.
