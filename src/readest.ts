@@ -66,19 +66,24 @@ export async function loadBooksWithAnnotations(
   } = {},
 ): Promise<ParsedBook[]> {
   const library = await readLibrary(booksDir);
+  const eligible = library.filter(
+    (book) => includeDeleted || !book.deletedAt,
+  );
+  const pairs = await Promise.all(
+    eligible.map(async (book) => ({
+      book,
+      config: await readBookConfig(booksDir, book.hash),
+    })),
+  );
+
   const results: ParsedBook[] = [];
 
-  for (const book of library) {
-    if (!includeDeleted && book.deletedAt) continue;
-
-    const config = await readBookConfig(booksDir, book.hash);
+  for (const { book, config } of pairs) {
     let annotations = (config?.booknotes ?? []).filter(
       (a): a is ReadestAnnotation => !a.deletedAt,
     );
     if (filter) annotations = annotations.filter(filter);
-
     if (onlyWithAnnotations && annotations.length === 0) continue;
-
     annotations.sort((a, b) => (a.page ?? 0) - (b.page ?? 0));
     results.push({ book, annotations });
   }

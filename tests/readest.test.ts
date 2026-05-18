@@ -75,6 +75,22 @@ void test("malformed config.json throws error mentioning the path", async (t) =>
 
 // --- book and annotation filtering ---
 
+void test("includeDeleted: true keeps soft-deleted books in results", async (t) => {
+  const dir = await makeBooksDir(
+    t,
+    { h1: { bookHash: "h1", booknotes: [{ ...baseAnnotation, bookHash: "h1", id: "a1" }] } },
+    [libraryEntry("h1", { deletedAt: 12345 })],
+  );
+  const withoutDeleted = await loadBooksWithAnnotations(dir);
+  assert.equal(withoutDeleted.length, 0);
+  const withDeleted = await loadBooksWithAnnotations(dir, {
+    includeDeleted: true,
+  });
+  assert.equal(withDeleted.length, 1);
+  assert.equal(withDeleted[0]?.book.hash, "h1");
+  assert.equal(withDeleted[0]?.book.deletedAt, 12345);
+});
+
 void test("onlyWithAnnotations: false keeps books with no annotations", async (t) => {
   const dir = await makeBooksDir(
     t,
