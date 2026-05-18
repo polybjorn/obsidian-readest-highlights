@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   applyTemplate,
   bookFilename,
+  renderBookNote,
   replaceHighlightsSection,
   upsertAppendedSection,
 } from "../src/renderer";
@@ -28,6 +29,7 @@ const opts: RenderOptions = {
   separator: "rule",
   showPage: true,
   showColor: false,
+  showHighlightCount: false,
   renderUnderlines: true,
   metadataPlacement: "below",
   showNotes: true,
@@ -52,6 +54,26 @@ const opts: RenderOptions = {
   },
 };
 
+const makeAnnotation = (
+  id: string,
+  overrides: Partial<ReadestAnnotation> = {},
+): ReadestAnnotation => ({
+  bookHash: "abc123",
+  id,
+  type: "annotation",
+  page: 1,
+  text: `text ${id}`,
+  style: "highlight",
+  color: "yellow",
+  note: "",
+  createdAt: 0,
+  updatedAt: 0,
+  deletedAt: null,
+  ...overrides,
+});
+
+// --- template and filename helpers ---
+
 void test("applyTemplate replaces tokens", () => {
   assert.equal(
     applyTemplate("{title} by {author}", book),
@@ -69,6 +91,8 @@ void test("bookFilename sanitizes forbidden chars", () => {
   assert.equal(bookFilename(dirty, "{title}"), "ABCDE.md");
 });
 
+// --- appended section helpers ---
+
 void test("upsertAppendedSection is idempotent", () => {
   const existing = "Intro\n";
   const body = "- quote one";
@@ -82,23 +106,13 @@ void test("upsertAppendedSection respects heading level", () => {
   assert.match(out, /^### Sub$/m);
 });
 
+// --- replace highlights section ---
+
 void test("replaceHighlightsSection preserves content above heading", () => {
   const existing =
     "# Top\n\nmanual intro text\n\n## Highlights\n\n- old\n\n## Notes\n\nkept\n";
-  const annotations: ReadestAnnotation[] = [
-    {
-      bookHash: "abc123",
-      id: "1",
-      type: "annotation",
-      page: 10,
-      text: "new quote",
-      style: "highlight",
-      color: "yellow",
-      note: "",
-      createdAt: 1,
-      updatedAt: 1,
-      deletedAt: null,
-    },
+  const annotations = [
+    makeAnnotation("1", { page: 10, text: "new quote" }),
   ];
   const out = replaceHighlightsSection(existing, book, annotations, opts);
   assert.match(out, /# Top/);
@@ -112,22 +126,45 @@ void test("replaceHighlightsSection preserves content above heading", () => {
 void test("replaceHighlightsSection anchors on exact heading line", () => {
   const existing =
     "## Highlights of the chapter\n\nmy own words\n\n## Highlights\n\n- old\n";
-  const annotations: ReadestAnnotation[] = [
-    {
-      bookHash: "abc123",
-      id: "1",
-      type: "annotation",
-      page: 1,
-      text: "new",
-      style: "highlight",
-      color: null,
-      note: "",
-      createdAt: 1,
-      updatedAt: 1,
-      deletedAt: null,
-    },
-  ];
+  const annotations = [makeAnnotation("1", { text: "new", color: null })];
   const out = replaceHighlightsSection(existing, book, annotations, opts);
   assert.match(out, /## Highlights of the chapter/);
   assert.match(out, /my own words/);
+});
+
+// --- highlight count line ---
+
+void test("showHighlightCount renders the count line under the heading", () => {
+  const annos = [makeAnnotation("1"), makeAnnotation("2"), makeAnnotation("3")];
+  const out = renderBookNote(
+    { book, annotations: annos },
+    { ...opts, showHighlightCount: true },
+  );
+  assert.match(out, /## Highlights\n\nTotal highlights: 3\n\n>/);
+});
+
+void test("showHighlightCount is omitted when there are no annotations", () => {
+  const out = renderBookNote(
+    { book, annotations: [] },
+    { ...opts, showHighlightCount: true },
+  );
+  assert.doesNotMatch(out, /Total highlights:/);
+});
+
+void test("showHighlightCount disabled does not insert a count line", () => {
+  const out = renderBookNote(
+    { book, annotations: [makeAnnotation("1"), makeAnnotation("2")] },
+    { ...opts, showHighlightCount: false },
+  );
+  assert.doesNotMatch(out, /Total highlights:/);
+});
+
+void test("replaceHighlightsSection includes the count line when enabled", () => {
+  const existing = "## Highlights\n\n- old\n";
+  const annos = [makeAnnotation("1"), makeAnnotation("2")];
+  const out = replaceHighlightsSection(existing, book, annos, {
+    ...opts,
+    showHighlightCount: true,
+  });
+  assert.match(out, /## Highlights\n\nTotal highlights: 2\n\n>/);
 });

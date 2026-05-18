@@ -30,6 +30,7 @@ export interface ReadestSettings {
   highlightSeparator: HighlightSeparator;
   showPage: boolean;
   showColor: boolean;
+  showHighlightCount: boolean;
   renderUnderlines: boolean;
   metadataPlacement: MetadataPlacement;
   showNotes: boolean;
@@ -113,6 +114,7 @@ export const DEFAULT_SETTINGS: ReadestSettings = {
   highlightSeparator: "blank",
   showPage: true,
   showColor: false,
+  showHighlightCount: false,
   renderUnderlines: true,
   metadataPlacement: "below",
   showNotes: true,
@@ -655,6 +657,20 @@ export class ReadestSettingTab extends PluginSettingTab {
           .onChange(async (value) => {
             this.plugin.settings.highlightSeparator =
               value as HighlightSeparator;
+            await this.plugin.saveSettings();
+          }),
+      );
+
+    new Setting(hl)
+      .setName("Show count")
+      .setDesc(
+        "Add a line under the highlights heading with the number of highlights included.",
+      )
+      .addToggle((t) =>
+        t
+          .setValue(this.plugin.settings.showHighlightCount)
+          .onChange(async (value) => {
+            this.plugin.settings.showHighlightCount = value;
             await this.plugin.saveSettings();
           }),
       );

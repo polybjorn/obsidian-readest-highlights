@@ -30,6 +30,7 @@ export interface RenderOptions {
   separator: HighlightSeparator;
   showPage: boolean;
   showColor: boolean;
+  showHighlightCount: boolean;
   renderUnderlines: boolean;
   metadataPlacement: MetadataPlacement;
   showNotes: boolean;
@@ -53,6 +54,7 @@ export function optionsFromSettings(s: ReadestSettings): RenderOptions {
     separator: s.highlightSeparator,
     showPage: s.showPage,
     showColor: s.showColor,
+    showHighlightCount: s.showHighlightCount,
     renderUnderlines: s.renderUnderlines,
     metadataPlacement: s.metadataPlacement,
     showNotes: s.showNotes,
@@ -482,6 +484,20 @@ function renderHeadingLine(
   return `${"#".repeat(opts.syncHeadingLevel)} ${text}`;
 }
 
+function renderHighlightCountLine(count: number): string {
+  return `Total highlights: ${count}`;
+}
+
+function prependHighlightCount(
+  body: string,
+  annotations: ReadestAnnotation[],
+  opts: RenderOptions,
+): string {
+  if (!opts.showHighlightCount || annotations.length === 0) return body;
+  const line = renderHighlightCountLine(annotations.length);
+  return body ? `${line}\n\n${body}` : line;
+}
+
 export function renderBookNote(
   parsed: ParsedBook,
   opts: RenderOptions,
@@ -489,7 +505,11 @@ export function renderBookNote(
   const { book, annotations } = parsed;
   const frontmatter = renderFrontmatter(book, opts.frontmatter);
   const heading = renderHeadingLine(book, opts);
-  const body = renderHighlightsBody(annotations, opts);
+  const body = prependHighlightCount(
+    renderHighlightsBody(annotations, opts),
+    annotations,
+    opts,
+  );
   const highlights = heading
     ? `${heading}\n\n${body}`.trimEnd()
     : body.trimEnd();
@@ -511,7 +531,11 @@ export function replaceHighlightsSection(
   const heading = renderHeadingLine(book, opts);
   const headingText = renderSyncHeading(book, opts.syncHeadingTemplate);
   const hashes = "#".repeat(opts.syncHeadingLevel);
-  const body = renderHighlightsBody(annotations, opts);
+  const body = prependHighlightCount(
+    renderHighlightsBody(annotations, opts),
+    annotations,
+    opts,
+  );
   const section = `${heading}\n\n${body}`.trimEnd();
 
   const headingRe = new RegExp(
