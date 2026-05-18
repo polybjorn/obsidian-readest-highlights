@@ -4,6 +4,21 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-05-18
+
+### Added
+
+- Show count: optional "Total highlights: N" line under the highlights heading. Counts the annotations actually rendered (respects the Filter setting). Off by default.
+- Notice when a book's `config.json` schema version exceeds what this build supports; sync continues on best effort.
+
+### Changed
+
+- Per-book config reads run in parallel; sync is faster on large libraries.
+
+### Fixed
+
+- JSON parse failures in `library.json` or a book's `config.json` name the offending file path in the error message.
+
 ## [1.1.1] - 2026-05-16
 
 ### Changed
