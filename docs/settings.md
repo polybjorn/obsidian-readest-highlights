@@ -167,6 +167,10 @@ How highlights are separated within a book note:
 - **Group under page headings** (`### Page N` between groups, no separator between highlights on the same page)
 - **None** (one per line, no separation)
 
+#### Show count
+
+When on, a `Total highlights: N` line is rendered under the highlights heading. Counts the annotations actually included (respects the Filter setting). Off by default.
+
 ### Metadata
 
 Per-highlight metadata (page, color).
