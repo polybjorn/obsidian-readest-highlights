@@ -33,7 +33,7 @@ function errorMessage(e: unknown): string {
 }
 
 export default class ReadestHighlightsPlugin extends Plugin {
-  settings!: ReadestSettings;
+  declare settings: ReadestSettings;
   private syncing = false;
 
   async onload() {
