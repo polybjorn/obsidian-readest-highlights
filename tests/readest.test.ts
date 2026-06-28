@@ -134,6 +134,33 @@ void test("highest unsupported version is reported when multiple books exceed", 
   assert.deepEqual(seen, [SUPPORTED_SCHEMA_VERSION + 3]);
 });
 
+void test("supported schema versions (v2, v3) parse without warning", async (t) => {
+  const dir = await makeBooksDir(
+    t,
+    {
+      h2: {
+        bookHash: "h2",
+        schemaVersion: 2,
+        booknotes: [{ ...baseAnnotation, bookHash: "h2", id: "a2" }],
+      },
+      h3: {
+        bookHash: "h3",
+        schemaVersion: 3,
+        booknotes: [{ ...baseAnnotation, bookHash: "h3", id: "a3" }],
+      },
+    },
+    [libraryEntry("h2"), libraryEntry("h3")],
+  );
+  let called = false;
+  const books = await loadBooksWithAnnotations(dir, {
+    onUnsupportedSchema: () => {
+      called = true;
+    },
+  });
+  assert.equal(called, false);
+  assert.equal(books.length, 2);
+});
+
 // --- parse error reporting ---
 
 void test("malformed library.json throws error mentioning the path", async (t) => {

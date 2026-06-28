@@ -7,7 +7,13 @@ import type {
   ReadestLibraryBook,
 } from "./types";
 
-export const SUPPORTED_SCHEMA_VERSION = 1;
+// Readest's current BOOK_CONFIG_SCHEMA_VERSION is 3. The booknote record shape
+// this plugin reads is stable across v1-v3: the v1->v2 migration only unifies a
+// split highlight+note pair into a single record (Readest's
+// utils/booknoteMigration.ts), and v2->v3 only changes searchConfig (a new search
+// `mode` enum). Neither touches the booknote fields consumed here, so configs up
+// to v3 are safe to read directly.
+export const SUPPORTED_SCHEMA_VERSION = 3;
 
 function isEnoent(e: unknown): boolean {
   return (
