@@ -225,9 +225,9 @@ export default class ReadestHighlightsPlugin extends Plugin {
     await this.rememberBooksDir(dir);
     return loadBooksWithAnnotations(dir, {
       filter,
-      onUnsupportedSchema: (found, supported) => {
+      onUnreadableHighlights: (count) => {
         new Notice(
-          `Readest: config schema v${found} is newer than supported (v${supported}). Update the Readest Highlights plugin.`,
+          `Readest: ${count} highlight(s) could not be read. Readest's note format may have changed - update the Readest Highlights plugin if highlights are missing.`,
           10000,
         );
       },

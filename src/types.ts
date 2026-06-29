@@ -39,7 +39,7 @@ export interface ReadestAnnotation {
   cfi?: string;
   page?: number;
   text: string;
-  style: "highlight" | "underline" | null;
+  style: "highlight" | "underline" | "squiggly" | null;
   color: string | null;
   note: string;
   createdAt: number;

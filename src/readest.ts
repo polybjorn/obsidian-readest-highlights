@@ -7,7 +7,21 @@ import type {
   ReadestLibraryBook,
 } from "./types";
 
-export const SUPPORTED_SCHEMA_VERSION = 1;
+// A highlight Readest considers real (it carries a `style`) but that we cannot
+// render: it has neither selected `text` nor a `note`. On healthy Readest data
+// this never happens. When it does, it means a field this plugin reads was
+// renamed or moved, i.e. the booknote format changed under us - which is the
+// only situation where "update the plugin" is the right advice. We deliberately
+// do NOT gate on `schemaVersion`: Readest bumps it for changes that never touch
+// the booknotes we read (v1->v2 unified split records, v2->v3 changed
+// searchConfig), so a version check cries wolf on every bump.
+function isUnrenderable(a: ReadestAnnotation): boolean {
+  return (
+    a.style != null &&
+    (a.text ?? "").trim() === "" &&
+    (a.note ?? "").trim() === ""
+  );
+}
 
 function isEnoent(e: unknown): boolean {
   return (
@@ -61,12 +75,12 @@ export async function loadBooksWithAnnotations(
     includeDeleted = false,
     onlyWithAnnotations = true,
     filter,
-    onUnsupportedSchema,
+    onUnreadableHighlights,
   }: {
     includeDeleted?: boolean;
     onlyWithAnnotations?: boolean;
     filter?: (a: ReadestAnnotation) => boolean;
-    onUnsupportedSchema?: (found: number, supported: number) => void;
+    onUnreadableHighlights?: (count: number) => void;
   } = {},
 ): Promise<ParsedBook[]> {
   const library = await readLibrary(booksDir);
@@ -81,27 +95,37 @@ export async function loadBooksWithAnnotations(
   );
 
   const results: ParsedBook[] = [];
-  let highestUnsupported = 0;
+  const versionsSeen = new Set<number>();
+  let unreadable = 0;
 
   for (const { book, config } of pairs) {
-    const version = config?.schemaVersion;
-    if (typeof version === "number" && version > SUPPORTED_SCHEMA_VERSION) {
-      if (version > highestUnsupported) highestUnsupported = version;
+    if (typeof config?.schemaVersion === "number") {
+      versionsSeen.add(config.schemaVersion);
     }
-    let annotations = (config?.booknotes ?? []).filter(
+    const live = (config?.booknotes ?? []).filter(
       (a): a is ReadestAnnotation => !a.deletedAt,
     );
+    // Drop highlights we can't render (no text, no note) rather than emit
+    // blank entries; their presence is what raises the format-change warning.
+    let annotations = live.filter((a) => !isUnrenderable(a));
+    unreadable += live.length - annotations.length;
     if (filter) annotations = annotations.filter(filter);
     if (onlyWithAnnotations && annotations.length === 0) continue;
     annotations.sort((a, b) => (a.page ?? 0) - (b.page ?? 0));
     results.push({ book, annotations });
   }
 
-  if (highestUnsupported > 0) {
-    console.warn(
-      `[readest-highlights] Encountered config schemaVersion ${highestUnsupported}, supported is ${SUPPORTED_SCHEMA_VERSION}. Update the plugin.`,
+  if (versionsSeen.size > 0) {
+    console.debug(
+      `[readest-highlights] Readest config schemaVersion(s) seen: ${[...versionsSeen].sort((a, b) => a - b).join(", ")}`,
     );
-    onUnsupportedSchema?.(highestUnsupported, SUPPORTED_SCHEMA_VERSION);
+  }
+
+  if (unreadable > 0) {
+    console.warn(
+      `[readest-highlights] ${unreadable} Readest highlight(s) had no text or note; the booknote format may have changed. Update the plugin if highlights are missing.`,
+    );
+    onUnreadableHighlights?.(unreadable);
   }
 
   return results;

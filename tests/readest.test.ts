@@ -3,10 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import {
-  loadBooksWithAnnotations,
-  SUPPORTED_SCHEMA_VERSION,
-} from "../src/readest";
+import { loadBooksWithAnnotations } from "../src/readest";
 
 async function tempDir(t: TestContext): Promise<string> {
   const dir = await mkdtemp(join(tmpdir(), "readest-test-"));
@@ -47,52 +44,38 @@ const libraryEntry = (hash: string, extra: object = {}) => ({
   ...extra,
 });
 
-// --- schema version detection ---
+// --- unreadable-highlight detection (format-change tripwire) ---
+//
+// We warn on the *shape* of the booknotes, not the schemaVersion number:
+// a highlight (style set) we cannot render at all - no text and no note -
+// means a field this plugin reads was renamed or moved. A bumped
+// schemaVersion alone, with healthy booknotes, must never warn.
 
-void test("schemaVersion newer than supported triggers onUnsupportedSchema", async (t) => {
+void test("newer schemaVersion with healthy booknotes does not warn", async (t) => {
   const dir = await makeBooksDir(
     t,
     {
-      h1: {
-        bookHash: "h1",
-        schemaVersion: SUPPORTED_SCHEMA_VERSION + 1,
-        booknotes: [{ ...baseAnnotation, bookHash: "h1", id: "a1" }],
+      v3: {
+        bookHash: "v3",
+        schemaVersion: 3,
+        booknotes: [{ ...baseAnnotation, bookHash: "v3", id: "a3" }],
+      },
+      v99: {
+        bookHash: "v99",
+        schemaVersion: 99,
+        booknotes: [{ ...baseAnnotation, bookHash: "v99", id: "a99" }],
       },
     },
-    [libraryEntry("h1")],
+    [libraryEntry("v3"), libraryEntry("v99")],
   );
-  let seenFound: number | undefined;
-  let seenSupported: number | undefined;
+  let count: number | undefined;
   const books = await loadBooksWithAnnotations(dir, {
-    onUnsupportedSchema: (found, supported) => {
-      seenFound = found;
-      seenSupported = supported;
+    onUnreadableHighlights: (c) => {
+      count = c;
     },
   });
-  assert.equal(seenFound, SUPPORTED_SCHEMA_VERSION + 1);
-  assert.equal(seenSupported, SUPPORTED_SCHEMA_VERSION);
-  assert.equal(books.length, 1);
-});
-
-void test("schemaVersion equal to supported does not warn", async (t) => {
-  const dir = await makeBooksDir(
-    t,
-    {
-      h1: {
-        bookHash: "h1",
-        schemaVersion: SUPPORTED_SCHEMA_VERSION,
-        booknotes: [{ ...baseAnnotation, bookHash: "h1", id: "a1" }],
-      },
-    },
-    [libraryEntry("h1")],
-  );
-  let called = false;
-  await loadBooksWithAnnotations(dir, {
-    onUnsupportedSchema: () => {
-      called = true;
-    },
-  });
-  assert.equal(called, false);
+  assert.equal(count, undefined);
+  assert.equal(books.length, 2);
 });
 
 void test("missing schemaVersion (legacy config) does not warn", async (t) => {
@@ -103,35 +86,133 @@ void test("missing schemaVersion (legacy config) does not warn", async (t) => {
   );
   let called = false;
   await loadBooksWithAnnotations(dir, {
-    onUnsupportedSchema: () => {
+    onUnreadableHighlights: () => {
       called = true;
     },
   });
   assert.equal(called, false);
 });
 
-void test("highest unsupported version is reported when multiple books exceed", async (t) => {
+void test("highlight with a note but no text does not warn (still renderable)", async (t) => {
   const dir = await makeBooksDir(
     t,
     {
       h1: {
         bookHash: "h1",
-        schemaVersion: SUPPORTED_SCHEMA_VERSION + 1,
-        booknotes: [{ ...baseAnnotation, bookHash: "h1", id: "a1" }],
+        schemaVersion: 3,
+        booknotes: [
+          { ...baseAnnotation, bookHash: "h1", id: "a1", text: "", note: "a margin note" },
+        ],
+      },
+    },
+    [libraryEntry("h1")],
+  );
+  let called = false;
+  const books = await loadBooksWithAnnotations(dir, {
+    onUnreadableHighlights: () => {
+      called = true;
+    },
+  });
+  assert.equal(called, false);
+  assert.equal(books.length, 1);
+});
+
+void test("styled highlight with neither text nor note warns (format changed)", async (t) => {
+  const dir = await makeBooksDir(
+    t,
+    {
+      h1: {
+        bookHash: "h1",
+        schemaVersion: 4,
+        booknotes: [
+          { ...baseAnnotation, bookHash: "h1", id: "a1", text: "", note: "" },
+        ],
+      },
+    },
+    [libraryEntry("h1")],
+  );
+  let count: number | undefined;
+  await loadBooksWithAnnotations(dir, {
+    onUnreadableHighlights: (c) => {
+      count = c;
+    },
+  });
+  assert.equal(count, 1);
+});
+
+void test("unreadable count aggregates across books and ignores deleted records", async (t) => {
+  const dir = await makeBooksDir(
+    t,
+    {
+      h1: {
+        bookHash: "h1",
+        booknotes: [
+          { ...baseAnnotation, bookHash: "h1", id: "ok", text: "good" },
+          { ...baseAnnotation, bookHash: "h1", id: "bad1", text: "", note: "" },
+          { ...baseAnnotation, bookHash: "h1", id: "del", text: "", note: "", deletedAt: 1 },
+        ],
       },
       h2: {
         bookHash: "h2",
-        schemaVersion: SUPPORTED_SCHEMA_VERSION + 3,
-        booknotes: [{ ...baseAnnotation, bookHash: "h2", id: "a2" }],
+        booknotes: [{ ...baseAnnotation, bookHash: "h2", id: "bad2", text: "", note: "" }],
       },
     },
     [libraryEntry("h1"), libraryEntry("h2")],
   );
-  const seen: number[] = [];
+  let count: number | undefined;
   await loadBooksWithAnnotations(dir, {
-    onUnsupportedSchema: (found) => seen.push(found),
+    includeDeleted: false,
+    onlyWithAnnotations: false,
+    onUnreadableHighlights: (c) => {
+      count = c;
+    },
   });
-  assert.deepEqual(seen, [SUPPORTED_SCHEMA_VERSION + 3]);
+  assert.equal(count, 2);
+});
+
+void test("unreadable highlights are excluded from the returned annotations", async (t) => {
+  const dir = await makeBooksDir(
+    t,
+    {
+      h1: {
+        bookHash: "h1",
+        booknotes: [
+          { ...baseAnnotation, bookHash: "h1", id: "ok", text: "kept" },
+          { ...baseAnnotation, bookHash: "h1", id: "bad", text: "", note: "" },
+        ],
+      },
+    },
+    [libraryEntry("h1")],
+  );
+  const books = await loadBooksWithAnnotations(dir);
+  assert.equal(books.length, 1);
+  assert.deepEqual(
+    (books[0]?.annotations ?? []).map((a) => a.id),
+    ["ok"],
+  );
+});
+
+void test("record with no style (e.g. a bookmark) and no text does not warn", async (t) => {
+  const dir = await makeBooksDir(
+    t,
+    {
+      h1: {
+        bookHash: "h1",
+        booknotes: [
+          { ...baseAnnotation, bookHash: "h1", id: "bm", type: "bookmark", style: null, text: "", note: "" },
+        ],
+      },
+    },
+    [libraryEntry("h1")],
+  );
+  let called = false;
+  await loadBooksWithAnnotations(dir, {
+    onlyWithAnnotations: false,
+    onUnreadableHighlights: () => {
+      called = true;
+    },
+  });
+  assert.equal(called, false);
 });
 
 // --- parse error reporting ---
