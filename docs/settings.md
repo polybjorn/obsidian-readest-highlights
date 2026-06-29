@@ -40,7 +40,7 @@ The folder icon opens a directory picker. You can also type the path manually.
 
 #### Folder
 
-Vault folder where book notes live. Defaults to `Readest`. If cleared, falls back to the default. If the path resolves to an existing file (not a folder), sync fails with a clear error.
+Vault folder where book notes live. Defaults to `Readest`. If cleared, falls back to the default. The path is kept vault-relative: leading slashes and `.`/`..` segments are stripped (so it can't escape the vault), and you're notified if the value was adjusted. If the path resolves to an existing file (not a folder), sync fails with a clear error.
 
 #### Filename template
 
@@ -144,10 +144,9 @@ Free-form YAML appended inside the frontmatter block. Lines containing only `---
 Which annotations to include:
 
 - All annotations
-- Only highlights
+- Only highlights (counts `highlight` and `squiggly` styles)
 - Only underlines
 - Only with notes
-- Only highlights and underlines
 
 #### Style
 

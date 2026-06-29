@@ -3,6 +3,7 @@ import { access } from "fs/promises";
 import { homedir } from "os";
 import { join } from "path";
 import type ReadestHighlightsPlugin from "./main";
+import type { AnnotationFilter } from "./filters";
 
 export type HighlightStyle = "blockquote" | "plain" | "callout" | "bullet";
 export type HighlightSeparator = "rule" | "blank" | "pageHeading" | "none";
@@ -11,12 +12,7 @@ export type AuthorFormat = "off" | "plain" | "wikilink";
 export type GenreFormat = "plain" | "wikilink";
 export type NoteStyle = "attached" | "separated" | "callout";
 export type MetadataPlacement = "below" | "inline";
-export type AnnotationFilter =
-  | "all"
-  | "highlights"
-  | "underlines"
-  | "withNotes"
-  | "marked";
+export type { AnnotationFilter };
 
 export interface ReadestSettings {
   booksDirs: string[];
@@ -100,6 +96,18 @@ export async function resolveBooksDir(s: ReadestSettings): Promise<string> {
   throw new Error(
     `No Readest library.json found. Checked: ${candidates.join(", ")}`,
   );
+}
+
+// Keeps the output folder a safe vault-relative path: strips leading slashes
+// (which would mean the vault root) and any "." / ".." segments (which could
+// escape the vault). Empty result falls back to the default folder.
+export function sanitizeOutputFolder(raw: string): string {
+  const segments = raw
+    .trim()
+    .split("/")
+    .map((s) => s.trim())
+    .filter((s) => s !== "" && s !== "." && s !== "..");
+  return segments.join("/") || DEFAULT_SETTINGS.outputFolder;
 }
 
 export const DEFAULT_SETTINGS: ReadestSettings = {
@@ -342,8 +350,13 @@ export class ReadestSettingTab extends PluginSettingTab {
           .setPlaceholder("Readest")
           .setValue(this.plugin.settings.outputFolder)
           .onChange(async (value) => {
-            this.plugin.settings.outputFolder =
-              value.trim() || DEFAULT_SETTINGS.outputFolder;
+            const safe = sanitizeOutputFolder(value);
+            if (safe !== value.trim() && value.trim() !== "") {
+              new Notice(
+                "Readest: output folder adjusted to a safe vault-relative path.",
+              );
+            }
+            this.plugin.settings.outputFolder = safe;
             await this.plugin.saveSettings();
           }),
       );
@@ -416,7 +429,7 @@ export class ReadestSettingTab extends PluginSettingTab {
             .setValue(this.plugin.settings.appendHeadingTemplate)
             .onChange(async (value) => {
               this.plugin.settings.appendHeadingTemplate =
-                value || DEFAULT_SETTINGS.appendHeadingTemplate;
+                value.trim() || DEFAULT_SETTINGS.appendHeadingTemplate;
               await this.plugin.saveSettings();
             }),
         ),
@@ -547,8 +560,19 @@ export class ReadestSettingTab extends PluginSettingTab {
             .setPlaceholder("0")
             .setValue(String(this.plugin.settings.maxGenres))
             .onChange(async (value) => {
-              const n = Math.max(0, Math.floor(Number(value) || 0));
-              this.plugin.settings.maxGenres = n;
+              const trimmed = value.trim();
+              // An empty field means "unlimited" (0). A non-numeric typo must
+              // not silently reset the cap to unlimited - keep the prior value.
+              if (trimmed === "") {
+                this.plugin.settings.maxGenres = 0;
+              } else {
+                const parsed = Number(trimmed);
+                if (!Number.isFinite(parsed)) return;
+                this.plugin.settings.maxGenres = Math.max(
+                  0,
+                  Math.floor(parsed),
+                );
+              }
               await this.plugin.saveSettings();
             }),
         ),
@@ -589,7 +613,19 @@ export class ReadestSettingTab extends PluginSettingTab {
     applyVisibility();
 
     fmDependent.push(
-      this.addFieldToggle(fm, "Readest hash", "includeReadestHash"),
+      new Setting(fm)
+        .setName("Readest hash")
+        .setDesc(
+          "Write the book's Readest hash to frontmatter. This is also the identity used to re-find a note when the book is renamed; with it off, a renamed book creates a new note instead of updating the old one.",
+        )
+        .addToggle((t) =>
+          t
+            .setValue(this.plugin.settings.includeReadestHash)
+            .onChange(async (value) => {
+              this.plugin.settings.includeReadestHash = value;
+              await this.plugin.saveSettings();
+            }),
+        ),
     );
 
     fmDependent.push(
@@ -622,7 +658,6 @@ export class ReadestSettingTab extends PluginSettingTab {
           .addOption("highlights", "Only highlights")
           .addOption("underlines", "Only underlines")
           .addOption("withNotes", "Only with notes")
-          .addOption("marked", "Only highlights and underlines")
           .setValue(this.plugin.settings.annotationFilter)
           .onChange(async (value) => {
             this.plugin.settings.annotationFilter = value as AnnotationFilter;

@@ -93,6 +93,19 @@ void test("bookFilename sanitizes forbidden chars", () => {
   assert.equal(bookFilename(dirty, "{title}"), "ABCDE.md");
 });
 
+void test("bookFilename falls back to hash when the title is all forbidden chars", () => {
+  const allForbidden = { ...book, title: "<:>" };
+  assert.equal(bookFilename(allForbidden, "{title}"), `${book.hash}.md`);
+});
+
+void test("bookFilename caps the name to a safe byte length", () => {
+  const longTitle = { ...book, title: "あ".repeat(300) };
+  const name = bookFilename(longTitle, "{title}");
+  const bytes = new TextEncoder().encode(name).length;
+  assert.ok(bytes <= 255, `filename is ${bytes} bytes, expected <= 255`);
+  assert.match(name, /\.md$/);
+});
+
 // --- appended section helpers ---
 
 void test("upsertAppendedSection is idempotent", () => {
@@ -296,4 +309,72 @@ void test("metadataPlacement inline appends metadata to the last text line", () 
     { ...opts, metadataPlacement: "inline", showPage: true },
   );
   assert.match(out, /> quote \*\(page 42\)\*/);
+});
+
+// --- grouping resilience ---
+
+void test("two distinct highlights sharing a cfi both survive", () => {
+  const out = renderHighlightsBody(
+    [
+      makeAnnotation("a", { text: "first selection", cfi: "epubcfi(/6/4!/4)" }),
+      makeAnnotation("b", { text: "second selection", cfi: "epubcfi(/6/4!/4)" }),
+    ],
+    { ...opts, separator: "blank", showPage: false },
+  );
+  assert.match(out, /first selection/);
+  assert.match(out, /second selection/);
+});
+
+void test("a note record with no text merges into its highlight at the same cfi", () => {
+  const out = renderHighlightsBody(
+    [
+      makeAnnotation("hl", { text: "the passage", cfi: "epubcfi(/6/4!/8)", note: "" }),
+      makeAnnotation("nt", { text: "", cfi: "epubcfi(/6/4!/8)", note: "my thought" }),
+    ],
+    { ...opts, noteStyle: "separated", showPage: false },
+  );
+  assert.match(out, /> the passage/);
+  assert.match(out, /\*\*Note:\*\* my thought/);
+  // One merged entry, not a stray empty highlight for the note record.
+  assert.equal((out.match(/the passage/g) ?? []).length, 1);
+});
+
+void test("an underline at a shared cfi does not underline a distinct highlight", () => {
+  const out = renderHighlightsBody(
+    [
+      makeAnnotation("h", { text: "plain highlight", cfi: "epubcfi(/6/4!/12)" }),
+      makeAnnotation("u", {
+        text: "underlined bit",
+        cfi: "epubcfi(/6/4!/12)",
+        style: "underline",
+      }),
+    ],
+    { ...opts, renderUnderlines: true, showPage: false },
+  );
+  assert.match(out, /> plain highlight/);
+  assert.doesNotMatch(out, /<u>plain highlight<\/u>/);
+  assert.match(out, /<u>underlined bit<\/u>/);
+});
+
+void test("a textless, noteless bookmark renders nothing", () => {
+  const out = renderHighlightsBody(
+    [makeAnnotation("bm", { type: "bookmark", text: "", note: "", style: null })],
+    { ...opts },
+  );
+  assert.equal(out, "");
+});
+
+void test("renderFrontmatter escapes newlines in metadata values", () => {
+  const messy = {
+    ...book,
+    metadata: { ...book.metadata, series: 'Foo"\ninjected: bar' },
+  };
+  const out = renderFrontmatter(messy, {
+    ...opts.frontmatter,
+    enabled: true,
+    includeSeries: true,
+  });
+  assert.match(out, /series: "Foo\\"\\ninjected: bar"/);
+  // The injected break must not become its own physical line / key.
+  assert.doesNotMatch(out, /^injected: bar/m);
 });

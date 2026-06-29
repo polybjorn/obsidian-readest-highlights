@@ -9,6 +9,7 @@ import {
   normalizePath,
 } from "obsidian";
 import { loadBooksWithAnnotations } from "./readest";
+import { buildAnnotationFilter } from "./filters";
 import {
   applyTemplate,
   bookFilename,
@@ -72,6 +73,11 @@ export default class ReadestHighlightsPlugin extends Plugin {
   async loadSettings() {
     const saved = ((await this.loadData()) ?? {}) as Partial<ReadestSettings>;
     this.settings = Object.assign({}, DEFAULT_SETTINGS, saved);
+    // The "marked" filter (any styled annotation, i.e. everything but bookmarks)
+    // was removed; "all" is the closest surviving behavior.
+    if ((this.settings.annotationFilter as string) === "marked") {
+      this.settings.annotationFilter = "all";
+    }
   }
 
   async saveSettings() {
@@ -95,16 +101,28 @@ export default class ReadestHighlightsPlugin extends Plugin {
 
       let created = 0;
       let updated = 0;
+      let failed = 0;
 
       for (const parsed of books) {
-        const result = await this.writeBookNote(parsed, hashIndex, usedPaths);
-        if (result.action === "created") created++;
-        else if (result.action === "updated") updated++;
+        try {
+          const result = await this.writeBookNote(parsed, hashIndex, usedPaths);
+          if (result.action === "created") created++;
+          else if (result.action === "updated") updated++;
+        } catch (e) {
+          // One bad book must not drop the rest of the batch.
+          failed++;
+          console.error(
+            `Readest: failed to write "${parsed.book.title}"`,
+            e,
+          );
+        }
       }
 
       notice.hide();
       new Notice(
-        `Readest: ${created} created, ${updated} updated (${books.length} books)`,
+        `Readest: ${created} created, ${updated} updated` +
+          (failed > 0 ? `, ${failed} failed` : "") +
+          ` (${books.length} books)`,
       );
     } catch (e) {
       notice.hide();
@@ -210,17 +228,7 @@ export default class ReadestHighlightsPlugin extends Plugin {
   }
 
   private async loadBooks(): Promise<ParsedBook[]> {
-    const mode = this.settings.annotationFilter;
-    const filter =
-      mode === "withNotes"
-        ? (a: { note: string }) => !!a.note && a.note.trim().length > 0
-        : mode === "highlights"
-          ? (a: { style: string | null }) => a.style === "highlight"
-          : mode === "underlines"
-            ? (a: { style: string | null }) => a.style === "underline"
-            : mode === "marked"
-              ? (a: { style: string | null }) => a.style !== null
-              : undefined;
+    const filter = buildAnnotationFilter(this.settings.annotationFilter);
     const dir = await resolveBooksDir(this.settings);
     await this.rememberBooksDir(dir);
     return loadBooksWithAnnotations(dir, {
@@ -228,6 +236,12 @@ export default class ReadestHighlightsPlugin extends Plugin {
       onUnreadableHighlights: (count) => {
         new Notice(
           `Readest: ${count} highlight(s) could not be read. Readest's note format may have changed - update the Readest Highlights plugin if highlights are missing.`,
+          10000,
+        );
+      },
+      onNewerSchemaVersion: (versions) => {
+        new Notice(
+          `Readest: config version ${versions.join(", ")} is newer than this plugin supports and no highlights could be read from it. Update the Readest Highlights plugin if you expected highlights.`,
           10000,
         );
       },
@@ -307,9 +321,10 @@ export default class ReadestHighlightsPlugin extends Plugin {
           usedPaths.has(templatedPath) ||
           (typeof otherHash === "string" && otherHash !== parsed.book.hash);
         if (isCollision) {
-          const suffix = parsed.book.hash.slice(0, 8);
-          templatedPath = normalizePath(
-            `${this.settings.outputFolder}/${filename.replace(/\.md$/, "")} (${suffix}).md`,
+          templatedPath = this.findFreePath(
+            `${this.settings.outputFolder}/${filename.replace(/\.md$/, "")}`,
+            parsed.book.hash.slice(0, 8),
+            usedPaths,
           );
         } else {
           matched = atPath;
@@ -338,13 +353,49 @@ export default class ReadestHighlightsPlugin extends Plugin {
       };
     }
 
-    const created = await this.app.vault.create(
-      templatedPath,
-      renderBookNote(parsed, opts),
-    );
+    const content = renderBookNote(parsed, opts);
+    let created: TFile;
+    try {
+      created = await this.app.vault.create(templatedPath, content);
+    } catch {
+      // Backstop: if the path was taken between the existence check and now
+      // (collision suffix still occupied, or a concurrent write), retry once at
+      // the next free path rather than aborting this book.
+      const retryPath = this.findFreePath(
+        normalizePath(templatedPath).replace(/\.md$/, ""),
+        "",
+        usedPaths,
+      );
+      created = await this.app.vault.create(retryPath, content);
+    }
     hashIndex.set(parsed.book.hash, created);
     usedPaths.add(created.path);
     return { action: "created", path: created.path };
+  }
+
+  // Finds a vault path not already used in this run and not present on disk.
+  // `base` is a full path stem (folder included, no extension). Tries
+  // "base (suffix).md" first, then numbers it ("base (suffix) 2.md", ...).
+  // A blank suffix yields "base.md", "base 2.md", ...
+  private findFreePath(
+    base: string,
+    suffix: string,
+    usedPaths: Set<string>,
+  ): string {
+    const tag = suffix ? ` (${suffix})` : "";
+    for (let n = 1; n <= 10000; n++) {
+      const counter = n === 1 ? "" : ` ${n}`;
+      const candidate = normalizePath(`${base}${tag}${counter}.md`);
+      if (
+        !usedPaths.has(candidate) &&
+        this.app.vault.getAbstractFileByPath(candidate) === null
+      ) {
+        return candidate;
+      }
+    }
+    // Effectively unreachable; bound guards against an unexpected pathological
+    // state rather than spinning forever. The per-book catch keeps the batch alive.
+    throw new Error(`Could not find a free path for "${base}".`);
   }
 
   private layoutReady(): Promise<void> {

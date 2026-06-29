@@ -69,13 +69,59 @@ void test("newer schemaVersion with healthy booknotes does not warn", async (t) 
     [libraryEntry("v3"), libraryEntry("v99")],
   );
   let count: number | undefined;
+  let newer: number[] | undefined;
   const books = await loadBooksWithAnnotations(dir, {
     onUnreadableHighlights: (c) => {
       count = c;
     },
+    onNewerSchemaVersion: (v) => {
+      newer = v;
+    },
   });
   assert.equal(count, undefined);
+  // A newer version that still reads highlights fine is a benign bump - quiet.
+  assert.equal(newer, undefined);
   assert.equal(books.length, 2);
+});
+
+void test("newer schemaVersion that yields no readable highlights warns", async (t) => {
+  // booknotes present but every record is unrenderable (no text, no note) AND
+  // the config is a version we have not verified: the silent-zero case.
+  const dir = await makeBooksDir(
+    t,
+    {
+      v99: {
+        bookHash: "v99",
+        schemaVersion: 99,
+        booknotes: [
+          { ...baseAnnotation, bookHash: "v99", id: "a99", text: "", note: "" },
+        ],
+      },
+    },
+    [libraryEntry("v99")],
+  );
+  let newer: number[] | undefined;
+  await loadBooksWithAnnotations(dir, {
+    onNewerSchemaVersion: (v) => {
+      newer = v;
+    },
+  });
+  assert.deepEqual(newer, [99]);
+});
+
+void test("a known schemaVersion with no highlights does not warn as newer", async (t) => {
+  const dir = await makeBooksDir(
+    t,
+    { v3: { bookHash: "v3", schemaVersion: 3, booknotes: [] } },
+    [libraryEntry("v3")],
+  );
+  let newer: number[] | undefined;
+  await loadBooksWithAnnotations(dir, {
+    onNewerSchemaVersion: (v) => {
+      newer = v;
+    },
+  });
+  assert.equal(newer, undefined);
 });
 
 void test("missing schemaVersion (legacy config) does not warn", async (t) => {
@@ -241,6 +287,64 @@ void test("malformed config.json throws error mentioning the path", async (t) =>
     (e: Error) =>
       e.message.includes(join("h1", "config.json")) &&
       e.message.startsWith("Failed to parse"),
+  );
+});
+
+void test("non-array library.json throws a clear format-changed error", async (t) => {
+  const dir = await tempDir(t);
+  await writeFile(
+    join(dir, "library.json"),
+    JSON.stringify({ books: [libraryEntry("h1")] }),
+  );
+  await assert.rejects(
+    () => loadBooksWithAnnotations(dir),
+    (e: Error) =>
+      e.message.includes("library.json") &&
+      e.message.includes("not a JSON array"),
+  );
+});
+
+void test("library entries without a usable hash are skipped, the rest load", async (t) => {
+  const dir = await tempDir(t);
+  await writeFile(
+    join(dir, "library.json"),
+    JSON.stringify([
+      { format: "epub", title: "no hash", createdAt: 0 },
+      { hash: "", format: "epub", title: "empty hash", createdAt: 0 },
+      libraryEntry("good"),
+    ]),
+  );
+  await mkdir(join(dir, "good"));
+  await writeFile(
+    join(dir, "good", "config.json"),
+    JSON.stringify({
+      bookHash: "good",
+      booknotes: [{ ...baseAnnotation, bookHash: "good", id: "a1" }],
+    }),
+  );
+  const books = await loadBooksWithAnnotations(dir);
+  assert.equal(books.length, 1);
+  assert.equal(books[0]?.book.hash, "good");
+});
+
+void test("an annotation deleted at epoch 0 is treated as deleted", async (t) => {
+  const dir = await makeBooksDir(
+    t,
+    {
+      h1: {
+        bookHash: "h1",
+        booknotes: [
+          { ...baseAnnotation, bookHash: "h1", id: "live", deletedAt: null },
+          { ...baseAnnotation, bookHash: "h1", id: "gone", deletedAt: 0 },
+        ],
+      },
+    },
+    [libraryEntry("h1")],
+  );
+  const books = await loadBooksWithAnnotations(dir);
+  assert.deepEqual(
+    books[0]?.annotations.map((a) => a.id),
+    ["live"],
   );
 });
 

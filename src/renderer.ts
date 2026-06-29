@@ -164,6 +164,19 @@ function sanitizeFilenamePart(name: string): string {
   return name.replace(/[\\/:*?"<>|]/g, "").trim();
 }
 
+// Trims a name so its UTF-8 byte length stays under the budget. Most filesystems
+// cap a name at 255 bytes, not characters, so a char-based slice overflows on
+// multibyte (Norwegian, CJK, emoji) titles.
+function capFilenameBytes(name: string, maxBytes: number): string {
+  const encoder = new TextEncoder();
+  if (encoder.encode(name).length <= maxBytes) return name;
+  let out = name;
+  while (out.length > 0 && encoder.encode(out).length > maxBytes) {
+    out = out.slice(0, -1);
+  }
+  return out.trim();
+}
+
 function tokenMap(book: ReadestLibraryBook): Record<string, string> {
   return {
     title: book.title ?? "",
@@ -200,11 +213,15 @@ export function bookFilename(
   template: string,
 ): string {
   const rendered = applyTemplate(template, book) || book.title || book.hash;
-  const sanitized = sanitizeFilenamePart(rendered);
-  // Cap under common 255-byte filename limit, leaving room for ".md" and a
+  // Fall back *after* sanitizing: a title of only forbidden chars (e.g. "<:>")
+  // sanitizes to empty, which would otherwise yield a bare ".md".
+  const sanitized =
+    sanitizeFilenamePart(rendered) ||
+    sanitizeFilenamePart(book.title ?? "") ||
+    book.hash;
+  // Cap under the common 255-byte filename limit, leaving room for ".md" and a
   // possible " (xxxxxxxx)" collision suffix.
-  const capped =
-    sanitized.length > 200 ? sanitized.slice(0, 200).trim() : sanitized;
+  const capped = capFilenameBytes(sanitized, 240);
   return `${capped}.md`;
 }
 
@@ -229,38 +246,59 @@ interface GroupedAnnotation {
 function groupAnnotations(
   annotations: ReadestAnnotation[],
 ): GroupedAnnotation[] {
-  const map = new Map<string, GroupedAnnotation>();
+  // Records are grouped by location (cfi, falling back to page) so a highlight
+  // and a separate note/color/style record at the same spot render as one
+  // entry. But two *distinct* highlights can share a cfi; merging blindly by
+  // location would let the first text win and silently drop the second. So we
+  // only merge into a group when the text matches or one side has no text (a
+  // note/style attachment). Different non-empty text at the same location stays
+  // a separate entry.
+  const byLocation = new Map<string, GroupedAnnotation[]>();
+  const order: GroupedAnnotation[] = [];
 
   for (const a of annotations) {
-    const key = a.cfi ?? `${a.page ?? 0}::${a.text}`;
-    const existing = map.get(key);
-    if (existing) {
-      if (a.color) existing.colors.add(a.color);
-      if (a.style) existing.styles.add(a.style);
-      if (a.note && a.note.trim()) existing.notes.push(a.note.trim());
-      existing.earliestCreatedAt = Math.min(
-        existing.earliestCreatedAt,
+    const cleaned = cleanText(a.text ?? "");
+    const location = a.cfi ?? `p${a.page ?? 0}`;
+    const groups = byLocation.get(location) ?? [];
+    const target = groups.find(
+      (g) => g.text === cleaned || cleaned === "" || g.text === "",
+    );
+    if (target) {
+      if (!target.text && cleaned) target.text = cleaned;
+      if (target.page === undefined && a.page !== undefined) target.page = a.page;
+      if (a.color) target.colors.add(a.color);
+      if (a.style) target.styles.add(a.style);
+      if (a.note && a.note.trim()) target.notes.push(a.note.trim());
+      target.earliestCreatedAt = Math.min(
+        target.earliestCreatedAt,
         a.createdAt,
       );
     } else {
-      map.set(key, {
-        key,
-        text: cleanText(a.text),
+      const group: GroupedAnnotation = {
+        key: location,
+        text: cleaned,
         page: a.page,
         colors: new Set(a.color ? [a.color] : []),
         styles: new Set(a.style ? [a.style] : []),
         notes: a.note && a.note.trim() ? [a.note.trim()] : [],
         earliestCreatedAt: a.createdAt,
-      });
+      };
+      groups.push(group);
+      byLocation.set(location, groups);
+      order.push(group);
     }
   }
 
-  return [...map.values()].sort((x, y) => {
-    const pa = x.page ?? 0;
-    const pb = y.page ?? 0;
-    if (pa !== pb) return pa - pb;
-    return x.earliestCreatedAt - y.earliestCreatedAt;
-  });
+  return order
+    // Drop records with nothing to show (e.g. textless bookmarks); a note-only
+    // record keeps its note, so only empty-and-noteless groups are removed.
+    .filter((g) => g.text.length > 0 || g.notes.length > 0)
+    .sort((x, y) => {
+      const pa = x.page ?? 0;
+      const pb = y.page ?? 0;
+      if (pa !== pb) return pa - pb;
+      return x.earliestCreatedAt - y.earliestCreatedAt;
+    });
 }
 
 function metadataParts(
@@ -465,7 +503,15 @@ function escapeRegex(s: string): string {
 }
 
 function yamlQuote(s: string): string {
-  return s.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  // Escapes for a double-quoted YAML scalar. Newlines/tabs must be escaped too,
+  // otherwise a metadata value containing one breaks out of the scalar and
+  // corrupts the frontmatter block.
+  return s
+    .replace(/\\/g, "\\\\")
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, "\\n")
+    .replace(/\r/g, "\\r")
+    .replace(/\t/g, "\\t");
 }
 
 export function renderSyncHeading(

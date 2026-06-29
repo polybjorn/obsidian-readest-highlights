@@ -38,13 +38,15 @@ export interface ReadestAnnotation {
   type: string;
   cfi?: string;
   page?: number;
-  text: string;
+  // Typed optional because partially-written Readest data can omit these; all
+  // reads guard with `?? ""`. Don't tighten to required - it lies about the data.
+  text?: string;
   // Known Readest styles, kept for autocomplete/intent; the `(string & {})`
   // arm keeps the union open so a future Readest style is not a type error.
   // Behavior keys off the value we can read (see isUnrenderable), not this set.
   style: "highlight" | "underline" | "squiggly" | (string & {}) | null;
   color: string | null;
-  note: string;
+  note?: string;
   createdAt: number;
   updatedAt: number;
   deletedAt: number | null;

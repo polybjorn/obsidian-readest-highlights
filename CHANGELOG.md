@@ -4,6 +4,34 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ## [Unreleased]
 
+## [1.2.2] - 2026-06-29
+
+### Added
+
+- Warn when a book's Readest config is a newer schema version than this plugin supports _and_ no highlights can be read from it - the case where a future format change would otherwise import nothing with no signal. A newer Readest version that still syncs highlights fine stays quiet.
+
+### Changed
+
+- "Only highlights" now also includes squiggly annotations; Readest treats squiggly as a highlight style.
+
+### Removed
+
+- The "Only highlights and underlines" filter option. Its only effect was excluding bookmarks, which now rarely differs from "All annotations"; if it was selected, it falls back to "All annotations" (use "Only with notes" to filter to annotations you wrote a note on).
+
+### Fixed
+
+- A highlight that shared a text location with another highlight was silently dropped from the note; both are now kept.
+- A highlight sharing a location with an underline is no longer rendered as underlined.
+- Frontmatter no longer breaks when a title, author, series, or genre value contains a newline or tab.
+- Long titles in non-Latin scripts (e.g. Norwegian, CJK) no longer exceed the filesystem's filename limit; names are capped by byte length.
+- A title made entirely of unsupported filename characters now falls back to the book hash instead of producing a nameless file.
+- Bookmarks with no text or note no longer render as empty highlight entries.
+- One book that fails to write no longer aborts the whole "Sync all" run; the remaining books still sync and the count reports any failures.
+- A filename collision now finds a free name instead of failing the sync.
+- A `library.json` that isn't a JSON array now reports a clear "format may have changed" error instead of an opaque crash; library entries with no usable book hash are skipped, and duplicate book hashes are flagged.
+- The output folder is kept vault-relative (leading slashes and `..` segments are stripped) so it can't point outside the vault.
+- A non-numeric "Max genres" entry no longer silently resets the limit to unlimited.
+
 ## [1.2.1] - 2026-06-29
 
 ### Fixed
