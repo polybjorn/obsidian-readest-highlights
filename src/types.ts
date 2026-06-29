@@ -39,7 +39,10 @@ export interface ReadestAnnotation {
   cfi?: string;
   page?: number;
   text: string;
-  style: "highlight" | "underline" | "squiggly" | null;
+  // Known Readest styles, kept for autocomplete/intent; the `(string & {})`
+  // arm keeps the union open so a future Readest style is not a type error.
+  // Behavior keys off the value we can read (see isUnrenderable), not this set.
+  style: "highlight" | "underline" | "squiggly" | (string & {}) | null;
   color: string | null;
   note: string;
   createdAt: number;
