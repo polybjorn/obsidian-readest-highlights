@@ -161,7 +161,8 @@ How each highlight is rendered in markdown:
 
 How line breaks within highlights are handled:
 
-- Toggle off to preserve line breaks within highlights that span multiple paragraphs or toggle on to replace line breaks with a space. 
+- **Off** (default): preserve line breaks in highlights that span multiple paragraphs
+- **On**: replace line breaks with a space
 
 #### Separator
 
