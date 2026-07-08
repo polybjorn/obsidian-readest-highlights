@@ -27,6 +27,7 @@ export interface ReadestSettings {
   showPage: boolean;
   showColor: boolean;
   showHighlightCount: boolean;
+  collapseHighlightLineBreaks: boolean;
   renderUnderlines: boolean;
   metadataPlacement: MetadataPlacement;
   showNotes: boolean;
@@ -123,6 +124,7 @@ export const DEFAULT_SETTINGS: ReadestSettings = {
   showPage: true,
   showColor: false,
   showHighlightCount: false,
+  collapseHighlightLineBreaks: false,
   renderUnderlines: true,
   metadataPlacement: "below",
   showNotes: true,
@@ -676,6 +678,18 @@ export class ReadestSettingTab extends PluginSettingTab {
           .setValue(this.plugin.settings.highlightStyle)
           .onChange(async (value) => {
             this.plugin.settings.highlightStyle = value as HighlightStyle;
+            await this.plugin.saveSettings();
+          }),
+      );
+
+    new Setting(hl)
+      .setName("Collapse line breaks")
+      .setDesc("Replace line breaks inside highlight text with spaces.")
+      .addToggle((t) =>
+        t
+          .setValue(this.plugin.settings.collapseHighlightLineBreaks)
+          .onChange(async (value) => {
+            this.plugin.settings.collapseHighlightLineBreaks = value;
             await this.plugin.saveSettings();
           }),
       );

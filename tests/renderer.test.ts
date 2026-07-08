@@ -32,6 +32,7 @@ const opts: RenderOptions = {
   showPage: true,
   showColor: false,
   showHighlightCount: false,
+  collapseHighlightLineBreaks: false,
   renderUnderlines: true,
   metadataPlacement: "below",
   showNotes: true,

@@ -31,6 +31,7 @@ export interface RenderOptions {
   showPage: boolean;
   showColor: boolean;
   showHighlightCount: boolean;
+  collapseHighlightLineBreaks: boolean;
   renderUnderlines: boolean;
   metadataPlacement: MetadataPlacement;
   showNotes: boolean;
@@ -55,6 +56,7 @@ export function optionsFromSettings(s: ReadestSettings): RenderOptions {
     showPage: s.showPage,
     showColor: s.showColor,
     showHighlightCount: s.showHighlightCount,
+    collapseHighlightLineBreaks: s.collapseHighlightLineBreaks,
     renderUnderlines: s.renderUnderlines,
     metadataPlacement: s.metadataPlacement,
     showNotes: s.showNotes,
@@ -225,12 +227,12 @@ export function bookFilename(
   return `${capped}.md`;
 }
 
-function cleanText(text: string): string {
+function cleanText(text: string, collapseLineBreaks: boolean): string {
   return text
     .split(/\n+/)
     .map((line) => line.replace(/[\t ]+/g, " ").trim())
     .filter((line) => line.length > 0)
-    .join("\n");
+    .join(collapseLineBreaks ? " " : "\n");
 }
 
 interface GroupedAnnotation {
@@ -245,6 +247,7 @@ interface GroupedAnnotation {
 
 function groupAnnotations(
   annotations: ReadestAnnotation[],
+  opts: Pick<RenderOptions, "collapseHighlightLineBreaks">,
 ): GroupedAnnotation[] {
   // Records are grouped by location (cfi, falling back to page) so a highlight
   // and a separate note/color/style record at the same spot render as one
@@ -257,7 +260,7 @@ function groupAnnotations(
   const order: GroupedAnnotation[] = [];
 
   for (const a of annotations) {
-    const cleaned = cleanText(a.text ?? "");
+    const cleaned = cleanText(a.text ?? "", opts.collapseHighlightLineBreaks);
     const location = a.cfi ?? `p${a.page ?? 0}`;
     const groups = byLocation.get(location) ?? [];
     const target = groups.find(
@@ -409,7 +412,7 @@ export function renderHighlightsBody(
   annotations: ReadestAnnotation[],
   opts: RenderOptions,
 ): string {
-  const groups = groupAnnotations(annotations);
+  const groups = groupAnnotations(annotations, opts);
   if (groups.length === 0) return "";
 
   if (opts.separator === "pageHeading") {

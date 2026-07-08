@@ -157,6 +157,12 @@ How each highlight is rendered in markdown:
 - **Callout** (`> [!quote]` block)
 - **Bullet** (`- text`)
 
+#### Collapse line breaks
+
+How line breaks within highlights are handled:
+
+- Toggle off to preserve line breaks within highlights that span multiple paragraphs or toggle on to replace line breaks with a space. 
+
 #### Separator
 
 How highlights are separated within a book note:
