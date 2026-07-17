@@ -4,6 +4,13 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-07-17
+
+### Changed
+
+- The settings UI now uses Obsidian 1.13's declarative settings API. All plugin settings show up in Obsidian's settings search, and the four tabs (Setup, Heading, Frontmatter, Rendering) are now navigable pages. Settings, defaults, and note output are unchanged.
+- Requires Obsidian 1.13.0 or later. Users on older Obsidian versions stay on plugin 1.3.0.
+
 ## [1.3.0] - 2026-07-17
 
 ### Added

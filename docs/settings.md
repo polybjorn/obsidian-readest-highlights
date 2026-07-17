@@ -1,6 +1,6 @@
 # Settings reference
 
-The settings UI has four tabs: Setup, Heading, Frontmatter, and Rendering.
+The settings tab has four pages: Setup, Heading, Frontmatter, and Rendering. Click a page to open it; the back arrow returns to the overview. All settings are indexed by Obsidian's settings search.
 
 ## Templates
 
@@ -34,7 +34,7 @@ Default location per platform:
 | Windows | `%APPDATA%\com.bilingify.readest\Readest\Books` |
 | Linux | `$XDG_DATA_HOME/com.bilingify.readest/Readest/Books` (or `~/.local/share/...`) |
 
-The folder icon opens a directory picker. You can also type the path manually.
+The `+` button in the Source header adds a path row; the `X` on a row removes it. The folder icon opens a directory picker, or type the path manually.
 
 ### Output
 

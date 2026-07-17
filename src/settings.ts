@@ -1,4 +1,5 @@
 import { App, Notice, PluginSettingTab, Setting } from "obsidian";
+import type { SettingDefinitionItem, SettingGroupItem } from "obsidian";
 import { access } from "fs/promises";
 import { homedir } from "os";
 import { join } from "path";
@@ -159,15 +160,6 @@ export const DEFAULT_SETTINGS: ReadestSettings = {
   extraFrontmatter: "",
 };
 
-type FieldToggleKey =
-  | "includeYear"
-  | "includeIsbn"
-  | "includeLanguage"
-  | "includeGenre"
-  | "includeReadestHash";
-
-type TabId = "setup" | "heading" | "frontmatter" | "rendering";
-
 interface ElectronRemote {
   dialog?: {
     showOpenDialog(options: {
@@ -197,718 +189,532 @@ async function pickDirectory(defaultPath?: string): Promise<PickResult> {
 
 export class ReadestSettingTab extends PluginSettingTab {
   plugin: ReadestHighlightsPlugin;
-  private activeTab: TabId = "setup";
 
   constructor(app: App, plugin: ReadestHighlightsPlugin) {
     super(app, plugin);
     this.plugin = plugin;
   }
 
-  private renderBooksDirs(container: HTMLElement) {
-    container.empty();
-    const dirs = this.plugin.settings.booksDirs;
-    const rows = dirs.length > 0 ? dirs : [""];
-
-    rows.forEach((value, index) => {
-      const setting = new Setting(container).addText((text) =>
-        text
-          .setPlaceholder("Path to Readest's books folder")
-          .setValue(value)
-          .onChange(async (v) => {
-            const list = [...this.plugin.settings.booksDirs];
-            while (list.length <= index) list.push("");
-            list[index] = v.trim();
-            this.plugin.settings.booksDirs = list;
-            await this.plugin.saveSettings();
-          }),
-      );
-      setting.settingEl.addClass("readest-books-dir-row");
-
-      setting.addExtraButton((b) =>
-        b
-          .setIcon("folder")
-          .setTooltip("Browse")
-          .onClick(async () => {
-            const result = await pickDirectory(
-              this.plugin.settings.booksDirs[index] || defaultActivePath(),
-            );
-            if (!result.available) {
-              new Notice(
-                "Readest: file picker unavailable; enter path manually.",
-              );
-              return;
-            }
-            if (!result.path) return;
-            const list = [...this.plugin.settings.booksDirs];
-            while (list.length <= index) list.push("");
-            list[index] = result.path;
-            this.plugin.settings.booksDirs = list;
-            await this.plugin.saveSettings();
-            this.renderBooksDirs(container);
-          }),
-      );
-
-      setting.addExtraButton((b) =>
-        b
-          .setIcon("trash")
-          .setTooltip("Remove")
-          .onClick(async () => {
-            const list = [...this.plugin.settings.booksDirs];
-            list.splice(index, 1);
-            this.plugin.settings.booksDirs = list;
-            await this.plugin.saveSettings();
-            this.renderBooksDirs(container);
-          }),
-      );
-
-      const isLast = index === rows.length - 1;
-      setting.addExtraButton((b) => {
-        b.setIcon("plus")
-          .setTooltip("Add path")
-          .onClick(async () => {
-            const list = [...this.plugin.settings.booksDirs];
-            if (list.length === 0) list.push("");
-            list.push("");
-            this.plugin.settings.booksDirs = list;
-            await this.plugin.saveSettings();
-            this.renderBooksDirs(container);
-          });
-        if (!isLast) b.extraSettingsEl.addClass("readest-hidden-button");
-      });
-    });
+  getControlValue(key: string): unknown {
+    const s = this.plugin.settings;
+    // Dropdown controls bind strings; the setting stores a number.
+    if (key === "syncHeadingLevel") return String(s.syncHeadingLevel);
+    return s[key as keyof ReadestSettings];
   }
 
-  private createSection(container: HTMLElement, title: string): HTMLElement {
-    const section = container.createDiv({ cls: "readest-section" });
-    new Setting(section).setName(title).setHeading();
-    return section;
-  }
-
-  private addFieldToggle(
-    containerEl: HTMLElement,
-    name: string,
-    key: FieldToggleKey,
-  ): Setting {
-    return new Setting(containerEl).setName(name).addToggle((t) =>
-      t.setValue(this.plugin.settings[key]).onChange(async (value) => {
-        this.plugin.settings[key] = value;
-        await this.plugin.saveSettings();
-      }),
-    );
-  }
-
-  display(): void {
-    const { containerEl } = this;
-    containerEl.empty();
-
-    const tabs: { id: TabId; label: string }[] = [
-      { id: "setup", label: "Setup" },
-      { id: "heading", label: "Heading" },
-      { id: "frontmatter", label: "Frontmatter" },
-      { id: "rendering", label: "Rendering" },
-    ];
-
-    const nav = containerEl.createDiv({ cls: "readest-tabs" });
-    const panes: Record<TabId, HTMLElement> = {
-      setup: containerEl.createDiv({ cls: "readest-pane" }),
-      heading: containerEl.createDiv({ cls: "readest-pane" }),
-      frontmatter: containerEl.createDiv({ cls: "readest-pane" }),
-      rendering: containerEl.createDiv({ cls: "readest-pane" }),
-    };
-
-    const buttons: Record<TabId, HTMLButtonElement> = {} as Record<
-      TabId,
-      HTMLButtonElement
-    >;
-
-    const setActive = (id: TabId) => {
-      this.activeTab = id;
-      for (const t of tabs) {
-        buttons[t.id].toggleClass("is-active", t.id === id);
-        panes[t.id].toggleClass("is-active", t.id === id);
+  async setControlValue(key: string, value: unknown): Promise<void> {
+    const s = this.plugin.settings;
+    switch (key) {
+      case "outputFolder": {
+        const raw = String(value);
+        const safe = sanitizeOutputFolder(raw);
+        if (safe !== raw.trim() && raw.trim() !== "") {
+          new Notice(
+            "Readest: output folder adjusted to a safe vault-relative path.",
+          );
+        }
+        s.outputFolder = safe;
+        break;
       }
-    };
-
-    for (const t of tabs) {
-      const btn = nav.createEl("button", {
-        text: t.label,
-        cls: "readest-tab",
-      });
-      buttons[t.id] = btn;
-      btn.addEventListener("click", () => setActive(t.id));
+      case "filenameTemplate":
+      case "syncHeadingTemplate":
+      case "appendHeadingTemplate": {
+        s[key] = String(value).trim() || DEFAULT_SETTINGS[key];
+        break;
+      }
+      case "syncHeadingLevel": {
+        s.syncHeadingLevel = Number(value) as HeadingLevel;
+        break;
+      }
+      case "autoSyncIntervalMinutes":
+      case "maxGenres": {
+        // An unparsable value must not silently reset the number; keep the
+        // prior value instead of persisting garbage.
+        const parsed = Number(value);
+        if (!Number.isFinite(parsed)) return;
+        s[key] = Math.max(0, Math.floor(parsed));
+        break;
+      }
+      default: {
+        (s as unknown as Record<string, unknown>)[key] = value;
+      }
     }
+    await this.plugin.saveSettings();
+    if (key === "autoSyncIntervalMinutes") {
+      this.plugin.applyAutoSyncInterval();
+    }
+    if (
+      key === "syncHeadingLevel" ||
+      key === "includeFrontmatter" ||
+      key === "includeGenre"
+    ) {
+      this.refreshDomState();
+    }
+  }
 
-    const setup = panes.setup;
-    const headingPane = panes.heading;
-    const fmPane = panes.frontmatter;
-    const renderPane = panes.rendering;
+  getSettingDefinitions(): SettingDefinitionItem[] {
+    return [
+      {
+        type: "page",
+        name: "Setup",
+        desc: "Source folders, output location, auto-sync.",
+        items: this.setupItems(),
+      },
+      {
+        type: "page",
+        name: "Heading",
+        desc: "Headings for synced and appended sections.",
+        items: this.headingItems(),
+      },
+      {
+        type: "page",
+        name: "Frontmatter",
+        desc: "YAML properties written to book notes.",
+        items: this.frontmatterItems(),
+      },
+      {
+        type: "page",
+        name: "Rendering",
+        desc: "How highlights, metadata, and notes are formatted.",
+        items: this.renderingItems(),
+      },
+    ];
+  }
 
-    const source = this.createSection(setup, "Source");
-    source.createEl("p", {
-      text: "Where Readest stores books. Leave empty to use the platform default; add alternatives for vaults synced across devices, first valid path is used.",
-      cls: "setting-item-description",
-    });
-
-    const dirsContainer = source.createDiv();
-    this.renderBooksDirs(dirsContainer);
-
-    const sync = this.createSection(setup, "Output");
-    sync.createEl("p", {
-      text: `Templates accept tokens: {title}, {author}, {year}, {series}, {seriesIndex}, {isbn}, {hash}.`,
-      cls: "setting-item-description",
-    });
-
-    new Setting(sync)
-      .setName("Folder")
-      .setDesc("Vault folder for book notes.")
-      .addText((text) =>
-        text
-          .setPlaceholder("Readest")
-          .setValue(this.plugin.settings.outputFolder)
-          .onChange(async (value) => {
-            const safe = sanitizeOutputFolder(value);
-            if (safe !== value.trim() && value.trim() !== "") {
-              new Notice(
-                "Readest: output folder adjusted to a safe vault-relative path.",
+  private booksDirRow(index: number): SettingGroupItem {
+    return {
+      name: "",
+      searchable: false,
+      render: (setting: Setting) => {
+        setting.settingEl.addClass("readest-books-dir-row");
+        setting.addText((text) =>
+          text
+            .setPlaceholder("Path to Readest's books folder")
+            .setValue(this.plugin.settings.booksDirs[index] ?? "")
+            .onChange(async (v) => {
+              this.plugin.settings.booksDirs[index] = v.trim();
+              await this.plugin.saveSettings();
+            }),
+        );
+        setting.addExtraButton((b) =>
+          b
+            .setIcon("folder")
+            .setTooltip("Browse")
+            .onClick(async () => {
+              const result = await pickDirectory(
+                this.plugin.settings.booksDirs[index] || defaultActivePath(),
               );
-            }
-            this.plugin.settings.outputFolder = safe;
-            await this.plugin.saveSettings();
-          }),
-      );
-
-    new Setting(sync)
-      .setName("Filename template")
-      .setDesc("Name for generated book notes.")
-      .addText((text) =>
-        text
-          .setPlaceholder(DEFAULT_SETTINGS.filenameTemplate)
-          .setValue(this.plugin.settings.filenameTemplate)
-          .onChange(async (value) => {
-            this.plugin.settings.filenameTemplate =
-              value.trim() || DEFAULT_SETTINGS.filenameTemplate;
-            await this.plugin.saveSettings();
-          }),
-      );
-
-    const auto = this.createSection(setup, "Auto-sync");
-
-    new Setting(auto)
-      .setName("Sync on startup")
-      .setDesc(
-        "Run a sync of all books at startup, notifying only when something changed.",
-      )
-      .addToggle((t) =>
-        t
-          .setValue(this.plugin.settings.autoSyncOnStartup)
-          .onChange(async (value) => {
-            this.plugin.settings.autoSyncOnStartup = value;
-            await this.plugin.saveSettings();
-          }),
-      );
-
-    new Setting(auto)
-      .setName("Sync interval")
-      .setDesc(
-        "Re-sync all books this often (minutes) while the app is open, zero disables it.",
-      )
-      .addText((text) =>
-        text
-          .setPlaceholder("0")
-          .setValue(String(this.plugin.settings.autoSyncIntervalMinutes))
-          .onChange(async (value) => {
-            const trimmed = value.trim();
-            // Same rule as "Max genres": an empty field means off, but a
-            // non-numeric typo must not silently reset the interval.
-            if (trimmed === "") {
-              this.plugin.settings.autoSyncIntervalMinutes = 0;
-            } else {
-              const parsed = Number(trimmed);
-              if (!Number.isFinite(parsed)) return;
-              this.plugin.settings.autoSyncIntervalMinutes = Math.max(
-                0,
-                Math.floor(parsed),
-              );
-            }
-            await this.plugin.saveSettings();
-            this.plugin.applyAutoSyncInterval();
-          }),
-      );
-
-    const headingDependent: Setting[] = [];
-    const applyHeadingDisabled = (level: number) => {
-      for (const s of headingDependent) {
-        s.settingEl.toggleClass("readest-disabled", level === 0);
-      }
-    };
-
-    new Setting(headingPane)
-      .setName("Heading level")
-      .setDesc(
-        "Heading level for sync and append. None omits headings and disables preserve.",
-      )
-      .addDropdown((d) =>
-        d
-          .addOption("0", "None")
-          .addOption("1", "H1 (#)")
-          .addOption("2", "H2 (##)")
-          .addOption("3", "H3 (###)")
-          .addOption("4", "H4 (####)")
-          .setValue(String(this.plugin.settings.syncHeadingLevel))
-          .onChange(async (value) => {
-            const level = Number(value) as HeadingLevel;
-            this.plugin.settings.syncHeadingLevel = level;
-            await this.plugin.saveSettings();
-            applyHeadingDisabled(level);
-          }),
-      );
-
-    headingDependent.push(
-      new Setting(headingPane)
-        .setName("Sync heading")
-        .setDesc("Heading above the highlights section.")
-        .addText((text) =>
-          text
-            .setPlaceholder(DEFAULT_SETTINGS.syncHeadingTemplate)
-            .setValue(this.plugin.settings.syncHeadingTemplate)
-            .onChange(async (value) => {
-              this.plugin.settings.syncHeadingTemplate =
-                value.trim() || DEFAULT_SETTINGS.syncHeadingTemplate;
-              await this.plugin.saveSettings();
-            }),
-        ),
-    );
-
-    headingDependent.push(
-      new Setting(headingPane)
-        .setName("Append heading")
-        .setDesc("Heading inserted by the append command.")
-        .addText((text) =>
-          text
-            .setPlaceholder(DEFAULT_SETTINGS.appendHeadingTemplate)
-            .setValue(this.plugin.settings.appendHeadingTemplate)
-            .onChange(async (value) => {
-              this.plugin.settings.appendHeadingTemplate =
-                value.trim() || DEFAULT_SETTINGS.appendHeadingTemplate;
-              await this.plugin.saveSettings();
-            }),
-        ),
-    );
-
-    headingDependent.push(
-      new Setting(headingPane)
-        .setName("Preserve manual edits")
-        .setDesc(
-          "On re-sync, only rewrite the section under the sync heading. Other content is kept.",
-        )
-        .addToggle((t) =>
-          t
-            .setValue(this.plugin.settings.preserveManualEdits)
-            .onChange(async (value) => {
-              this.plugin.settings.preserveManualEdits = value;
-              await this.plugin.saveSettings();
-            }),
-        ),
-    );
-    applyHeadingDisabled(this.plugin.settings.syncHeadingLevel);
-
-    const fm = fmPane;
-
-    const fmDependent: Setting[] = [];
-    const genreDependent: Setting[] = [];
-    const applyVisibility = () => {
-      const fmOn = this.plugin.settings.includeFrontmatter;
-      const genreOn = this.plugin.settings.includeGenre;
-      for (const s of fmDependent) {
-        const isGenreSub = genreDependent.includes(s);
-        const visible = fmOn && (!isGenreSub || genreOn);
-        s.settingEl.style.display = visible ? "" : "none";
-      }
-    };
-
-    new Setting(fm)
-      .setName("Include frontmatter")
-      .setDesc("YAML block at the top of book notes.")
-      .addToggle((t) =>
-        t
-          .setValue(this.plugin.settings.includeFrontmatter)
-          .onChange(async (value) => {
-            this.plugin.settings.includeFrontmatter = value;
-            await this.plugin.saveSettings();
-            applyVisibility();
-          }),
-      );
-
-    fmDependent.push(
-      new Setting(fm)
-        .setName("Tags")
-        .setDesc("Comma-separated. Blank omits the property.")
-        .addText((text) =>
-          text
-            .setPlaceholder(DEFAULT_SETTINGS.frontmatterTags)
-            .setValue(this.plugin.settings.frontmatterTags)
-            .onChange(async (value) => {
-              this.plugin.settings.frontmatterTags = value;
-              await this.plugin.saveSettings();
-            }),
-        ),
-    );
-
-    fmDependent.push(
-      new Setting(fm)
-        .setName("Author")
-        .setDesc("Off, plain text, or wiki-link for backlinks.")
-        .addDropdown((d) =>
-          d
-            .addOption("off", "Off")
-            .addOption("plain", "Plain text")
-            .addOption("wikilink", "Wiki-link")
-            .setValue(this.plugin.settings.authorFormat)
-            .onChange(async (value) => {
-              this.plugin.settings.authorFormat = value as AuthorFormat;
-              await this.plugin.saveSettings();
-            }),
-        ),
-    );
-
-    // Series and Publisher mirror Author: one off/plain/wikilink dropdown.
-    // They sit right under Author so the three linkable fields (and their
-    // identical dropdowns) read as one block, followed by the plain toggles.
-    const addLinkableField = (
-      name: string,
-      formatKey: "seriesFormat" | "publisherFormat",
-    ) => {
-      fmDependent.push(
-        new Setting(fm)
-          .setName(name)
-          .setDesc("Off, plain text, or wiki-link for backlinks.")
-          .addDropdown((d) =>
-            d
-              .addOption("off", "Off")
-              .addOption("plain", "Plain text")
-              .addOption("wikilink", "Wiki-link")
-              .setValue(this.plugin.settings[formatKey])
-              .onChange(async (value) => {
-                this.plugin.settings[formatKey] = value as AuthorFormat;
-                await this.plugin.saveSettings();
-              }),
-          ),
-      );
-    };
-
-    addLinkableField("Series", "seriesFormat");
-    addLinkableField("Publisher", "publisherFormat");
-
-    fmDependent.push(this.addFieldToggle(fm, "Year", "includeYear"));
-    fmDependent.push(this.addFieldToggle(fm, "ISBN", "includeIsbn"));
-    fmDependent.push(this.addFieldToggle(fm, "Language", "includeLanguage"));
-
-    fmDependent.push(
-      new Setting(fm)
-        .setName("Genre")
-        .addToggle((t) =>
-          t
-            .setValue(this.plugin.settings.includeGenre)
-            .onChange(async (value) => {
-              this.plugin.settings.includeGenre = value;
-              await this.plugin.saveSettings();
-              applyVisibility();
-            }),
-        ),
-    );
-
-    const pushGenreSub = (s: Setting) => {
-      s.settingEl.addClass("readest-indent");
-      fmDependent.push(s);
-      genreDependent.push(s);
-    };
-
-    pushGenreSub(
-      new Setting(fm)
-        .setName("Format")
-        .setDesc("Plain text, or wiki-link for backlinks.")
-        .addDropdown((d) =>
-          d
-            .addOption("plain", "Plain text")
-            .addOption("wikilink", "Wiki-link")
-            .setValue(this.plugin.settings.genreFormat)
-            .onChange(async (value) => {
-              this.plugin.settings.genreFormat = value as GenreFormat;
-              await this.plugin.saveSettings();
-            }),
-        ),
-    );
-
-    pushGenreSub(
-      new Setting(fm)
-        .setName("Max genres")
-        .setDesc("Keep at most this many genres in source order. Zero means unlimited.")
-        .addText((text) =>
-          text
-            .setPlaceholder("0")
-            .setValue(String(this.plugin.settings.maxGenres))
-            .onChange(async (value) => {
-              const trimmed = value.trim();
-              // An empty field means "unlimited" (0). A non-numeric typo must
-              // not silently reset the cap to unlimited - keep the prior value.
-              if (trimmed === "") {
-                this.plugin.settings.maxGenres = 0;
-              } else {
-                const parsed = Number(trimmed);
-                if (!Number.isFinite(parsed)) return;
-                this.plugin.settings.maxGenres = Math.max(
-                  0,
-                  Math.floor(parsed),
+              if (!result.available) {
+                new Notice(
+                  "Readest: file picker unavailable; enter path manually.",
                 );
+                return;
               }
+              if (!result.path) return;
+              this.plugin.settings.booksDirs[index] = result.path;
               await this.plugin.saveSettings();
+              this.update();
             }),
+        );
+      },
+    };
+  }
+
+  private setupItems(): SettingDefinitionItem[] {
+    return [
+      {
+        type: "list",
+        heading: "Source",
+        emptyState: "Using the platform default location.",
+        items: this.plugin.settings.booksDirs.map((_, index) =>
+          this.booksDirRow(index),
         ),
-    );
-
-    pushGenreSub(
-      new Setting(fm)
-        .setName("Natural order")
-        .setDesc(
-          "Swap inverted headings like \"state, the\" to \"the state\".",
-        )
-        .addToggle((t) =>
-          t
-            .setValue(this.plugin.settings.uninvertGenres)
-            .onChange(async (value) => {
-              this.plugin.settings.uninvertGenres = value;
+        addItem: {
+          name: "Add path",
+          action: () => {
+            void (async () => {
+              this.plugin.settings.booksDirs.push("");
               await this.plugin.saveSettings();
-            }),
-        ),
-    );
-
-    pushGenreSub(
-      new Setting(fm)
-        .setName("Clean names")
-        .setDesc(
-          "Strip cataloging suffixes from genres, e.g. \"ethics -- early works to 1800\" becomes \"ethics\".",
-        )
-        .addToggle((t) =>
-          t
-            .setValue(this.plugin.settings.cleanGenres)
-            .onChange(async (value) => {
-              this.plugin.settings.cleanGenres = value;
-              await this.plugin.saveSettings();
-            }),
-        ),
-    );
-
-    applyVisibility();
-
-    fmDependent.push(
-      new Setting(fm)
-        .setName("Readest hash")
-        .setDesc(
-          "Write the book's Readest hash to frontmatter. This is also the identity used to re-find a note when the book is renamed; with it off, a renamed book creates a new note instead of updating the old one.",
-        )
-        .addToggle((t) =>
-          t
-            .setValue(this.plugin.settings.includeReadestHash)
-            .onChange(async (value) => {
-              this.plugin.settings.includeReadestHash = value;
-              await this.plugin.saveSettings();
-            }),
-        ),
-    );
-
-    fmDependent.push(
-      new Setting(fm)
-        .setName("Extra fields")
-        .setDesc(
-          "Free-form YAML appended inside frontmatter. Lines containing only '---' are stripped to keep the block valid.",
-        )
-        .addTextArea((t) => {
-          t.setPlaceholder("Rating: 5\nreview: thoughts")
-            .setValue(this.plugin.settings.extraFrontmatter)
-            .onChange(async (value) => {
-              this.plugin.settings.extraFrontmatter = value;
-              await this.plugin.saveSettings();
-            });
-          t.inputEl.rows = 4;
-          t.inputEl.addClass("readest-extra-frontmatter");
-        }),
-    );
-
-
-    const hl = this.createSection(renderPane, "Highlights");
-
-    new Setting(hl)
-      .setName("Filter")
-      .setDesc("Which annotations to include.")
-      .addDropdown((d) =>
-        d
-          .addOption("all", "All annotations")
-          .addOption("highlights", "Only highlights")
-          .addOption("underlines", "Only underlines")
-          .addOption("withNotes", "Only with notes")
-          .setValue(this.plugin.settings.annotationFilter)
-          .onChange(async (value) => {
-            this.plugin.settings.annotationFilter = value as AnnotationFilter;
+              this.update();
+            })();
+          },
+        },
+        onDelete: (index) => {
+          void (async () => {
+            this.plugin.settings.booksDirs.splice(index, 1);
             await this.plugin.saveSettings();
-          }),
-      );
+            this.update();
+          })();
+        },
+      },
+      {
+        name: "",
+        searchable: false,
+        render: (setting: Setting) => {
+          setting.setDesc(
+            "Where Readest stores books. Leave empty to use the platform default; add alternatives for vaults synced across devices, first valid path is used.",
+          );
+          setting.settingEl.addClass("readest-info-row");
+        },
+      },
+      {
+        type: "group",
+        heading: "Output",
+        items: [
+          {
+            name: "Folder",
+            desc: "Vault folder for book notes.",
+            control: {
+              type: "text",
+              key: "outputFolder",
+              placeholder: DEFAULT_SETTINGS.outputFolder,
+            },
+          },
+          {
+            name: "Filename template",
+            desc: "Name for generated book notes. Tokens: {title}, {author}, {year}, {series}, {seriesIndex}, {isbn}, {hash}.",
+            control: {
+              type: "text",
+              key: "filenameTemplate",
+              placeholder: DEFAULT_SETTINGS.filenameTemplate,
+            },
+          },
+        ],
+      },
+      {
+        type: "group",
+        heading: "Auto-sync",
+        items: [
+          {
+            name: "Sync on startup",
+            desc: "Run a sync of all books at startup, notifying only when something changed.",
+            control: { type: "toggle", key: "autoSyncOnStartup" },
+          },
+          {
+            name: "Sync interval",
+            desc: "Re-sync all books this often (minutes) while the app is open, zero disables it.",
+            control: {
+              type: "number",
+              key: "autoSyncIntervalMinutes",
+              placeholder: "0",
+              min: 0,
+              step: 1,
+            },
+          },
+        ],
+      },
+    ];
+  }
 
-    new Setting(hl)
-      .setName("Style")
-      .addDropdown((d) =>
-        d
-          .addOption("blockquote", "Blockquote (> text)")
-          .addOption("plain", "Plain text")
-          .addOption("callout", "Callout (> [!quote])")
-          .addOption("bullet", "Bullet (- text)")
-          .setValue(this.plugin.settings.highlightStyle)
-          .onChange(async (value) => {
-            this.plugin.settings.highlightStyle = value as HighlightStyle;
-            await this.plugin.saveSettings();
-          }),
-      );
+  private headingItems(): SettingDefinitionItem[] {
+    const noHeading = () => this.plugin.settings.syncHeadingLevel === 0;
+    return [
+      {
+        name: "Heading level",
+        desc: "Heading level for sync and append. None omits headings and disables preserve.",
+        control: {
+          type: "dropdown",
+          key: "syncHeadingLevel",
+          options: {
+            "0": "None",
+            "1": "H1 (#)",
+            "2": "H2 (##)",
+            "3": "H3 (###)",
+            "4": "H4 (####)",
+          },
+        },
+      },
+      {
+        name: "Sync heading",
+        desc: "Heading above the highlights section. Tokens: {title}, {author}, {year}, {series}, {seriesIndex}, {isbn}, {hash}.",
+        control: {
+          type: "text",
+          key: "syncHeadingTemplate",
+          placeholder: DEFAULT_SETTINGS.syncHeadingTemplate,
+          disabled: noHeading,
+        },
+      },
+      {
+        name: "Append heading",
+        desc: "Heading inserted by the append command. Accepts the same tokens.",
+        control: {
+          type: "text",
+          key: "appendHeadingTemplate",
+          placeholder: DEFAULT_SETTINGS.appendHeadingTemplate,
+          disabled: noHeading,
+        },
+      },
+      {
+        name: "Preserve manual edits",
+        desc: "On re-sync, only rewrite the section under the sync heading. Other content is kept.",
+        control: {
+          type: "toggle",
+          key: "preserveManualEdits",
+          disabled: noHeading,
+        },
+      },
+    ];
+  }
 
-    new Setting(hl)
-      .setName("Collapse line breaks")
-      .setDesc("Replace line breaks inside highlight text with spaces.")
-      .addToggle((t) =>
-        t
-          .setValue(this.plugin.settings.collapseHighlightLineBreaks)
-          .onChange(async (value) => {
-            this.plugin.settings.collapseHighlightLineBreaks = value;
-            await this.plugin.saveSettings();
-          }),
-      );
+  private frontmatterItems(): SettingDefinitionItem[] {
+    const fmOn = () => this.plugin.settings.includeFrontmatter;
+    const genreOn = () => fmOn() && this.plugin.settings.includeGenre;
+    const linkableOptions = {
+      off: "Off",
+      plain: "Plain text",
+      wikilink: "Wiki-link",
+    };
+    return [
+      {
+        name: "Include frontmatter",
+        desc: "YAML block at the top of book notes.",
+        control: { type: "toggle", key: "includeFrontmatter" },
+      },
+      {
+        name: "Tags",
+        desc: "Comma-separated. Blank omits the property.",
+        visible: fmOn,
+        control: {
+          type: "text",
+          key: "frontmatterTags",
+          placeholder: DEFAULT_SETTINGS.frontmatterTags,
+        },
+      },
+      {
+        name: "Author",
+        desc: "Off, plain text, or wiki-link for backlinks.",
+        visible: fmOn,
+        control: {
+          type: "dropdown",
+          key: "authorFormat",
+          options: linkableOptions,
+        },
+      },
+      {
+        name: "Series",
+        desc: "Off, plain text, or wiki-link for backlinks.",
+        visible: fmOn,
+        control: {
+          type: "dropdown",
+          key: "seriesFormat",
+          options: linkableOptions,
+        },
+      },
+      {
+        name: "Publisher",
+        desc: "Off, plain text, or wiki-link for backlinks.",
+        visible: fmOn,
+        control: {
+          type: "dropdown",
+          key: "publisherFormat",
+          options: linkableOptions,
+        },
+      },
+      {
+        name: "Year",
+        visible: fmOn,
+        control: { type: "toggle", key: "includeYear" },
+      },
+      {
+        name: "ISBN",
+        visible: fmOn,
+        control: { type: "toggle", key: "includeIsbn" },
+      },
+      {
+        name: "Language",
+        visible: fmOn,
+        control: { type: "toggle", key: "includeLanguage" },
+      },
+      {
+        name: "Genre",
+        visible: fmOn,
+        control: { type: "toggle", key: "includeGenre" },
+      },
+      {
+        type: "group",
+        cls: "readest-indent",
+        visible: genreOn,
+        items: [
+          {
+            name: "Format",
+            desc: "Plain text, or wiki-link for backlinks.",
+            control: {
+              type: "dropdown",
+              key: "genreFormat",
+              options: { plain: "Plain text", wikilink: "Wiki-link" },
+            },
+          },
+          {
+            name: "Max genres",
+            desc: "Keep at most this many genres in source order. Zero means unlimited.",
+            control: {
+              type: "number",
+              key: "maxGenres",
+              placeholder: "0",
+              min: 0,
+              step: 1,
+            },
+          },
+          {
+            name: "Natural order",
+            desc: 'Swap inverted headings like "state, the" to "the state".',
+            control: { type: "toggle", key: "uninvertGenres" },
+          },
+          {
+            name: "Clean names",
+            desc: 'Strip cataloging suffixes from genres, e.g. "ethics -- early works to 1800" becomes "ethics".',
+            control: { type: "toggle", key: "cleanGenres" },
+          },
+        ],
+      },
+      {
+        name: "Readest hash",
+        desc: "Write the book's Readest hash to frontmatter. This is also the identity used to re-find a note when the book is renamed; with it off, a renamed book creates a new note instead of updating the old one.",
+        visible: fmOn,
+        control: { type: "toggle", key: "includeReadestHash" },
+      },
+      {
+        name: "Extra fields",
+        desc: "Free-form YAML appended inside frontmatter. Lines containing only '---' are stripped to keep the block valid.",
+        visible: fmOn,
+        control: {
+          type: "textarea",
+          key: "extraFrontmatter",
+          placeholder: "Rating: 5\nreview: thoughts",
+          rows: 4,
+        },
+      },
+    ];
+  }
 
-    new Setting(hl)
-      .setName("Sort order")
-      .setDesc(
-        "Order of highlights in the note: by position in the book, or by when you made them.",
-      )
-      .addDropdown((d) =>
-        d
-          .addOption("page", "Book position")
-          .addOption("date", "Highlight date")
-          .setValue(this.plugin.settings.highlightSortOrder)
-          .onChange(async (value) => {
-            this.plugin.settings.highlightSortOrder =
-              value as HighlightSortOrder;
-            await this.plugin.saveSettings();
-          }),
-      );
-
-    new Setting(hl)
-      .setName("Separator")
-      .addDropdown((d) =>
-        d
-          .addOption("rule", "Horizontal rule (---)")
-          .addOption("blank", "Blank line")
-          .addOption("pageHeading", "Group under page headings")
-          .addOption("none", "None")
-          .setValue(this.plugin.settings.highlightSeparator)
-          .onChange(async (value) => {
-            this.plugin.settings.highlightSeparator =
-              value as HighlightSeparator;
-            await this.plugin.saveSettings();
-          }),
-      );
-
-    new Setting(hl)
-      .setName("Show count")
-      .setDesc(
-        "Add a line under the highlights heading with the number of highlights included.",
-      )
-      .addToggle((t) =>
-        t
-          .setValue(this.plugin.settings.showHighlightCount)
-          .onChange(async (value) => {
-            this.plugin.settings.showHighlightCount = value;
-            await this.plugin.saveSettings();
-          }),
-      );
-
-    const meta = this.createSection(renderPane, "Metadata");
-    meta.createEl("p", {
-      text: "Extra details shown with each highlight.",
-      cls: "setting-item-description",
-    });
-
-    new Setting(meta)
-      .setName("Page number")
-      .addToggle((t) =>
-        t
-          .setValue(this.plugin.settings.showPage)
-          .onChange(async (value) => {
-            this.plugin.settings.showPage = value;
-            await this.plugin.saveSettings();
-          }),
-      );
-
-    new Setting(meta)
-      .setName("Color")
-      .addToggle((t) =>
-        t
-          .setValue(this.plugin.settings.showColor)
-          .onChange(async (value) => {
-            this.plugin.settings.showColor = value;
-            await this.plugin.saveSettings();
-          }),
-      );
-
-    new Setting(meta)
-      .setName("Render underlines")
-      .setDesc("Wrap underlined annotations in <u>…</u> so they render underlined.")
-      .addToggle((t) =>
-        t
-          .setValue(this.plugin.settings.renderUnderlines)
-          .onChange(async (value) => {
-            this.plugin.settings.renderUnderlines = value;
-            await this.plugin.saveSettings();
-          }),
-      );
-
-    new Setting(meta)
-      .setName("Placement")
-      .setDesc("Inline with highlight or on its own line below.")
-      .addDropdown((d) =>
-        d
-          .addOption("below", "Below highlight")
-          .addOption("inline", "Inline with highlight")
-          .setValue(this.plugin.settings.metadataPlacement)
-          .onChange(async (value) => {
-            this.plugin.settings.metadataPlacement =
-              value as MetadataPlacement;
-            await this.plugin.saveSettings();
-          }),
-      );
-
-    const notes = this.createSection(renderPane, "Notes");
-
-    new Setting(notes)
-      .setName("Show notes")
-      .addToggle((t) =>
-        t
-          .setValue(this.plugin.settings.showNotes)
-          .onChange(async (value) => {
-            this.plugin.settings.showNotes = value;
-            await this.plugin.saveSettings();
-          }),
-      );
-
-    new Setting(notes)
-      .setName("Placement")
-      .addDropdown((d) =>
-        d
-          .addOption("attached", "Attached (inside the highlight)")
-          .addOption("separated", "Separated (below, plain)")
-          .addOption("callout", "Callout (below, as [!note])")
-          .setValue(this.plugin.settings.noteStyle)
-          .onChange(async (value) => {
-            this.plugin.settings.noteStyle = value as NoteStyle;
-            await this.plugin.saveSettings();
-          }),
-      );
-
-    setActive(this.activeTab);
+  private renderingItems(): SettingDefinitionItem[] {
+    return [
+      {
+        type: "group",
+        heading: "Highlights",
+        items: [
+          {
+            name: "Filter",
+            desc: "Which annotations to include.",
+            control: {
+              type: "dropdown",
+              key: "annotationFilter",
+              options: {
+                all: "All annotations",
+                highlights: "Only highlights",
+                underlines: "Only underlines",
+                withNotes: "Only with notes",
+              },
+            },
+          },
+          {
+            name: "Style",
+            control: {
+              type: "dropdown",
+              key: "highlightStyle",
+              options: {
+                blockquote: "Blockquote (> text)",
+                plain: "Plain text",
+                callout: "Callout (> [!quote])",
+                bullet: "Bullet (- text)",
+              },
+            },
+          },
+          {
+            name: "Collapse line breaks",
+            desc: "Replace line breaks inside highlight text with spaces.",
+            control: { type: "toggle", key: "collapseHighlightLineBreaks" },
+          },
+          {
+            name: "Sort order",
+            desc: "Order of highlights in the note: by position in the book, or by when you made them.",
+            control: {
+              type: "dropdown",
+              key: "highlightSortOrder",
+              options: { page: "Book position", date: "Highlight date" },
+            },
+          },
+          {
+            name: "Separator",
+            control: {
+              type: "dropdown",
+              key: "highlightSeparator",
+              options: {
+                rule: "Horizontal rule (---)",
+                blank: "Blank line",
+                pageHeading: "Group under page headings",
+                none: "None",
+              },
+            },
+          },
+          {
+            name: "Show count",
+            desc: "Add a line under the highlights heading with the number of highlights included.",
+            control: { type: "toggle", key: "showHighlightCount" },
+          },
+        ],
+      },
+      {
+        type: "group",
+        heading: "Metadata",
+        items: [
+          {
+            name: "",
+            searchable: false,
+            render: (setting: Setting) => {
+              setting.setDesc("Extra details shown with each highlight.");
+              setting.settingEl.addClass("readest-info-row");
+            },
+          },
+          {
+            name: "Page number",
+            control: { type: "toggle", key: "showPage" },
+          },
+          {
+            name: "Color",
+            control: { type: "toggle", key: "showColor" },
+          },
+          {
+            name: "Render underlines",
+            desc: "Wrap underlined annotations in <u>…</u> so they render underlined.",
+            control: { type: "toggle", key: "renderUnderlines" },
+          },
+          {
+            name: "Placement",
+            desc: "Inline with highlight or on its own line below.",
+            control: {
+              type: "dropdown",
+              key: "metadataPlacement",
+              options: {
+                below: "Below highlight",
+                inline: "Inline with highlight",
+              },
+            },
+          },
+        ],
+      },
+      {
+        type: "group",
+        heading: "Notes",
+        items: [
+          {
+            name: "Show notes",
+            control: { type: "toggle", key: "showNotes" },
+          },
+          {
+            name: "Placement",
+            control: {
+              type: "dropdown",
+              key: "noteStyle",
+              options: {
+                attached: "Attached (inside the highlight)",
+                separated: "Separated (below, plain)",
+                callout: "Callout (below, as [!note])",
+              },
+            },
+          },
+        ],
+      },
+    ];
   }
 }
