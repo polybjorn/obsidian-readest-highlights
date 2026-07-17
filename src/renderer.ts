@@ -266,12 +266,15 @@ function groupAnnotations(
     const target = groups.find(
       (g) => g.text === cleaned || cleaned === "" || g.text === "",
     );
+    // Notes keep their line breaks (collapse only applies to highlight text)
+    // but get the same per-line whitespace normalization.
+    const note = cleanText(a.note ?? "", false);
     if (target) {
       if (!target.text && cleaned) target.text = cleaned;
       if (target.page === undefined && a.page !== undefined) target.page = a.page;
       if (a.color) target.colors.add(a.color);
       if (a.style) target.styles.add(a.style);
-      if (a.note && a.note.trim()) target.notes.push(a.note.trim());
+      if (note) target.notes.push(note);
       target.earliestCreatedAt = Math.min(
         target.earliestCreatedAt,
         a.createdAt,
@@ -283,7 +286,7 @@ function groupAnnotations(
         page: a.page,
         colors: new Set(a.color ? [a.color] : []),
         styles: new Set(a.style ? [a.style] : []),
-        notes: a.note && a.note.trim() ? [a.note.trim()] : [],
+        notes: note ? [note] : [],
         earliestCreatedAt: a.createdAt,
       };
       groups.push(group);
@@ -323,28 +326,31 @@ function wrapStyle(
   extras: string[],
   style: HighlightStyle,
 ): string {
+  // An extra (e.g. an attached multi-line note) can span lines; every line
+  // needs the style prefix or it escapes the blockquote/callout/bullet.
+  const extraLines = extras.flatMap((e) => e.split("\n"));
   switch (style) {
     case "blockquote": {
       const out = textLines.map((l) => `> ${l}`);
-      if (extras.length) {
+      if (extraLines.length) {
         out.push(">");
-        for (const e of extras) out.push(`> ${e}`);
+        for (const e of extraLines) out.push(`> ${e}`);
       }
       return out.join("\n");
     }
     case "callout": {
       const out = ["> [!quote]"];
       for (const l of textLines) out.push(`> ${l}`);
-      if (extras.length) {
+      if (extraLines.length) {
         out.push(">");
-        for (const e of extras) out.push(`> ${e}`);
+        for (const e of extraLines) out.push(`> ${e}`);
       }
       return out.join("\n");
     }
     case "bullet": {
       const out = [`- ${textLines[0] ?? ""}`];
       for (let i = 1; i < textLines.length; i++) out.push(`  ${textLines[i]}`);
-      for (const e of extras) out.push(`  ${e}`);
+      for (const e of extraLines) out.push(`  ${e}`);
       return out.join("\n");
     }
     case "plain": {
@@ -505,6 +511,25 @@ function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+// Marks lines that must not be treated as headings: fenced code block
+// delimiters and everything between them. Without this, a "## Highlights"
+// line inside a user's code sample would be mistaken for the section heading
+// (or its end boundary) and re-sync would cut the note at the wrong place.
+function fenceMask(lines: string[]): boolean[] {
+  const mask: boolean[] = new Array<boolean>(lines.length).fill(false);
+  let open = false;
+  for (let i = 0; i < lines.length; i++) {
+    const isFence = /^\s{0,3}(`{3,}|~{3,})/.test(lines[i] ?? "");
+    if (isFence) {
+      mask[i] = true;
+      open = !open;
+    } else {
+      mask[i] = open;
+    }
+  }
+  return mask;
+}
+
 function yamlQuote(s: string): string {
   // Escapes for a double-quoted YAML scalar. Newlines/tabs must be escaped too,
   // otherwise a metadata value containing one breaks out of the scalar and
@@ -587,27 +612,28 @@ export function replaceHighlightsSection(
   );
   const section = `${heading}\n\n${body}`.trimEnd();
 
-  const headingRe = new RegExp(
-    `^${hashes} ${escapeRegex(headingText)}\\s*$`,
-    "m",
+  const headingRe = new RegExp(`^${hashes} ${escapeRegex(headingText)}\\s*$`);
+  const lines = existing.split("\n");
+  const masked = fenceMask(lines);
+  const startLineIdx = lines.findIndex(
+    (l, i) => !masked[i] && headingRe.test(l),
   );
-  const startMatch = existing.match(headingRe);
-  if (!startMatch || startMatch.index === undefined) {
+  if (startLineIdx === -1) {
     return existing.trimEnd() + "\n\n" + section + "\n";
   }
-  const startIdx = startMatch.index;
 
-  const afterHeading = startIdx + heading.length;
-  const rest = existing.slice(afterHeading);
-  const boundaryRe = new RegExp(`^#{1,${opts.syncHeadingLevel}}\\s+`, "m");
-  const nextHeadingMatch = rest.match(boundaryRe);
-  const endIdx = nextHeadingMatch
-    ? afterHeading + (nextHeadingMatch.index ?? 0)
-    : existing.length;
+  const boundaryRe = new RegExp(`^#{1,${opts.syncHeadingLevel}}\\s+`);
+  let endLineIdx = lines.length;
+  for (let i = startLineIdx + 1; i < lines.length; i++) {
+    if (!masked[i] && boundaryRe.test(lines[i] ?? "")) {
+      endLineIdx = i;
+      break;
+    }
+  }
 
-  const before = existing.slice(0, startIdx).trimEnd();
-  const after = existing.slice(endIdx);
-  return `${before}\n\n${section}\n\n${after.trimStart()}`.trimEnd() + "\n";
+  const before = lines.slice(0, startLineIdx).join("\n").trimEnd();
+  const after = lines.slice(endLineIdx).join("\n").trimStart();
+  return `${before}\n\n${section}\n\n${after}`.trimEnd() + "\n";
 }
 
 export function upsertAppendedSection(
@@ -620,7 +646,10 @@ export function upsertAppendedSection(
   const headingLine = `${hashes} ${heading}`;
   const section = `${headingLine}\n\n${body}`.trimEnd();
   const lines = existing.split("\n");
-  const startLineIdx = lines.findIndex((l) => l.trim() === headingLine);
+  const masked = fenceMask(lines);
+  const startLineIdx = lines.findIndex(
+    (l, i) => !masked[i] && l.trim() === headingLine,
+  );
 
   if (startLineIdx === -1) {
     return existing.trimEnd() + `\n\n${section}\n`;
@@ -629,7 +658,7 @@ export function upsertAppendedSection(
   const boundaryRe = new RegExp(`^#{1,${level}}\\s+`);
   let endLineIdx = lines.length;
   for (let i = startLineIdx + 1; i < lines.length; i++) {
-    if (boundaryRe.test(lines[i] ?? "")) {
+    if (!masked[i] && boundaryRe.test(lines[i] ?? "")) {
       endLineIdx = i;
       break;
     }

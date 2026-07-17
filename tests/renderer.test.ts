@@ -379,3 +379,73 @@ void test("renderFrontmatter escapes newlines in metadata values", () => {
   // The injected break must not become its own physical line / key.
   assert.doesNotMatch(out, /^injected: bar/m);
 });
+
+// --- multi-line notes stay inside wrapped styles ---
+
+void test("a multi-line attached note stays inside a blockquote highlight", () => {
+  const out = renderHighlightsBody(
+    [makeAnnotation("a", { text: "quote", note: "line one\nline two" })],
+    { ...opts, style: "blockquote", noteStyle: "attached", showPage: false },
+  );
+  for (const line of out.split("\n")) {
+    assert.ok(line.startsWith(">"), `line escaped the blockquote: "${line}"`);
+  }
+  assert.match(out, /> \*\*Note:\*\* line one\n> line two/);
+});
+
+void test("a multi-line attached note stays inside a callout highlight", () => {
+  const out = renderHighlightsBody(
+    [makeAnnotation("a", { text: "quote", note: "line one\nline two" })],
+    { ...opts, style: "callout", noteStyle: "attached", showPage: false },
+  );
+  for (const line of out.split("\n")) {
+    assert.ok(line.startsWith(">"), `line escaped the callout: "${line}"`);
+  }
+});
+
+void test("note whitespace is normalized per line, breaks kept", () => {
+  const out = renderHighlightsBody(
+    [makeAnnotation("a", { text: "quote", note: "one\t two\n\n  three  " })],
+    { ...opts, noteStyle: "separated", showPage: false },
+  );
+  assert.match(out, /\*\*Note:\*\* one two\nthree/);
+});
+
+// --- fenced code blocks are not section boundaries ---
+
+void test("replaceHighlightsSection ignores a heading inside a code fence", () => {
+  const existing =
+    "```\n## Highlights\nfenced\n```\n\n## Highlights\n\n- old\n\n## Notes\n\nkept\n";
+  const out = replaceHighlightsSection(
+    existing,
+    book,
+    [makeAnnotation("1", { text: "new quote" })],
+    opts,
+  );
+  assert.match(out, /```\n## Highlights\nfenced\n```/);
+  assert.match(out, /new quote/);
+  assert.match(out, /kept/);
+  assert.doesNotMatch(out, /- old/);
+});
+
+void test("replaceHighlightsSection does not end the section at a fenced heading", () => {
+  const existing =
+    "## Highlights\n\n- old\n\n```\n# not a heading\n```\n\n- old too\n\n## Notes\n\nkept\n";
+  const out = replaceHighlightsSection(
+    existing,
+    book,
+    [makeAnnotation("1", { text: "new quote" })],
+    opts,
+  );
+  assert.doesNotMatch(out, /- old too/);
+  assert.match(out, /## Notes/);
+  assert.match(out, /kept/);
+});
+
+void test("upsertAppendedSection ignores a heading inside a code fence", () => {
+  const existing = "```\n## Book\n```\n\nprose\n";
+  const out = upsertAppendedSection(existing, "Book", "- quote", 2);
+  assert.match(out, /```\n## Book\n```/);
+  assert.match(out, /prose/);
+  assert.match(out, /## Book\n\n- quote/);
+});
