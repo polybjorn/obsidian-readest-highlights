@@ -52,7 +52,7 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ### Fixed
 
-- Stop the false "update the plugin" warning that appeared on every sync with current Readest libraries. The warning no longer keys off Readest's config schema version (which changes for reasons unrelated to highlights) - it now fires only when a highlight genuinely can't be read, so newer Readest versions sync cleanly.
+- Stop the false "update the plugin" warning that appeared on every sync with current Readest libraries. The warning no longer keys off Readest's config schema version (which changes for reasons unrelated to highlights) - it now fires only when a highlight genuinely can't be read, so newer Readest versions sync cleanly. (thanks @logicelf for the diagnosis in PR #23)
 
 ## [1.2.0] - 2026-05-18
 
