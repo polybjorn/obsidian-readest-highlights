@@ -29,6 +29,7 @@ const book: ReadestLibraryBook = {
 const opts: RenderOptions = {
   style: "blockquote",
   separator: "rule",
+  sortOrder: "page",
   showPage: true,
   showColor: false,
   showHighlightCount: false,
@@ -46,7 +47,9 @@ const opts: RenderOptions = {
     authorFormat: "off",
     includeYear: false,
     includeIsbn: false,
-    includeSeries: false,
+    seriesFormat: "off",
+    publisherFormat: "off",
+    includeLanguage: false,
     includeGenre: false,
     genreFormat: "plain",
     cleanGenres: true,
@@ -199,7 +202,7 @@ void test("renderFrontmatter writes tags, author, year, isbn, series", () => {
     authorFormat: "plain",
     includeYear: true,
     includeIsbn: true,
-    includeSeries: true,
+    seriesFormat: "plain",
   });
   assert.match(out, /^---$/m);
   assert.match(out, /tags:\n {2}- "Book"\n {2}- "Fantasy"/);
@@ -373,7 +376,7 @@ void test("renderFrontmatter escapes newlines in metadata values", () => {
   const out = renderFrontmatter(messy, {
     ...opts.frontmatter,
     enabled: true,
-    includeSeries: true,
+    seriesFormat: "plain",
   });
   assert.match(out, /series: "Foo\\"\\ninjected: bar"/);
   // The injected break must not become its own physical line / key.
@@ -448,4 +451,110 @@ void test("upsertAppendedSection ignores a heading inside a code fence", () => {
   assert.match(out, /```\n## Book\n```/);
   assert.match(out, /prose/);
   assert.match(out, /## Book\n\n- quote/);
+});
+
+// --- sort order ---
+
+void test("sortOrder date orders highlights by creation time, not page", () => {
+  const annos = [
+    makeAnnotation("late", { page: 1, text: "made last", createdAt: 300 }),
+    makeAnnotation("early", { page: 9, text: "made first", createdAt: 100 }),
+    makeAnnotation("mid", { page: 5, text: "made second", createdAt: 200 }),
+  ];
+  const out = renderHighlightsBody(annos, {
+    ...opts,
+    sortOrder: "date",
+    showPage: false,
+  });
+  assert.ok(
+    out.indexOf("made first") < out.indexOf("made second") &&
+      out.indexOf("made second") < out.indexOf("made last"),
+    `expected creation order, got:\n${out}`,
+  );
+});
+
+void test("sortOrder page keeps book-position order", () => {
+  const annos = [
+    makeAnnotation("late", { page: 1, text: "page one", createdAt: 300 }),
+    makeAnnotation("early", { page: 9, text: "page nine", createdAt: 100 }),
+  ];
+  const out = renderHighlightsBody(annos, {
+    ...opts,
+    sortOrder: "page",
+    showPage: false,
+  });
+  assert.ok(out.indexOf("page one") < out.indexOf("page nine"));
+});
+
+// --- publisher and language frontmatter ---
+
+void test("renderFrontmatter writes publisher and language when enabled", () => {
+  const withMeta = {
+    ...book,
+    metadata: { ...book.metadata, publisher: "DAW Books", language: "en" },
+  };
+  const out = renderFrontmatter(withMeta, {
+    ...opts.frontmatter,
+    enabled: true,
+    publisherFormat: "plain",
+    includeLanguage: true,
+  });
+  assert.match(out, /publisher: "DAW Books"/);
+  assert.match(out, /language: "en"/);
+});
+
+void test("renderFrontmatter joins a language array", () => {
+  const withMeta = {
+    ...book,
+    metadata: { ...book.metadata, language: ["en", "no"] },
+  };
+  const out = renderFrontmatter(withMeta, {
+    ...opts.frontmatter,
+    enabled: true,
+    includeLanguage: true,
+  });
+  assert.match(out, /language: "en, no"/);
+});
+
+void test("renderFrontmatter omits publisher and language by default", () => {
+  const withMeta = {
+    ...book,
+    metadata: { ...book.metadata, publisher: "DAW Books", language: "en" },
+  };
+  const out = renderFrontmatter(withMeta, {
+    ...opts.frontmatter,
+    enabled: true,
+  });
+  assert.doesNotMatch(out, /publisher:/);
+  assert.doesNotMatch(out, /language:/);
+});
+
+void test("renderFrontmatter wraps series and publisher in wikilinks when set", () => {
+  const withMeta = {
+    ...book,
+    metadata: { ...book.metadata, publisher: "DAW Books" },
+  };
+  const out = renderFrontmatter(withMeta, {
+    ...opts.frontmatter,
+    enabled: true,
+    seriesFormat: "wikilink",
+    publisherFormat: "wikilink",
+  });
+  assert.match(out, /series: "\[\[Kingkiller Chronicle\]\]"/);
+  assert.match(out, /publisher: "\[\[DAW Books\]\]"/);
+});
+
+void test("renderFrontmatter keeps series and publisher plain by default", () => {
+  const withMeta = {
+    ...book,
+    metadata: { ...book.metadata, publisher: "DAW Books" },
+  };
+  const out = renderFrontmatter(withMeta, {
+    ...opts.frontmatter,
+    enabled: true,
+    seriesFormat: "plain",
+    publisherFormat: "plain",
+  });
+  assert.match(out, /series: "Kingkiller Chronicle"/);
+  assert.match(out, /publisher: "DAW Books"/);
 });

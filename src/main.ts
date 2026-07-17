@@ -36,6 +36,11 @@ function errorMessage(e: unknown): string {
 export default class ReadestHighlightsPlugin extends Plugin {
   declare settings: ReadestSettings;
   private syncing = false;
+  private autoSyncIntervalId: number | null = null;
+  // A quiet (auto) sync must not re-announce the same persistent failure
+  // every interval tick; these remember what was already reported.
+  private lastQuietRunError: string | null = null;
+  private lastQuietFailedBooks = "";
 
   async onload() {
     await this.loadSettings();
@@ -68,6 +73,43 @@ export default class ReadestHighlightsPlugin extends Plugin {
     });
 
     this.addSettingTab(new ReadestSettingTab(this.app, this));
+
+    if (this.settings.autoSyncOnStartup) {
+      // The hash index that re-finds renamed notes reads frontmatter from
+      // metadataCache, which is still indexing at layout-ready time on a cold
+      // start. Syncing before it resolves would miss renamed notes and create
+      // duplicates, so wait for the cache's initial "resolved". When the
+      // plugin is (re)enabled mid-session the layout is already ready, the
+      // cache is warm, and "resolved" may not fire again until a file changes
+      // - sync immediately in that case.
+      if (this.app.workspace.layoutReady) {
+        void this.syncAll({ quiet: true });
+      } else {
+        const ref = this.app.metadataCache.on("resolved", () => {
+          this.app.metadataCache.offref(ref);
+          void this.syncAll({ quiet: true });
+        });
+        this.registerEvent(ref);
+      }
+    }
+    this.applyAutoSyncInterval();
+  }
+
+  // (Re)arms the periodic auto-sync from settings. Called on load and whenever
+  // the interval setting changes; clears any previously armed timer first.
+  applyAutoSyncInterval() {
+    if (this.autoSyncIntervalId !== null) {
+      window.clearInterval(this.autoSyncIntervalId);
+      this.autoSyncIntervalId = null;
+    }
+    const minutes = this.settings.autoSyncIntervalMinutes;
+    if (minutes <= 0) return;
+    this.autoSyncIntervalId = this.registerInterval(
+      window.setInterval(
+        () => void this.syncAll({ quiet: true }),
+        minutes * 60 * 1000,
+      ),
+    );
   }
 
   async loadSettings() {
@@ -78,19 +120,27 @@ export default class ReadestHighlightsPlugin extends Plugin {
     if ((this.settings.annotationFilter as string) === "marked") {
       this.settings.annotationFilter = "all";
     }
+    // Series was an include-toggle before becoming an off/plain/wikilink
+    // dropdown (like Author); an explicit "don't include" must survive.
+    const legacy = saved as { includeSeries?: boolean };
+    if (legacy.includeSeries === false) {
+      this.settings.seriesFormat = "off";
+    }
   }
 
   async saveSettings() {
     await this.saveData(this.settings);
   }
 
-  async syncAll() {
+  // quiet mode (auto-sync) skips the progress notice and only reports when
+  // something actually changed or failed, so background runs stay silent.
+  async syncAll({ quiet = false }: { quiet?: boolean } = {}) {
     if (this.syncing) {
-      new Notice("Readest: sync already running.");
+      if (!quiet) new Notice("Readest: sync already running.");
       return;
     }
     this.syncing = true;
-    const notice = new Notice("Readest: syncing...", 0);
+    const notice = quiet ? null : new Notice("Readest: syncing...", 0);
     try {
       const books = await this.loadBooks();
       await this.ensureFolder(this.settings.outputFolder);
@@ -101,7 +151,7 @@ export default class ReadestHighlightsPlugin extends Plugin {
 
       let created = 0;
       let updated = 0;
-      let failed = 0;
+      const failedBooks: string[] = [];
 
       for (const parsed of books) {
         try {
@@ -110,7 +160,7 @@ export default class ReadestHighlightsPlugin extends Plugin {
           else if (result.action === "updated") updated++;
         } catch (e) {
           // One bad book must not drop the rest of the batch.
-          failed++;
+          failedBooks.push(parsed.book.title);
           console.error(
             `Readest: failed to write "${parsed.book.title}"`,
             e,
@@ -118,16 +168,35 @@ export default class ReadestHighlightsPlugin extends Plugin {
         }
       }
 
-      notice.hide();
-      new Notice(
-        `Readest: ${created} created, ${updated} updated` +
-          (failed > 0 ? `, ${failed} failed` : "") +
-          ` (${books.length} books)`,
-      );
+      const failed = failedBooks.length;
+      // A book that keeps failing would otherwise surface a notice on every
+      // quiet run; only report failures when the failing set changes.
+      const failedSig = [...failedBooks].sort().join("\n");
+      const failuresChanged = failedSig !== this.lastQuietFailedBooks;
+      this.lastQuietFailedBooks = failedSig;
+      this.lastQuietRunError = null;
+
+      notice?.hide();
+      if (
+        !quiet ||
+        created > 0 ||
+        updated > 0 ||
+        (failed > 0 && failuresChanged)
+      ) {
+        new Notice(
+          `Readest: ${created} created, ${updated} updated` +
+            (failed > 0 ? `, ${failed} failed` : "") +
+            ` (${books.length} books)`,
+        );
+      }
     } catch (e) {
-      notice.hide();
+      notice?.hide();
       console.error("Readest sync failed", e);
-      new Notice(`Readest sync failed: ${errorMessage(e)}`);
+      const msg = errorMessage(e);
+      if (!quiet || msg !== this.lastQuietRunError) {
+        new Notice(`Readest sync failed: ${msg}`);
+      }
+      this.lastQuietRunError = msg;
     } finally {
       this.syncing = false;
     }
@@ -333,9 +402,8 @@ export default class ReadestHighlightsPlugin extends Plugin {
     }
 
     if (matched) {
-      let changed = false;
-      await this.app.vault.process(matched, (current) => {
-        const next = this.settings.preserveManualEdits
+      const render = (current: string) =>
+        this.settings.preserveManualEdits
           ? replaceHighlightsSection(
               current,
               parsed.book,
@@ -343,9 +411,21 @@ export default class ReadestHighlightsPlugin extends Plugin {
               opts,
             )
           : renderBookNote(parsed, opts);
-        changed = next !== current;
-        return next;
-      });
+      // Cheap pre-check so an unchanged note is not rewritten: vault.process
+      // saves unconditionally, and auto-sync would otherwise touch every note
+      // on every run (mtime churn that ripples into file-sync tools). The
+      // cache can lag a just-modified file; process re-renders from the real
+      // content, so a stale hit only costs one deferred update, never a wrong
+      // write.
+      const cached = await this.app.vault.cachedRead(matched);
+      let changed = false;
+      if (render(cached) !== cached) {
+        await this.app.vault.process(matched, (current) => {
+          const next = render(current);
+          changed = next !== current;
+          return next;
+        });
+      }
       usedPaths.add(matched.path);
       return {
         action: changed ? "updated" : "unchanged",

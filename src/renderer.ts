@@ -3,7 +3,9 @@ import type {
   GenreFormat,
   HeadingLevel,
   HighlightSeparator,
+  HighlightSortOrder,
   HighlightStyle,
+  LinkFormat,
   MetadataPlacement,
   NoteStyle,
   ReadestSettings,
@@ -15,7 +17,9 @@ export interface FrontmatterOptions {
   authorFormat: "off" | "plain" | "wikilink";
   includeYear: boolean;
   includeIsbn: boolean;
-  includeSeries: boolean;
+  seriesFormat: "off" | LinkFormat;
+  publisherFormat: "off" | LinkFormat;
+  includeLanguage: boolean;
   includeGenre: boolean;
   genreFormat: GenreFormat;
   cleanGenres: boolean;
@@ -28,6 +32,7 @@ export interface FrontmatterOptions {
 export interface RenderOptions {
   style: HighlightStyle;
   separator: HighlightSeparator;
+  sortOrder: HighlightSortOrder;
   showPage: boolean;
   showColor: boolean;
   showHighlightCount: boolean;
@@ -53,6 +58,7 @@ export function optionsFromSettings(s: ReadestSettings): RenderOptions {
   return {
     style: s.highlightStyle,
     separator: s.highlightSeparator,
+    sortOrder: s.highlightSortOrder,
     showPage: s.showPage,
     showColor: s.showColor,
     showHighlightCount: s.showHighlightCount,
@@ -70,7 +76,9 @@ export function optionsFromSettings(s: ReadestSettings): RenderOptions {
       authorFormat: s.authorFormat,
       includeYear: s.includeYear,
       includeIsbn: s.includeIsbn,
-      includeSeries: s.includeSeries,
+      seriesFormat: s.seriesFormat,
+      publisherFormat: s.publisherFormat,
+      includeLanguage: s.includeLanguage,
       includeGenre: s.includeGenre,
       genreFormat: s.genreFormat,
       cleanGenres: s.cleanGenres,
@@ -153,6 +161,17 @@ function subjectList(book: ReadestLibraryBook): string[] {
     }
   }
   return out;
+}
+
+// Epub metadata allows multiple languages; Readest passes that through as an
+// array. Render one value, comma-joined when there are several.
+function languageValue(book: ReadestLibraryBook): string {
+  const l = book.metadata?.language;
+  const list = Array.isArray(l) ? l : [l];
+  return list
+    .filter((x): x is string => typeof x === "string" && x.trim() !== "")
+    .map((x) => x.trim())
+    .join(", ");
 }
 
 function publishedYear(book: ReadestLibraryBook): string {
@@ -247,7 +266,7 @@ interface GroupedAnnotation {
 
 function groupAnnotations(
   annotations: ReadestAnnotation[],
-  opts: Pick<RenderOptions, "collapseHighlightLineBreaks">,
+  opts: Pick<RenderOptions, "collapseHighlightLineBreaks" | "sortOrder">,
 ): GroupedAnnotation[] {
   // Records are grouped by location (cfi, falling back to page) so a highlight
   // and a separate note/color/style record at the same spot render as one
@@ -300,6 +319,12 @@ function groupAnnotations(
     // record keeps its note, so only empty-and-noteless groups are removed.
     .filter((g) => g.text.length > 0 || g.notes.length > 0)
     .sort((x, y) => {
+      if (opts.sortOrder === "date") {
+        if (x.earliestCreatedAt !== y.earliestCreatedAt) {
+          return x.earliestCreatedAt - y.earliestCreatedAt;
+        }
+        return (x.page ?? 0) - (y.page ?? 0);
+      }
       const pa = x.page ?? 0;
       const pb = y.page ?? 0;
       if (pa !== pb) return pa - pb;
@@ -457,6 +482,8 @@ export function renderFrontmatter(
   const year = publishedYear(book);
   const isbn = book.metadata?.isbn ?? "";
   const series = book.metadata?.series ?? "";
+  const publisher = pickLocalized(book.metadata?.publisher);
+  const language = languageValue(book);
   const subjects = subjectList(book);
 
   const lines: string[] = ["---"];
@@ -467,16 +494,16 @@ export function renderFrontmatter(
   }
 
   if (fm.authorFormat !== "off" && author) {
-    const value =
-      fm.authorFormat === "wikilink"
-        ? `"[[${yamlQuote(author)}]]"`
-        : `"${yamlQuote(author)}"`;
-    lines.push(`author: ${value}`);
+    lines.push(`author: ${linkValue(author, fm.authorFormat)}`);
   }
   if (fm.includeYear && year) lines.push(`year: ${year}`);
   if (fm.includeIsbn && isbn) lines.push(`isbn: "${yamlQuote(isbn)}"`);
-  if (fm.includeSeries && series)
-    lines.push(`series: "${yamlQuote(series)}"`);
+  if (fm.seriesFormat !== "off" && series)
+    lines.push(`series: ${linkValue(series, fm.seriesFormat)}`);
+  if (fm.publisherFormat !== "off" && publisher)
+    lines.push(`publisher: ${linkValue(publisher, fm.publisherFormat)}`);
+  if (fm.includeLanguage && language)
+    lines.push(`language: "${yamlQuote(language)}"`);
   if (fm.includeGenre && subjects.length) {
     let items = subjects;
     if (fm.cleanGenres) items = items.map(cleanLcshHeading);
@@ -486,11 +513,7 @@ export function renderFrontmatter(
     if (items.length) {
       lines.push("genre:");
       for (const s of items) {
-        const value =
-          fm.genreFormat === "wikilink"
-            ? `"[[${yamlQuote(s)}]]"`
-            : `"${yamlQuote(s)}"`;
-        lines.push(`  - ${value}`);
+        lines.push(`  - ${linkValue(s, fm.genreFormat)}`);
       }
     }
   }
@@ -540,6 +563,13 @@ function yamlQuote(s: string): string {
     .replace(/\n/g, "\\n")
     .replace(/\r/g, "\\r")
     .replace(/\t/g, "\\t");
+}
+
+// Quoted YAML scalar, optionally wrapped as a wiki-link.
+function linkValue(value: string, format: LinkFormat): string {
+  return format === "wikilink"
+    ? `"[[${yamlQuote(value)}]]"`
+    : `"${yamlQuote(value)}"`;
 }
 
 export function renderSyncHeading(

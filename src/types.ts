@@ -13,7 +13,7 @@ export interface ReadestLibraryBook {
   metadata?: {
     identifier?: string;
     title?: string;
-    language?: string;
+    language?: string | string[];
     description?: string;
     publisher?: string;
     published?: string;

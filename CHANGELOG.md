@@ -4,6 +4,22 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-07-17
+
+### Added
+
+- Option to collapse line breaks within a highlight, replacing them with spaces (thanks @idkicarus).
+- Auto-sync: optionally run a full sync when Obsidian starts, and/or re-sync on a fixed interval while it's open. Auto-sync runs are quiet - they only notify when something changed or a new failure appeared, and they don't rewrite notes that haven't changed. Both are off by default.
+- Sort order setting for highlights: by position in the book (default, as before) or by when the highlight was made.
+- Publisher and Language frontmatter fields, off by default.
+- Series and Publisher can now be written as wiki-links, matching the existing option on Author and Genre.
+
+### Fixed
+
+- A note spanning multiple lines no longer breaks out of its blockquote or callout when attached to the highlight.
+- A `## Highlights` line inside a fenced code block is no longer mistaken for the section heading during re-sync, which could cut the note at the wrong place.
+- Note text now gets the same whitespace cleanup as highlight text (line breaks are kept).
+
 ## [1.2.2] - 2026-06-29
 
 ### Added
@@ -102,7 +118,11 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 - Initial release.
 
-[Unreleased]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.1.1...HEAD
+[Unreleased]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.3.0...HEAD
+[1.3.0]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.2.2...1.3.0
+[1.2.2]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.2.1...1.2.2
+[1.2.1]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.2.0...1.2.1
+[1.2.0]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.1.1...1.2.0
 [1.1.1]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.1.0...1.1.1
 [1.1.0]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.0.3...1.1.0
 [1.0.3]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.0.2...1.0.3

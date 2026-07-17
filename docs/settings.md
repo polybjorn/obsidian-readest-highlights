@@ -48,6 +48,20 @@ Token-aware. Default `{title} ({year})`. The result is sanitized (Windows-reserv
 
 If two books produce the same filename, the second is written to `<filename> (<hash8>).md` instead of overwriting the first.
 
+### Auto-sync
+
+#### Sync on startup
+
+When on, a full sync of all books runs when Obsidian starts. Off by default.
+
+#### Sync interval
+
+Re-sync all books every N minutes while Obsidian is open. `0` (default) disables the interval.
+
+Auto-sync runs are quiet: no progress notice, and the summary notice only appears when a note was created or updated, or a book failed. A persistent failure (e.g. an unreachable books folder) is reported once, not on every run; it is announced again if the error changes or after a run succeeds. A manual sync always reports.
+
+On startup, auto-sync waits for Obsidian's metadata index to finish so renamed notes are re-found by their `readest-hash` instead of duplicated. Unchanged notes are not rewritten, so background runs don't touch files (or trip file-sync tools) unless something actually changed.
+
 ## Heading
 
 ### Heading level
@@ -84,9 +98,13 @@ Comma-separated list of tags. Each is quoted in YAML, so values with `:` or `,` 
 
 Off, plain text, or wiki-link. The wiki-link form renders as `author: "[[Author Name]]"` for backlink navigation in Obsidian.
 
-### Year, ISBN, Series
+### Series, Publisher
 
-Single toggles. Each adds the corresponding field to frontmatter when its value is present in the book's metadata.
+Off, plain text, or wiki-link - the same dropdown as Author. Series defaults to plain text, Publisher to off.
+
+### Year, ISBN, Language
+
+Single toggles. Each adds the corresponding field to frontmatter when its value is present in the book's metadata. Year and ISBN are on by default; Language is off. If a book declares several languages, they are joined with commas into one value.
 
 ### Genre
 
@@ -156,6 +174,15 @@ How each highlight is rendered in markdown:
 - **Plain text**
 - **Callout** (`> [!quote]` block)
 - **Bullet** (`- text`)
+
+#### Sort order
+
+Order of highlights within a book note:
+
+- **Book position** (default): by page, ties broken by creation time
+- **Highlight date**: by when you made the highlight, ties broken by page
+
+With the "Group under page headings" separator, highlights are still bucketed by page; the sort order then only affects ordering within each page.
 
 #### Collapse line breaks
 

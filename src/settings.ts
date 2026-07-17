@@ -9,14 +9,18 @@ export type HighlightStyle = "blockquote" | "plain" | "callout" | "bullet";
 export type HighlightSeparator = "rule" | "blank" | "pageHeading" | "none";
 export type HeadingLevel = 0 | 1 | 2 | 3 | 4;
 export type AuthorFormat = "off" | "plain" | "wikilink";
-export type GenreFormat = "plain" | "wikilink";
+export type LinkFormat = "plain" | "wikilink";
+export type GenreFormat = LinkFormat;
 export type NoteStyle = "attached" | "separated" | "callout";
+export type HighlightSortOrder = "page" | "date";
 export type MetadataPlacement = "below" | "inline";
 export type { AnnotationFilter };
 
 export interface ReadestSettings {
   booksDirs: string[];
   outputFolder: string;
+  autoSyncOnStartup: boolean;
+  autoSyncIntervalMinutes: number;
   filenameTemplate: string;
   syncHeadingTemplate: string;
   syncHeadingLevel: HeadingLevel;
@@ -24,6 +28,7 @@ export interface ReadestSettings {
   preserveManualEdits: boolean;
   highlightStyle: HighlightStyle;
   highlightSeparator: HighlightSeparator;
+  highlightSortOrder: HighlightSortOrder;
   showPage: boolean;
   showColor: boolean;
   showHighlightCount: boolean;
@@ -38,7 +43,9 @@ export interface ReadestSettings {
   authorFormat: AuthorFormat;
   includeYear: boolean;
   includeIsbn: boolean;
-  includeSeries: boolean;
+  seriesFormat: AuthorFormat;
+  publisherFormat: AuthorFormat;
+  includeLanguage: boolean;
   includeGenre: boolean;
   genreFormat: GenreFormat;
   cleanGenres: boolean;
@@ -114,6 +121,8 @@ export function sanitizeOutputFolder(raw: string): string {
 export const DEFAULT_SETTINGS: ReadestSettings = {
   booksDirs: [],
   outputFolder: "Readest",
+  autoSyncOnStartup: false,
+  autoSyncIntervalMinutes: 0,
   filenameTemplate: "{title} ({year})",
   syncHeadingTemplate: "Highlights",
   syncHeadingLevel: 2,
@@ -121,6 +130,7 @@ export const DEFAULT_SETTINGS: ReadestSettings = {
   preserveManualEdits: true,
   highlightStyle: "bullet",
   highlightSeparator: "blank",
+  highlightSortOrder: "page",
   showPage: true,
   showColor: false,
   showHighlightCount: false,
@@ -135,7 +145,11 @@ export const DEFAULT_SETTINGS: ReadestSettings = {
   authorFormat: "wikilink",
   includeYear: true,
   includeIsbn: true,
-  includeSeries: true,
+  seriesFormat: "plain",
+  // New fields default off so notes created after an upgrade keep the same
+  // frontmatter shape unless the user opts in.
+  publisherFormat: "off",
+  includeLanguage: false,
   includeGenre: true,
   genreFormat: "plain",
   cleanGenres: true,
@@ -148,7 +162,7 @@ export const DEFAULT_SETTINGS: ReadestSettings = {
 type FieldToggleKey =
   | "includeYear"
   | "includeIsbn"
-  | "includeSeries"
+  | "includeLanguage"
   | "includeGenre"
   | "includeReadestHash";
 
@@ -377,6 +391,50 @@ export class ReadestSettingTab extends PluginSettingTab {
           }),
       );
 
+    const auto = this.createSection(setup, "Auto-sync");
+
+    new Setting(auto)
+      .setName("Sync on startup")
+      .setDesc(
+        "Run a sync of all books at startup, notifying only when something changed.",
+      )
+      .addToggle((t) =>
+        t
+          .setValue(this.plugin.settings.autoSyncOnStartup)
+          .onChange(async (value) => {
+            this.plugin.settings.autoSyncOnStartup = value;
+            await this.plugin.saveSettings();
+          }),
+      );
+
+    new Setting(auto)
+      .setName("Sync interval")
+      .setDesc(
+        "Re-sync all books this often (minutes) while the app is open, zero disables it.",
+      )
+      .addText((text) =>
+        text
+          .setPlaceholder("0")
+          .setValue(String(this.plugin.settings.autoSyncIntervalMinutes))
+          .onChange(async (value) => {
+            const trimmed = value.trim();
+            // Same rule as "Max genres": an empty field means off, but a
+            // non-numeric typo must not silently reset the interval.
+            if (trimmed === "") {
+              this.plugin.settings.autoSyncIntervalMinutes = 0;
+            } else {
+              const parsed = Number(trimmed);
+              if (!Number.isFinite(parsed)) return;
+              this.plugin.settings.autoSyncIntervalMinutes = Math.max(
+                0,
+                Math.floor(parsed),
+              );
+            }
+            await this.plugin.saveSettings();
+            this.plugin.applyAutoSyncInterval();
+          }),
+      );
+
     const headingDependent: Setting[] = [];
     const applyHeadingDisabled = (level: number) => {
       for (const s of headingDependent) {
@@ -513,9 +571,37 @@ export class ReadestSettingTab extends PluginSettingTab {
         ),
     );
 
+    // Series and Publisher mirror Author: one off/plain/wikilink dropdown.
+    // They sit right under Author so the three linkable fields (and their
+    // identical dropdowns) read as one block, followed by the plain toggles.
+    const addLinkableField = (
+      name: string,
+      formatKey: "seriesFormat" | "publisherFormat",
+    ) => {
+      fmDependent.push(
+        new Setting(fm)
+          .setName(name)
+          .setDesc("Off, plain text, or wiki-link for backlinks.")
+          .addDropdown((d) =>
+            d
+              .addOption("off", "Off")
+              .addOption("plain", "Plain text")
+              .addOption("wikilink", "Wiki-link")
+              .setValue(this.plugin.settings[formatKey])
+              .onChange(async (value) => {
+                this.plugin.settings[formatKey] = value as AuthorFormat;
+                await this.plugin.saveSettings();
+              }),
+          ),
+      );
+    };
+
+    addLinkableField("Series", "seriesFormat");
+    addLinkableField("Publisher", "publisherFormat");
+
     fmDependent.push(this.addFieldToggle(fm, "Year", "includeYear"));
     fmDependent.push(this.addFieldToggle(fm, "ISBN", "includeIsbn"));
-    fmDependent.push(this.addFieldToggle(fm, "Series", "includeSeries"));
+    fmDependent.push(this.addFieldToggle(fm, "Language", "includeLanguage"));
 
     fmDependent.push(
       new Setting(fm)
@@ -690,6 +776,23 @@ export class ReadestSettingTab extends PluginSettingTab {
           .setValue(this.plugin.settings.collapseHighlightLineBreaks)
           .onChange(async (value) => {
             this.plugin.settings.collapseHighlightLineBreaks = value;
+            await this.plugin.saveSettings();
+          }),
+      );
+
+    new Setting(hl)
+      .setName("Sort order")
+      .setDesc(
+        "Order of highlights in the note: by position in the book, or by when you made them.",
+      )
+      .addDropdown((d) =>
+        d
+          .addOption("page", "Book position")
+          .addOption("date", "Highlight date")
+          .setValue(this.plugin.settings.highlightSortOrder)
+          .onChange(async (value) => {
+            this.plugin.settings.highlightSortOrder =
+              value as HighlightSortOrder;
             await this.plugin.saveSettings();
           }),
       );
