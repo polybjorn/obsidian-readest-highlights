@@ -9,7 +9,8 @@ All notable changes to this project are documented here. Format based on [Keep a
 ### Changed
 
 - The settings UI now uses Obsidian 1.13's declarative settings API. All plugin settings show up in Obsidian's settings search, and the four tabs (Setup, Heading, Frontmatter, Rendering) are now navigable pages. Settings, defaults, and note output are unchanged.
-- Requires Obsidian 1.13.0 or later. Users on older Obsidian versions stay on plugin 1.3.0.
+
+Requires Obsidian 1.13.0 or later. Users on older Obsidian versions stay on plugin 1.3.0.
 
 ## [1.3.0] - 2026-07-17
 
@@ -117,7 +118,7 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ## [1.0.1] - 2026-05-16
 
-### Security
+### Added
 
 - Release artifacts (`main.js`, `styles.css`, `manifest.json`) are now signed with GitHub build provenance attestations.
 
@@ -125,7 +126,8 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 - Initial release.
 
-[Unreleased]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.3.0...HEAD
+[Unreleased]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.4.0...HEAD
+[1.4.0]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.3.0...1.4.0
 [1.3.0]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.2.2...1.3.0
 [1.2.2]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.2.1...1.2.2
 [1.2.1]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.2.0...1.2.1
