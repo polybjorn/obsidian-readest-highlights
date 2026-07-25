@@ -14,6 +14,8 @@ Several settings accept token-based templates. Available tokens:
 | `{series}` | Series name |
 | `{seriesIndex}` | Index within the series |
 | `{isbn}` | ISBN |
+| `{publisher}` | Publisher |
+| `{language}` | Language |
 | `{hash}` | Readest's internal book hash |
 
 Empty tokens collapse cleanly: surrounding whitespace, separators (`-`, `_`), a trailing `by`, and empty parentheses/brackets are trimmed.
@@ -151,7 +153,7 @@ If two notes accidentally share the same `readest-hash` (e.g. you duplicated a n
 
 ### Extra fields
 
-Free-form YAML appended inside the frontmatter block. Lines containing only `---` are stripped so a stray fence cannot break the block. Otherwise the content is spliced in as-is, so invalid YAML will break the frontmatter; you own the contents.
+Free-form YAML appended inside the frontmatter block. [Tokens](#templates) are substituted, so `rating: ""` or `readest-id: "{hash}"` resolve against the book. Lines containing only `---` are stripped so a stray fence cannot break the block. Otherwise the content is spliced in as-is, so invalid YAML will break the frontmatter; you own the contents (if a substituted value could contain a colon or quote, wrap the field value in quotes).
 
 ## Rendering
 
@@ -203,6 +205,21 @@ How highlights are separated within a book note:
 #### Show count
 
 When on, a `Total highlights: N` line is rendered under the highlights heading. Counts the annotations actually included (respects the Filter setting). Off by default.
+
+#### Block IDs
+
+Off by default. When on, each highlight gets a stable Obsidian block ID (`^rdst-<hash>`) on its own line, letting you link to a specific highlight from anywhere - another note, a daily note, or a canvas card - with `[[Book note#^rdst-abc123]]`. The ID is derived from the highlight's Readest location, so it stays the same across re-syncs and existing links keep working.
+
+The ID line is hidden in reading view but visible in source and live-preview mode, which is why this is off by default. If Readest re-anchors a highlight (its location changes), that highlight's ID changes and links to the old ID break.
+
+#### Readest link
+
+Off by default. Adds an `Open in Readest` link under each highlight that opens the annotation in Readest at its exact location. Two forms:
+
+- **Web link** (`https://web.readest.com/o/book/{hash}/annotation/{id}`): a universal link. On mobile it opens the Readest app; on desktop it resolves to Readest's web landing page. More robust - no OS handler registration needed.
+- **App link** (`readest://book/{hash}/annotation/{id}`): the custom scheme. Only works if the Readest desktop/mobile app has registered the `readest://` handler with the OS.
+
+Both mirror the link formats Readest itself uses for markdown export. The web form is the safer default.
 
 ### Metadata
 

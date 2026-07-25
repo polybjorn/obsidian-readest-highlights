@@ -15,6 +15,7 @@ export type GenreFormat = LinkFormat;
 export type NoteStyle = "attached" | "separated" | "callout";
 export type HighlightSortOrder = "page" | "date";
 export type MetadataPlacement = "below" | "inline";
+export type ReadestLinkType = "off" | "web" | "app";
 export type { AnnotationFilter };
 
 export interface ReadestSettings {
@@ -38,6 +39,8 @@ export interface ReadestSettings {
   metadataPlacement: MetadataPlacement;
   showNotes: boolean;
   noteStyle: NoteStyle;
+  highlightBlockIds: boolean;
+  readestLink: ReadestLinkType;
   annotationFilter: AnnotationFilter;
   includeFrontmatter: boolean;
   frontmatterTags: string;
@@ -140,6 +143,8 @@ export const DEFAULT_SETTINGS: ReadestSettings = {
   metadataPlacement: "below",
   showNotes: true,
   noteStyle: "attached",
+  highlightBlockIds: false,
+  readestLink: "off",
   annotationFilter: "all",
   includeFrontmatter: true,
   frontmatterTags: "Book",
@@ -569,13 +574,13 @@ export class ReadestSettingTab extends PluginSettingTab {
       },
       {
         name: "Readest hash",
-        desc: "Write the book's Readest hash to frontmatter. This is also the identity used to re-find a note when the book is renamed; with it off, a renamed book creates a new note instead of updating the old one.",
+        desc: "Write the book's Readest hash to frontmatter. Also the identity for re-finding a note after a rename; off means a renamed book creates a new note.",
         visible: fmOn,
         control: { type: "toggle", key: "includeReadestHash" },
       },
       {
         name: "Extra fields",
-        desc: "Free-form YAML appended inside frontmatter. Lines containing only '---' are stripped to keep the block valid.",
+        desc: "Free-form YAML appended to frontmatter. Tokens like {title}, {hash} are substituted; lone '---' lines are stripped.",
         visible: fmOn,
         control: {
           type: "textarea",
@@ -627,7 +632,7 @@ export class ReadestSettingTab extends PluginSettingTab {
           },
           {
             name: "Sort order",
-            desc: "Order of highlights in the note: by position in the book, or by when you made them.",
+            desc: "By position in the book, or by when you made them.",
             control: {
               type: "dropdown",
               key: "highlightSortOrder",
@@ -649,8 +654,26 @@ export class ReadestSettingTab extends PluginSettingTab {
           },
           {
             name: "Show count",
-            desc: "Add a line under the highlights heading with the number of highlights included.",
+            desc: "Show the highlight count under the heading.",
             control: { type: "toggle", key: "showHighlightCount" },
+          },
+          {
+            name: "Block IDs",
+            desc: "Add a stable ^id under each highlight to link to it from other notes. Shown in source view, hidden in reading view.",
+            control: { type: "toggle", key: "highlightBlockIds" },
+          },
+          {
+            name: "Readest link",
+            desc: "Add an 'Open in Readest' link under each highlight that jumps to it in the app.",
+            control: {
+              type: "dropdown",
+              key: "readestLink",
+              options: {
+                off: "Off",
+                web: "Web link (web.readest.com)",
+                app: "App link (readest://)",
+              },
+            },
           },
         ],
       },

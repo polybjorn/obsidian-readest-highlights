@@ -38,6 +38,8 @@ const opts: RenderOptions = {
   metadataPlacement: "below",
   showNotes: true,
   noteStyle: "attached",
+  highlightBlockIds: false,
+  readestLink: "off",
   filenameTemplate: "{title} - {author}",
   syncHeadingTemplate: "Highlights",
   syncHeadingLevel: 2,
@@ -212,6 +214,31 @@ void test("renderFrontmatter writes tags, author, year, isbn, series", () => {
   assert.match(out, /series: "Kingkiller Chronicle"/);
 });
 
+void test("renderFrontmatter substitutes tokens in extra fields", () => {
+  const out = renderFrontmatter(book, {
+    ...opts.frontmatter,
+    enabled: true,
+    extra: 'source: "readest://book/{hash}"\ntitle_alias: "{title}"',
+  });
+  assert.match(out, /source: "readest:\/\/book\/abc123"/);
+  assert.match(out, /title_alias: "The Name of the Wind"/);
+  assert.doesNotMatch(out, /\{hash\}|\{title\}/);
+});
+
+void test("renderFrontmatter substitutes publisher and language tokens in extra fields", () => {
+  const withMeta = {
+    ...book,
+    metadata: { ...book.metadata, publisher: "DAW Books", language: "en" },
+  };
+  const out = renderFrontmatter(withMeta, {
+    ...opts.frontmatter,
+    enabled: true,
+    extra: 'from: "{publisher}"\nlang: "{language}"',
+  });
+  assert.match(out, /from: "DAW Books"/);
+  assert.match(out, /lang: "en"/);
+});
+
 void test("renderFrontmatter wraps author in wikilink format", () => {
   const out = renderFrontmatter(book, {
     ...opts.frontmatter,
@@ -267,6 +294,115 @@ void test("renderHighlightsBody rule separator inserts --- between annotations",
     { ...opts, separator: "rule", showPage: false },
   );
   assert.match(out, /first\n\n---\n\n> second/);
+});
+
+// --- block IDs ---
+
+void test("highlightBlockIds appends a ^rdst- id after each highlight", () => {
+  const out = renderHighlightsBody(
+    [
+      makeAnnotation("a", { cfi: "cfi/1", text: "first" }),
+      makeAnnotation("b", { cfi: "cfi/2", text: "second" }),
+    ],
+    { ...opts, style: "plain", showPage: false, highlightBlockIds: true },
+  );
+  const ids = [...out.matchAll(/^\^(rdst-[a-z0-9-]+)$/gm)].map((m) => m[1]);
+  assert.equal(ids.length, 2);
+  assert.notEqual(ids[0], ids[1]);
+});
+
+void test("highlightBlockIds is deterministic across renders", () => {
+  const annos = [
+    makeAnnotation("a", { cfi: "cfi/1", text: "first" }),
+    makeAnnotation("b", { cfi: "cfi/2", text: "second" }),
+  ];
+  const render = () =>
+    renderHighlightsBody(annos, {
+      ...opts,
+      style: "plain",
+      showPage: false,
+      highlightBlockIds: true,
+    });
+  assert.equal(render(), render());
+});
+
+void test("highlightBlockIds suffixes collisions when two highlights share a location", () => {
+  const out = renderHighlightsBody(
+    [
+      makeAnnotation("a", { cfi: "cfi/same", text: "first" }),
+      makeAnnotation("b", { cfi: "cfi/same", text: "second" }),
+    ],
+    { ...opts, style: "plain", showPage: false, highlightBlockIds: true },
+  );
+  const ids = [...out.matchAll(/^\^(rdst-[a-z0-9-]+)$/gm)].map((m) => m[1]);
+  assert.equal(ids.length, 2);
+  assert.equal(ids[1], `${ids[0]}-2`);
+});
+
+void test("highlightBlockIds anchors to the highlight, not a detached note", () => {
+  const out = renderHighlightsBody(
+    [makeAnnotation("a", { cfi: "cfi/1", text: "quote", note: "my note" })],
+    {
+      ...opts,
+      style: "plain",
+      showPage: false,
+      noteStyle: "separated",
+      highlightBlockIds: true,
+    },
+  );
+  assert.match(out, /quote\n\n\^rdst-[a-z0-9]+\n\n\*\*Note:\*\* my note/);
+});
+
+void test("highlightBlockIds off emits no ids", () => {
+  const out = renderHighlightsBody(
+    [makeAnnotation("a", { text: "first" })],
+    { ...opts, style: "plain", showPage: false },
+  );
+  assert.doesNotMatch(out, /\^rdst-/);
+});
+
+// --- Readest link ---
+
+void test("readestLink web renders an Open in Readest universal link with cfi", () => {
+  const out = renderHighlightsBody(
+    [makeAnnotation("note1", { cfi: "cfi/1", text: "quote" })],
+    { ...opts, style: "plain", showPage: false, readestLink: "web" },
+  );
+  assert.match(
+    out,
+    /\[Open in Readest\]\(https:\/\/web\.readest\.com\/o\/book\/abc123\/annotation\/note1\?cfi=cfi%2F1\)/,
+  );
+});
+
+void test("readestLink app renders the custom-scheme link", () => {
+  const out = renderHighlightsBody(
+    [makeAnnotation("note1", { cfi: "cfi/1", text: "quote" })],
+    { ...opts, style: "plain", showPage: false, readestLink: "app" },
+  );
+  assert.match(
+    out,
+    /\[Open in Readest\]\(readest:\/\/book\/abc123\/annotation\/note1\?cfi=cfi%2F1\)/,
+  );
+});
+
+void test("readestLink omits the cfi query when the annotation has none", () => {
+  const out = renderHighlightsBody(
+    [makeAnnotation("note1", { text: "quote" })],
+    { ...opts, style: "plain", showPage: false, readestLink: "web" },
+  );
+  assert.match(
+    out,
+    /\(https:\/\/web\.readest\.com\/o\/book\/abc123\/annotation\/note1\)/,
+  );
+  assert.doesNotMatch(out, /\?cfi=/);
+});
+
+void test("readestLink off renders no link", () => {
+  const out = renderHighlightsBody(
+    [makeAnnotation("note1", { text: "quote" })],
+    { ...opts, style: "plain", showPage: false },
+  );
+  assert.doesNotMatch(out, /Open in Readest/);
 });
 
 // --- highlight style variants ---

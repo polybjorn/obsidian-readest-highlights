@@ -8,6 +8,7 @@ import type {
   LinkFormat,
   MetadataPlacement,
   NoteStyle,
+  ReadestLinkType,
   ReadestSettings,
 } from "./settings";
 
@@ -41,6 +42,8 @@ export interface RenderOptions {
   metadataPlacement: MetadataPlacement;
   showNotes: boolean;
   noteStyle: NoteStyle;
+  highlightBlockIds: boolean;
+  readestLink: ReadestLinkType;
   filenameTemplate: string;
   syncHeadingTemplate: string;
   syncHeadingLevel: HeadingLevel;
@@ -67,6 +70,8 @@ export function optionsFromSettings(s: ReadestSettings): RenderOptions {
     metadataPlacement: s.metadataPlacement,
     showNotes: s.showNotes,
     noteStyle: s.noteStyle,
+    highlightBlockIds: s.highlightBlockIds,
+    readestLink: s.readestLink,
     filenameTemplate: s.filenameTemplate,
     syncHeadingTemplate: s.syncHeadingTemplate,
     syncHeadingLevel: s.syncHeadingLevel,
@@ -209,19 +214,28 @@ function tokenMap(book: ReadestLibraryBook): Record<string, string> {
         ? String(book.metadata.seriesIndex)
         : "",
     isbn: book.metadata?.isbn ?? "",
+    publisher: pickLocalized(book.metadata?.publisher),
+    language: languageValue(book),
     hash: book.hash,
   };
+}
+
+// Raw token substitution with no cosmetic cleanup. Filename/heading templates
+// want the extra trimming in applyTemplate; multi-line YAML (extra fields) does
+// not, so it uses this directly.
+export function substituteTokens(
+  template: string,
+  book: ReadestLibraryBook,
+): string {
+  const tokens = tokenMap(book);
+  return template.replace(/\{(\w+)\}/g, (_, key: string) => tokens[key] ?? "");
 }
 
 export function applyTemplate(
   template: string,
   book: ReadestLibraryBook,
 ): string {
-  const tokens = tokenMap(book);
-  let out = template.replace(
-    /\{(\w+)\}/g,
-    (_, key: string) => tokens[key] ?? "",
-  );
+  let out = substituteTokens(template, book);
   out = out.replace(/\s+/g, " ");
   out = out.replace(/\s*[-_]\s*$/g, "").replace(/^\s*[-_]\s*/, "");
   out = out.replace(/\(\s*\)|\[\s*\]/g, "").trim();
@@ -262,6 +276,11 @@ interface GroupedAnnotation {
   styles: Set<string>;
   notes: string[];
   earliestCreatedAt: number;
+  // Identity of the representative annotation, for building a Readest deep link
+  // back to this highlight. Set to the record that provided the highlight text.
+  id?: string;
+  bookHash?: string;
+  cfi?: string;
 }
 
 function groupAnnotations(
@@ -289,7 +308,14 @@ function groupAnnotations(
     // but get the same per-line whitespace normalization.
     const note = cleanText(a.note ?? "", false);
     if (target) {
-      if (!target.text && cleaned) target.text = cleaned;
+      if (!target.text && cleaned) {
+        // This record supplies the highlight text, so it becomes the link
+        // target (a bare note/style attachment shouldn't own the deep link).
+        target.text = cleaned;
+        target.id = a.id;
+        target.bookHash = a.bookHash;
+        target.cfi = a.cfi;
+      }
       if (target.page === undefined && a.page !== undefined) target.page = a.page;
       if (a.color) target.colors.add(a.color);
       if (a.style) target.styles.add(a.style);
@@ -307,6 +333,9 @@ function groupAnnotations(
         styles: new Set(a.style ? [a.style] : []),
         notes: note ? [note] : [],
         earliestCreatedAt: a.createdAt,
+        id: a.id,
+        bookHash: a.bookHash,
+        cfi: a.cfi,
       };
       groups.push(group);
       byLocation.set(location, groups);
@@ -330,6 +359,54 @@ function groupAnnotations(
       if (pa !== pb) return pa - pb;
       return x.earliestCreatedAt - y.earliestCreatedAt;
     });
+}
+
+// Deterministic 32-bit djb2 hash -> base36. Seeds the block IDs from a
+// highlight's stable location key, so the same highlight yields the same ID on
+// every re-sync (block references stay valid across syncs).
+function hashKey(key: string): string {
+  let h = 5381;
+  for (let i = 0; i < key.length; i++) {
+    h = ((h << 5) + h + key.charCodeAt(i)) | 0;
+  }
+  return (h >>> 0).toString(36);
+}
+
+// Maps each group to a note-unique `^rdst-<hash>` block ID. Two distinct
+// highlights can share a location key (see groupAnnotations); collisions get a
+// stable `-N` suffix in sort order, so the mapping is still deterministic.
+export function buildBlockIds(
+  groups: GroupedAnnotation[],
+): Map<GroupedAnnotation, string> {
+  const ids = new Map<GroupedAnnotation, string>();
+  const seen = new Map<string, number>();
+  for (const g of groups) {
+    const base = `rdst-${hashKey(g.key)}`;
+    const n = (seen.get(base) ?? 0) + 1;
+    seen.set(base, n);
+    ids.set(g, n === 1 ? base : `${base}-${n}`);
+  }
+  return ids;
+}
+
+// Readest's annotation deep link. The web form is a universal link that mobile
+// app-links intercept and desktop resolves to a landing page; the app form is
+// the custom scheme. Both match Readest's own parser (book/{hash}/annotation/
+// {id}); the plugin mirrors the formats from readest-app's deeplink.ts.
+const READEST_WEB_BASE = "https://web.readest.com";
+
+function readestLinkUrl(
+  g: GroupedAnnotation,
+  linkType: ReadestLinkType,
+): string | null {
+  if (linkType === "off" || !g.id || !g.bookHash) return null;
+  const hash = encodeURIComponent(g.bookHash);
+  const id = encodeURIComponent(g.id);
+  const base =
+    linkType === "app"
+      ? `readest://book/${hash}/annotation/${id}`
+      : `${READEST_WEB_BASE}/o/book/${hash}/annotation/${id}`;
+  return g.cfi ? `${base}?cfi=${encodeURIComponent(g.cfi)}` : base;
 }
 
 function metadataParts(
@@ -386,7 +463,11 @@ function wrapStyle(
   }
 }
 
-function renderGroup(g: GroupedAnnotation, opts: RenderOptions): string {
+function renderGroup(
+  g: GroupedAnnotation,
+  opts: RenderOptions,
+  blockId?: string,
+): string {
   const text =
     opts.renderUnderlines && g.styles.has("underline")
       ? `<u>${g.text}</u>`
@@ -410,17 +491,24 @@ function renderGroup(g: GroupedAnnotation, opts: RenderOptions): string {
   if (notesText && opts.noteStyle === "attached") {
     innerExtras.push(`**Note:** ${notesText}`);
   }
+  const linkUrl = readestLinkUrl(g, opts.readestLink);
+  if (linkUrl) innerExtras.push(`[Open in Readest](${linkUrl})`);
 
   const highlight = wrapStyle(textLines, innerExtras, opts.style);
 
-  if (!notesText || opts.noteStyle === "attached") return highlight;
+  // Anchor the block ID to the highlight itself (on its own line after a blank
+  // line, the placement Obsidian resolves for every style), so `#^id` links land
+  // on the quote even when a note is rendered as a separate block below it.
+  const anchored = blockId ? `${highlight}\n\n^${blockId}` : highlight;
+
+  if (!notesText || opts.noteStyle === "attached") return anchored;
 
   if (opts.noteStyle === "callout") {
     const noteLines = notesText.split("\n").map((l) => `> ${l}`);
-    return `${highlight}\n\n> [!note]\n${noteLines.join("\n")}`;
+    return `${anchored}\n\n> [!note]\n${noteLines.join("\n")}`;
   }
 
-  return `${highlight}\n\n**Note:** ${notesText}`;
+  return `${anchored}\n\n**Note:** ${notesText}`;
 }
 
 function joinWithSeparator(
@@ -446,6 +534,8 @@ export function renderHighlightsBody(
   const groups = groupAnnotations(annotations, opts);
   if (groups.length === 0) return "";
 
+  const ids = opts.highlightBlockIds ? buildBlockIds(groups) : null;
+
   if (opts.separator === "pageHeading") {
     const byPage = new Map<number, GroupedAnnotation[]>();
     for (const g of groups) {
@@ -460,7 +550,7 @@ export function renderHighlightsBody(
     )) {
       const heading = `### Page ${page}`;
       const body = groupsOnPage
-        .map((g) => renderGroup(g, opts))
+        .map((g) => renderGroup(g, opts, ids?.get(g)))
         .join("\n\n");
       sections.push(`${heading}\n\n${body}`);
     }
@@ -468,7 +558,7 @@ export function renderHighlightsBody(
   }
 
   return joinWithSeparator(
-    groups.map((g) => renderGroup(g, opts)),
+    groups.map((g) => renderGroup(g, opts, ids?.get(g))),
     opts.separator,
   );
 }
@@ -519,7 +609,7 @@ export function renderFrontmatter(
   }
   if (fm.includeReadestHash) lines.push(`readest-hash: ${book.hash}`);
 
-  const extra = fm.extra
+  const extra = substituteTokens(fm.extra, book)
     .split("\n")
     .filter((l) => l.trim() !== "---")
     .join("\n")
