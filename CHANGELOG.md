@@ -8,7 +8,7 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ### Added
 
-- Tokens (`{title}`, `{author}`, `{hash}`, etc.) are now substituted in "Extra fields" frontmatter; adds `{publisher}` and `{language}` tokens. (#32)
+- The template tokens (`{title}`, `{author}`, `{hash}`, etc.) are now substituted in "Extra fields" frontmatter, and two new tokens, `{publisher}` and `{language}`, join the set. (#32)
 - Optional block IDs under each highlight, so you can link to a specific highlight from a canvas or another note. Off by default; the ID stays stable across re-syncs. (inspired by #31)
 - Optional "Open in Readest" link under each highlight that jumps to the annotation in the app. Off by default; pick the web (universal) or `readest://` app form.
 
