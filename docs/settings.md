@@ -36,13 +36,13 @@ Default location per platform:
 | Windows | `%APPDATA%\com.bilingify.readest\Readest\Books` |
 | Linux | `$XDG_DATA_HOME/com.bilingify.readest/Readest/Books` (or `~/.local/share/...`) |
 
-The `+` button in the Source header adds a path row; the `X` on a row removes it. The folder icon opens a directory picker, or type the path manually.
+The `+` button in the Source header adds a path row; the `X` on a row removes it, and the drag handle reorders rows (order matters, since the first path that resolves wins). The folder icon opens a directory picker, or type the path manually.
 
 ### Output
 
 #### Folder
 
-Vault folder where book notes live. Defaults to `Readest`. If cleared, falls back to the default. The path is kept vault-relative: leading slashes and `.`/`..` segments are stripped (so it can't escape the vault), and you're notified if the value was adjusted. If the path resolves to an existing file (not a folder), sync fails with a clear error.
+Vault folder where book notes live. Defaults to `Readest`. Existing vault folders are suggested as you type. If cleared, falls back to the default. The path is kept vault-relative: leading slashes and `.`/`..` segments are stripped (so it can't escape the vault), and you're notified if the value was adjusted. If the path resolves to an existing file (not a folder), sync fails with a clear error.
 
 #### Filename template
 

@@ -1,4 +1,4 @@
-import { App, Notice, PluginSettingTab, Setting } from "obsidian";
+import { App, Notice, parseYaml, PluginSettingTab, Setting } from "obsidian";
 import type { SettingDefinitionItem, SettingGroupItem } from "obsidian";
 import { access } from "fs/promises";
 import { homedir } from "os";
@@ -351,6 +351,16 @@ export class ReadestSettingTab extends PluginSettingTab {
             this.update();
           })();
         },
+        onReorder: (oldIndex, newIndex) => {
+          void (async () => {
+            const dirs = this.plugin.settings.booksDirs;
+            const [moved] = dirs.splice(oldIndex, 1);
+            if (moved === undefined) return;
+            dirs.splice(newIndex, 0, moved);
+            await this.plugin.saveSettings();
+            this.update();
+          })();
+        },
       },
       {
         name: "",
@@ -370,7 +380,7 @@ export class ReadestSettingTab extends PluginSettingTab {
             name: "Folder",
             desc: "Vault folder for book notes.",
             control: {
-              type: "text",
+              type: "folder",
               key: "outputFolder",
               placeholder: DEFAULT_SETTINGS.outputFolder,
             },
@@ -459,6 +469,32 @@ export class ReadestSettingTab extends PluginSettingTab {
         },
       },
     ];
+  }
+
+  // Mirrors the renderer's extra-frontmatter handling ({token} substitution,
+  // lone '---' stripping) so the check sees what actually reaches the YAML
+  // block. Rejects hard parse errors and non-mapping results (e.g. a missing
+  // colon); does not mutate the stored value.
+  private validateExtraFrontmatter(value: string): string | void {
+    const probe = value
+      .replace(/\{(\w+)\}/g, "x")
+      .split("\n")
+      .filter((l) => l.trim() !== "---")
+      .join("\n")
+      .trim();
+    if (!probe) return;
+    let parsed: unknown;
+    try {
+      parsed = parseYaml(probe);
+    } catch (e) {
+      const raw =
+        (e instanceof Error ? e.message.split("\n")[0] : "") || "parse error";
+      const msg = raw.replace(/\s*at line \d+, column \d+:?\s*$/, "");
+      return `Invalid YAML: ${msg}`;
+    }
+    if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return "Extra fields must be YAML key: value pairs.";
+    }
   }
 
   private frontmatterItems(): SettingDefinitionItem[] {
@@ -582,11 +618,28 @@ export class ReadestSettingTab extends PluginSettingTab {
         name: "Extra fields",
         desc: "Free-form YAML appended to frontmatter. Tokens like {title}, {hash} are substituted; lone '---' lines are stripped.",
         visible: fmOn,
-        control: {
-          type: "textarea",
-          key: "extraFrontmatter",
-          placeholder: "Rating: 5\nreview: thoughts",
-          rows: 4,
+        render: (setting: Setting) => {
+          setting.setName("Extra fields");
+          setting.setDesc(
+            "Free-form YAML appended to frontmatter. Tokens like {title}, {hash} are substituted; lone '---' lines are stripped.",
+          );
+          const errorEl = setting.descEl.createDiv({
+            cls: "readest-inline-error",
+          });
+          const refreshError = (v: string) => {
+            errorEl.setText(this.validateExtraFrontmatter(v) ?? "");
+          };
+          setting.addTextArea((ta) => {
+            ta.setPlaceholder("Rating: 5\nreview: thoughts")
+              .setValue(this.plugin.settings.extraFrontmatter)
+              .onChange(async (v) => {
+                this.plugin.settings.extraFrontmatter = v;
+                await this.plugin.saveSettings();
+                refreshError(v);
+              });
+            ta.inputEl.rows = 4;
+          });
+          refreshError(this.plugin.settings.extraFrontmatter);
         },
       },
     ];
@@ -601,6 +654,7 @@ export class ReadestSettingTab extends PluginSettingTab {
           {
             name: "Filter",
             desc: "Which annotations to include.",
+            aliases: ["annotations"],
             control: {
               type: "dropdown",
               key: "annotationFilter",
@@ -628,6 +682,7 @@ export class ReadestSettingTab extends PluginSettingTab {
           {
             name: "Collapse line breaks",
             desc: "Replace line breaks inside highlight text with spaces.",
+            aliases: ["newline", "wrap"],
             control: { type: "toggle", key: "collapseHighlightLineBreaks" },
           },
           {
@@ -641,6 +696,7 @@ export class ReadestSettingTab extends PluginSettingTab {
           },
           {
             name: "Separator",
+            aliases: ["divider"],
             control: {
               type: "dropdown",
               key: "highlightSeparator",
@@ -660,11 +716,13 @@ export class ReadestSettingTab extends PluginSettingTab {
           {
             name: "Block IDs",
             desc: "Add a stable ^id under each highlight to link to it from other notes. Shown in source view, hidden in reading view.",
+            aliases: ["anchor", "reference"],
             control: { type: "toggle", key: "highlightBlockIds" },
           },
           {
             name: "Readest link",
             desc: "Add an 'Open in Readest' link under each highlight that jumps to it in the app.",
+            aliases: ["deep link", "open in app"],
             control: {
               type: "dropdown",
               key: "readestLink",

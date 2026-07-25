@@ -4,6 +4,16 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ## [Unreleased]
 
+### Added
+
+- "Extra fields" frontmatter is validated as you type, with broken YAML flagged inline.
+- Source paths can be dragged to reorder.
+
+### Changed
+
+- The output folder field autocompletes existing vault folders.
+- More settings turn up in search under alternate terms.
+
 ## [1.5.0] - 2026-07-25
 
 ### Added
