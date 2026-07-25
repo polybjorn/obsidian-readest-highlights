@@ -4,6 +4,8 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-07-25
+
 ### Added
 
 - Tokens (`{title}`, `{author}`, `{hash}`, etc.) are now substituted in the frontmatter "Extra fields" box, so custom properties can be built from book metadata. New `{publisher}` and `{language}` tokens join the existing set.
@@ -132,7 +134,8 @@ Requires Obsidian 1.13.0 or later. Users on older Obsidian versions stay on plug
 
 - Initial release.
 
-[Unreleased]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.4.0...HEAD
+[Unreleased]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.5.0...HEAD
+[1.5.0]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.4.0...1.5.0
 [1.4.0]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.3.0...1.4.0
 [1.3.0]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.2.2...1.3.0
 [1.2.2]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.2.1...1.2.2
