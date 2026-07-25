@@ -8,9 +8,9 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ### Added
 
-- Tokens (`{title}`, `{author}`, `{hash}`, etc.) are now substituted in the frontmatter "Extra fields" box, so custom properties can be built from book metadata. New `{publisher}` and `{language}` tokens join the existing set.
-- Optional block IDs under each highlight ("Block IDs" in Rendering > Highlights), so you can link to a specific highlight from anywhere in your vault, including a canvas. Off by default. The ID is derived from the highlight's Readest location, so it stays stable across re-syncs.
-- Optional "Open in Readest" link under each highlight ("Readest link" in Rendering > Highlights) that opens the annotation in Readest at its exact location. Off by default; choose the web (universal) link or the `readest://` app link.
+- Tokens (`{title}`, `{author}`, `{hash}`, etc.) are now substituted in "Extra fields" frontmatter; adds `{publisher}` and `{language}` tokens.
+- Optional block IDs under each highlight, so you can link to a specific highlight from a canvas or another note. Off by default; the ID stays stable across re-syncs.
+- Optional "Open in Readest" link under each highlight that jumps to the annotation in the app. Off by default; pick the web (universal) or `readest://` app form.
 
 ## [1.4.0] - 2026-07-17
 
