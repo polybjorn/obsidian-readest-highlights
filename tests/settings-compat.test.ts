@@ -67,8 +67,9 @@ function rowsOf(el: FakeEl, out: Setting[] = []): Setting[] {
 }
 
 function render(tab: ReadestSettingTab): Setting[] {
-  // eslint-disable-next-line @typescript-eslint/no-deprecated -- exercising the pre-1.13 path is the point
-  tab.display();
+  // display() is what Obsidian < 1.13 calls, so exercising it is the point. The
+  // local type keeps the deprecation off the call without a blanket disable.
+  (tab as unknown as { display: () => void }).display();
   return rowsOf(container(tab));
 }
 

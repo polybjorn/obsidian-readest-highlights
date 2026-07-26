@@ -7,10 +7,7 @@ import {
   Setting,
 } from "obsidian";
 import type { SettingDefinitionItem, SettingGroupItem } from "obsidian";
-import {
-  declarativeSettingsSupported,
-  renderFallback,
-} from "./settings-compat";
+import { baseSettingTabMethod, renderFallback } from "./settings-compat";
 import { access } from "fs/promises";
 import { homedir } from "os";
 import { join } from "path";
@@ -283,31 +280,37 @@ export class ReadestSettingTab extends PluginSettingTab {
     }
   }
 
+  private renderCompat(): void {
+    renderFallback(this, this.containerEl, this.getSettingDefinitions());
+  }
+
   // Obsidian < 1.13 ignores getSettingDefinitions() and calls display(), so
   // the same definitions are rendered with the classic Setting API. Never
   // reached on 1.13+. See settings-compat.ts.
   display(): void {
-    renderFallback(this, this.containerEl, this.getSettingDefinitions());
+    this.renderCompat();
   }
 
-  // Both helpers arrived with the declarative API in 1.13; the render
-  // callbacks below call them. On older builds, re-render the tab instead.
+  // Both helpers arrived with the declarative API in 1.13; the render callbacks
+  // below call them. Resolve them off the base prototype rather than through
+  // super, so that on older builds, where they do not exist, the whole tab is
+  // re-rendered instead.
   update(): void {
-    if (declarativeSettingsSupported()) {
-      super.update();
+    const base = baseSettingTabMethod("update");
+    if (base) {
+      base.call(this);
       return;
     }
-    // eslint-disable-next-line @typescript-eslint/no-deprecated -- the pre-1.13 path is the point
-    this.display();
+    this.renderCompat();
   }
 
   refreshDomState(): void {
-    if (declarativeSettingsSupported()) {
-      super.refreshDomState();
+    const base = baseSettingTabMethod("refreshDomState");
+    if (base) {
+      base.call(this);
       return;
     }
-    // eslint-disable-next-line @typescript-eslint/no-deprecated -- the pre-1.13 path is the point
-    this.display();
+    this.renderCompat();
   }
 
   getSettingDefinitions(): SettingDefinitionItem[] {

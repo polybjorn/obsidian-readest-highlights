@@ -24,11 +24,17 @@ export interface SettingsHost {
 }
 
 // update() and refreshDomState() both landed in 1.13.0 alongside the
-// declarative API, so the base prototype having update() means the running app
-// renders declaratively and this whole module is unused.
-export function declarativeSettingsSupported(): boolean {
-  const proto = PluginSettingTab.prototype as { update?: unknown };
-  return typeof proto.update === "function";
+// declarative API, so the base class only defines them there. Resolving one off
+// the prototype is the feature check and the call site in a single step, which
+// keeps the two from drifting apart. Returning undefined means the running app
+// predates the declarative API, so the caller re-renders instead.
+export function baseSettingTabMethod(
+  name: "update" | "refreshDomState",
+): (() => void) | undefined {
+  const proto = PluginSettingTab.prototype as Partial<
+    Record<"update" | "refreshDomState", () => void>
+  >;
+  return proto[name];
 }
 
 function resolve<T>(value: T | (() => T) | undefined, fallback: T): T {

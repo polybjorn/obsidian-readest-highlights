@@ -220,8 +220,8 @@ export class Setting {
 }
 
 // Obsidian < 1.13 has neither update() nor refreshDomState() on the prototype;
-// declarativeSettingsSupported() keys off exactly that. Tests flip this to
-// exercise both branches.
+// baseSettingTabMethod() keys off exactly that. Tests flip this to exercise
+// both branches.
 export class PluginSettingTab {
   containerEl = new FakeEl();
   constructor(
