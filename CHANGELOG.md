@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented here. Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.2] - 2026-07-26
+
+No user-visible changes. The Obsidian 1.13 settings helpers are now resolved at runtime instead of through `super`, which clears the plugin review lint. Behavior on both 1.12.x and 1.13.x is unchanged.
+
 ## [1.5.1] - 2026-07-26
 
 ### Fixed
@@ -151,7 +155,8 @@ Requires Obsidian 1.13.0 or later. Users on older Obsidian versions stay on plug
 
 - Initial release.
 
-[Unreleased]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.5.1...HEAD
+[Unreleased]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.5.2...HEAD
+[1.5.2]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.5.1...1.5.2
 [1.5.1]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.5.0...1.5.1
 [1.5.0]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.4.0...1.5.0
 [1.4.0]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.3.0...1.4.0
