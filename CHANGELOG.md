@@ -4,19 +4,22 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ## [Unreleased]
 
+### Fixed
+
+- Settings are reachable again on Obsidian 1.12.x. Plugin 1.4.0 moved settings to an API that only Obsidian 1.13 provides, which left the settings tab blank for anyone who installed it manually. It also stranded the stable channel, since Obsidian never offers a plugin version above your app version: existing installs stopped updating at 1.3.0, and fresh installs fell all the way back to 1.0.0. Settings now render either way, and the plugin requires Obsidian 1.12.7 again. (#35)
+- Editing the output folder no longer stacks up one notification per character typed. The warning about a path being adjusted now appears once, after you stop typing, and no longer appears at all for a path that is only briefly invalid while you type it.
+
 ### Added
 
 - "Extra fields" frontmatter is validated as you type, with broken YAML flagged inline.
-- Source paths can be dragged to reorder.
+- Source paths can be dragged to reorder. (Obsidian 1.13 and later)
 
 ### Changed
 
-- The output folder field autocompletes existing vault folders.
-- More settings turn up in search under alternate terms.
+- The output folder field autocompletes existing vault folders. (Obsidian 1.13 and later)
+- More settings turn up in search under alternate terms. (Obsidian 1.13 and later)
 
-### Fixed
-
-- Settings are reachable again on Obsidian 1.12.x. Plugin 1.4.0 moved settings to an API that only Obsidian 1.13 provides, which left the settings tab blank for anyone who installed it manually. It also stranded the stable channel, since Obsidian never offers a plugin version above your app version: existing installs stopped updating at 1.3.0, and fresh installs fell all the way back to 1.0.0. Settings now render either way, and the plugin requires Obsidian 1.12.7 again. On 1.12.x they appear as one scrolling page rather than four, source paths reorder with buttons instead of dragging, the output folder has no autocomplete, and individual settings do not appear in Obsidian's settings search; Obsidian 1.13 keeps all four. (#35)
+On Obsidian 1.12.x the settings appear as one scrolling page rather than four, and source paths reorder with buttons instead of dragging.
 
 ## [1.5.0] - 2026-07-25
 

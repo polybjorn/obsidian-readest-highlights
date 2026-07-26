@@ -1,4 +1,11 @@
-import { App, Notice, parseYaml, PluginSettingTab, Setting } from "obsidian";
+import {
+  App,
+  debounce,
+  Notice,
+  parseYaml,
+  PluginSettingTab,
+  Setting,
+} from "obsidian";
 import type { SettingDefinitionItem, SettingGroupItem } from "obsidian";
 import {
   declarativeSettingsSupported,
@@ -199,6 +206,19 @@ async function pickDirectory(defaultPath?: string): Promise<PickResult> {
 export class ReadestSettingTab extends PluginSettingTab {
   plugin: ReadestHighlightsPlugin;
 
+  // Text controls commit on every keystroke, so typing "../x" walks through
+  // intermediate values ("." then "..") that each get sanitized. Collapse the
+  // warning into one notice per editing burst instead of one per character.
+  private readonly notifyFolderSanitized = debounce(
+    () => {
+      new Notice(
+        "Readest: output folder adjusted to a safe vault-relative path.",
+      );
+    },
+    800,
+    true,
+  );
+
   constructor(app: App, plugin: ReadestHighlightsPlugin) {
     super(app, plugin);
     this.plugin = plugin;
@@ -215,12 +235,14 @@ export class ReadestSettingTab extends PluginSettingTab {
     const s = this.plugin.settings;
     switch (key) {
       case "outputFolder": {
-        const raw = String(value);
+        const raw = String(value).trim();
         const safe = sanitizeOutputFolder(raw);
-        if (safe !== raw.trim() && raw.trim() !== "") {
-          new Notice(
-            "Readest: output folder adjusted to a safe vault-relative path.",
-          );
+        if (safe !== raw && raw !== "") {
+          this.notifyFolderSanitized();
+        } else {
+          // A pending warning from an intermediate value ("My/" on the way to
+          // "My/Folder") must not fire once the value is clean again.
+          this.notifyFolderSanitized.cancel();
         }
         s.outputFolder = safe;
         break;
