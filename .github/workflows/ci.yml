@@ -25,3 +25,29 @@ jobs:
             - run: npm run build --if-present
             - run: npm run lint
             - run: npm test
+
+    review-lint:
+        # Runs the rules the Obsidian plugin reviewers run. The current
+        # eslint-plugin-obsidianmd cannot be a devDependency here: it pulls an old
+        # minimatch that only works with the unpatched brace-expansion this repo
+        # overrides away from. Installing it in a throwaway directory keeps the repo's
+        # dependency tree patched while still catching what the reviewers catch.
+        # Scoped to src/ because that is all esbuild bundles and ships.
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v7
+            - uses: actions/setup-node@v7
+              with:
+                  node-version: 22.x
+            - name: Lint with the Obsidian review rules
+              run: |
+                  dir="$RUNNER_TEMP/review-lint"
+                  mkdir -p "$dir"
+                  cp -R src manifest.json tsconfig.json eslint.config.mts "$dir/"
+                  cd "$dir"
+                  echo '{"name":"review-lint","private":true,"type":"module","version":"1.0.0"}' > package.json
+                  npm install --no-audit --no-fund -D \
+                      eslint@9 typescript-eslint@8 eslint-plugin-obsidianmd@latest \
+                      typescript@5 obsidian@1.13.1 globals jiti
+                  npx eslint src/
