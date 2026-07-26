@@ -28,7 +28,7 @@ export default tseslint.config(
 			obsidianmd,
 		},
 		rules: {
-			"obsidianmd/ui/sentence-case": ["error", { brands: ["Readest"] }],
+			"obsidianmd/ui/sentence-case": ["error", { brands: ["Readest", "Obsidian"] }],
 		},
 	},
 	globalIgnores([

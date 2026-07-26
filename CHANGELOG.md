@@ -14,6 +14,10 @@ All notable changes to this project are documented here. Format based on [Keep a
 - The output folder field autocompletes existing vault folders.
 - More settings turn up in search under alternate terms.
 
+### Fixed
+
+- Settings are reachable again on Obsidian 1.12.x. Plugin 1.4.0 moved settings to an API that only Obsidian 1.13 provides, which left the settings tab blank for anyone who installed it manually and held everyone else on plugin 1.3.0, since Obsidian's plugin browser will not offer a version above your app version. Settings now render either way, and the plugin requires Obsidian 1.12.7 again. On 1.12.x they appear as one scrolling page rather than four, source paths reorder with buttons instead of dragging, the output folder has no autocomplete, and individual settings do not appear in Obsidian's settings search; Obsidian 1.13 keeps all four. (#35)
+
 ## [1.5.0] - 2026-07-25
 
 ### Added

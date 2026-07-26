@@ -1,5 +1,9 @@
 import { App, Notice, parseYaml, PluginSettingTab, Setting } from "obsidian";
 import type { SettingDefinitionItem, SettingGroupItem } from "obsidian";
+import {
+  declarativeSettingsSupported,
+  renderFallback,
+} from "./settings-compat";
 import { access } from "fs/promises";
 import { homedir } from "os";
 import { join } from "path";
@@ -255,6 +259,33 @@ export class ReadestSettingTab extends PluginSettingTab {
     ) {
       this.refreshDomState();
     }
+  }
+
+  // Obsidian < 1.13 ignores getSettingDefinitions() and calls display(), so
+  // the same definitions are rendered with the classic Setting API. Never
+  // reached on 1.13+. See settings-compat.ts.
+  display(): void {
+    renderFallback(this, this.containerEl, this.getSettingDefinitions());
+  }
+
+  // Both helpers arrived with the declarative API in 1.13; the render
+  // callbacks below call them. On older builds, re-render the tab instead.
+  update(): void {
+    if (declarativeSettingsSupported()) {
+      super.update();
+      return;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-deprecated -- the pre-1.13 path is the point
+    this.display();
+  }
+
+  refreshDomState(): void {
+    if (declarativeSettingsSupported()) {
+      super.refreshDomState();
+      return;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-deprecated -- the pre-1.13 path is the point
+    this.display();
   }
 
   getSettingDefinitions(): SettingDefinitionItem[] {

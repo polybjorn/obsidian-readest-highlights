@@ -2,6 +2,8 @@
 
 The settings tab has four pages: Setup, Heading, Frontmatter, and Rendering. Click a page to open it; the back arrow returns to the overview. All settings are indexed by Obsidian's settings search.
 
+On Obsidian 1.12.x the same settings render as one scrolling page with the four names as headings. Source paths reorder with up and down buttons instead of dragging, the output folder has no autocomplete, and settings are not indexed by settings search. Every setting below is present either way; the screenshots show the 1.13 layout.
+
 ## Templates
 
 Several settings accept token-based templates. Available tokens:
