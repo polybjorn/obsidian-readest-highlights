@@ -126,6 +126,14 @@ export default class ReadestHighlightsPlugin extends Plugin {
     if (legacy.includeSeries === false) {
       this.settings.seriesFormat = "off";
     }
+    // The Separator dropdown carried grouping values (pageHeading since 1.1,
+    // chapterHeading in 1.6.0) before grouping became its own setting. Blank
+    // is what those modes rendered within groups, so output stays identical.
+    const sep = this.settings.highlightSeparator as string;
+    if (sep === "pageHeading" || sep === "chapterHeading") {
+      this.settings.highlightGrouping = sep === "pageHeading" ? "page" : "chapter";
+      this.settings.highlightSeparator = "blank";
+    }
   }
 
   async saveSettings() {

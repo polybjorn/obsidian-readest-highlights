@@ -195,17 +195,23 @@ How line breaks within highlights are handled:
 - **Off** (default): preserve line breaks in highlights that span multiple paragraphs
 - **On**: replace line breaks with a space
 
+#### Group by
+
+Group highlights under headings (one level below the sync heading):
+
+- **No grouping** (default)
+- **Page headings** (`### Page N`)
+- **Chapter headings** (`### <chapter title>`, matching Readest's own export)
+
+Chapter titles come from a table-of-contents cache Readest writes the first time a book is opened. If a book shows no chapter headings, open it once in Readest and re-sync. Highlights the cache cannot place (or books without a cache) render without headings.
+
 #### Separator
 
-How highlights are separated within a book note:
+How highlights are separated, also within groups:
 
 - **Horizontal rule** (`---` between highlights)
 - **Blank line**
-- **Group under page headings** (`### Page N` between groups, no separator between highlights on the same page)
-- **Group under chapter headings** (`### <chapter title>` between groups, matching Readest's own export)
 - **None** (one per line, no separation)
-
-Chapter titles come from a table-of-contents cache Readest writes the first time a book is opened. If a book shows no chapter headings, open it once in Readest and re-sync. Highlights the cache cannot place (or books without a cache) render without headings.
 
 #### Show count
 
@@ -232,7 +238,7 @@ Per-highlight metadata (page, color).
 
 #### Page number, Color
 
-Each is an independent toggle. The page number is omitted when the Separator is "Group under page headings", since the heading already carries it; under chapter headings it still renders.
+Each is an independent toggle. The page number is omitted when grouping by page headings, since the heading already carries it; under chapter headings it still renders.
 
 #### Render underlines
 

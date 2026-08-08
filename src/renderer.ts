@@ -2,6 +2,7 @@ import type { ParsedBook, ReadestAnnotation, ReadestLibraryBook } from "./types"
 import type {
   GenreFormat,
   HeadingLevel,
+  HighlightGrouping,
   HighlightSeparator,
   HighlightSortOrder,
   HighlightStyle,
@@ -33,6 +34,7 @@ export interface FrontmatterOptions {
 export interface RenderOptions {
   style: HighlightStyle;
   separator: HighlightSeparator;
+  grouping: HighlightGrouping;
   sortOrder: HighlightSortOrder;
   showPage: boolean;
   showColor: boolean;
@@ -61,6 +63,7 @@ export function optionsFromSettings(s: ReadestSettings): RenderOptions {
   return {
     style: s.highlightStyle,
     separator: s.highlightSeparator,
+    grouping: s.highlightGrouping,
     sortOrder: s.highlightSortOrder,
     showPage: s.showPage,
     showColor: s.showColor,
@@ -419,7 +422,7 @@ function metadataParts(
   opts: RenderOptions,
 ): string[] {
   const meta: string[] = [];
-  if (opts.showPage && g.page !== undefined && opts.separator !== "pageHeading") {
+  if (opts.showPage && g.page !== undefined && opts.grouping !== "page") {
     meta.push(`page ${g.page}`);
   }
   if (opts.showColor) {
@@ -527,9 +530,6 @@ function joinWithSeparator(
       return parts.join("\n\n");
     case "none":
       return parts.join("\n");
-    case "pageHeading":
-    case "chapterHeading":
-      return parts.join("\n\n");
   }
 }
 
@@ -548,13 +548,18 @@ export function renderHighlightsBody(
   // re-sync cut the section at the first group and duplicate the rest.
   const groupHashes = "#".repeat(Math.max(3, opts.syncHeadingLevel + 1));
 
-  if (opts.separator === "chapterHeading") {
+  const renderRun = (gs: GroupedAnnotation[]) =>
+    joinWithSeparator(
+      gs.map((g) => renderGroup(g, opts, ids?.get(g))),
+      opts.separator,
+    );
+
+  if (opts.grouping === "chapter") {
     // Group in encounter order (groups are already sorted): chapters appear in
     // book order under page sort, first-highlight order under date sort.
     // Highlights with no resolved chapter (no nav.json cache, or positioned
     // before the first TOC entry) collect under an empty key and render with
-    // no heading, so a book without chapter data degrades to plain blank-line
-    // separation.
+    // no heading, so a book without chapter data degrades to no grouping.
     const byChapter = new Map<string, GroupedAnnotation[]>();
     for (const g of groups) {
       const c = g.chapter ?? "";
@@ -564,15 +569,13 @@ export function renderHighlightsBody(
     }
     const sections: string[] = [];
     for (const [chapter, groupsInChapter] of byChapter) {
-      const body = groupsInChapter
-        .map((g) => renderGroup(g, opts, ids?.get(g)))
-        .join("\n\n");
+      const body = renderRun(groupsInChapter);
       sections.push(chapter ? `${groupHashes} ${chapter}\n\n${body}` : body);
     }
     return sections.join("\n\n");
   }
 
-  if (opts.separator === "pageHeading") {
+  if (opts.grouping === "page") {
     const byPage = new Map<number, GroupedAnnotation[]>();
     for (const g of groups) {
       const p = g.page ?? 0;
@@ -584,19 +587,12 @@ export function renderHighlightsBody(
     for (const [page, groupsOnPage] of [...byPage.entries()].sort(
       (a, b) => a[0] - b[0],
     )) {
-      const heading = `${groupHashes} Page ${page}`;
-      const body = groupsOnPage
-        .map((g) => renderGroup(g, opts, ids?.get(g)))
-        .join("\n\n");
-      sections.push(`${heading}\n\n${body}`);
+      sections.push(`${groupHashes} Page ${page}\n\n${renderRun(groupsOnPage)}`);
     }
     return sections.join("\n\n");
   }
 
-  return joinWithSeparator(
-    groups.map((g) => renderGroup(g, opts, ids?.get(g))),
-    opts.separator,
-  );
+  return renderRun(groups);
 }
 
 export function renderFrontmatter(

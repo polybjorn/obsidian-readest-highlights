@@ -15,12 +15,8 @@ import type ReadestHighlightsPlugin from "./main";
 import type { AnnotationFilter } from "./filters";
 
 export type HighlightStyle = "blockquote" | "plain" | "callout" | "bullet";
-export type HighlightSeparator =
-  | "rule"
-  | "blank"
-  | "pageHeading"
-  | "chapterHeading"
-  | "none";
+export type HighlightSeparator = "rule" | "blank" | "none";
+export type HighlightGrouping = "none" | "page" | "chapter";
 export type HeadingLevel = 0 | 1 | 2 | 3 | 4;
 export type AuthorFormat = "off" | "plain" | "wikilink";
 export type LinkFormat = "plain" | "wikilink";
@@ -43,6 +39,7 @@ export interface ReadestSettings {
   preserveManualEdits: boolean;
   highlightStyle: HighlightStyle;
   highlightSeparator: HighlightSeparator;
+  highlightGrouping: HighlightGrouping;
   highlightSortOrder: HighlightSortOrder;
   showPage: boolean;
   showColor: boolean;
@@ -147,6 +144,7 @@ export const DEFAULT_SETTINGS: ReadestSettings = {
   preserveManualEdits: true,
   highlightStyle: "bullet",
   highlightSeparator: "blank",
+  highlightGrouping: "none",
   highlightSortOrder: "page",
   showPage: true,
   showColor: false,
@@ -756,7 +754,22 @@ export class ReadestSettingTab extends PluginSettingTab {
             },
           },
           {
+            name: "Group by",
+            desc: "Group highlights under page or chapter headings. Chapter titles need the book opened once in Readest.",
+            aliases: ["chapters", "pages"],
+            control: {
+              type: "dropdown",
+              key: "highlightGrouping",
+              options: {
+                none: "No grouping",
+                page: "Page headings",
+                chapter: "Chapter headings",
+              },
+            },
+          },
+          {
             name: "Separator",
+            desc: "Between highlights, also within groups.",
             aliases: ["divider"],
             control: {
               type: "dropdown",
@@ -764,8 +777,6 @@ export class ReadestSettingTab extends PluginSettingTab {
               options: {
                 rule: "Horizontal rule (---)",
                 blank: "Blank line",
-                pageHeading: "Group under page headings",
-                chapterHeading: "Group under chapter headings",
                 none: "None",
               },
             },

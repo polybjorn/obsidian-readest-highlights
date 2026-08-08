@@ -29,6 +29,7 @@ const book: ReadestLibraryBook = {
 const opts: RenderOptions = {
   style: "blockquote",
   separator: "rule",
+  grouping: "none",
   sortOrder: "page",
   showPage: true,
   showColor: false,
@@ -266,7 +267,7 @@ void test("renderBookNote composes frontmatter + heading + body with trailing ne
 
 // --- renderHighlightsBody separators ---
 
-void test("renderHighlightsBody pageHeading separator groups annotations under page headings", () => {
+void test("renderHighlightsBody page grouping puts annotations under page headings", () => {
   const annos = [
     makeAnnotation("a", { page: 1, text: "first on page 1" }),
     makeAnnotation("b", { page: 1, text: "second on page 1" }),
@@ -274,7 +275,8 @@ void test("renderHighlightsBody pageHeading separator groups annotations under p
   ];
   const out = renderHighlightsBody(annos, {
     ...opts,
-    separator: "pageHeading",
+    grouping: "page",
+    separator: "blank",
     showPage: false,
   });
   assert.match(out, /### Page 1/);
@@ -285,7 +287,7 @@ void test("renderHighlightsBody pageHeading separator groups annotations under p
   );
 });
 
-void test("renderHighlightsBody chapterHeading separator groups annotations under chapter headings", () => {
+void test("renderHighlightsBody chapter grouping puts annotations under chapter headings", () => {
   const annos = [
     makeAnnotation("a", { page: 1, text: "first in ch1", chapter: "Chapter One" }),
     makeAnnotation("b", { page: 2, text: "second in ch1", chapter: "Chapter One" }),
@@ -293,7 +295,8 @@ void test("renderHighlightsBody chapterHeading separator groups annotations unde
   ];
   const out = renderHighlightsBody(annos, {
     ...opts,
-    separator: "chapterHeading",
+    grouping: "chapter",
+    separator: "blank",
   });
   assert.match(out, /### Chapter One/);
   assert.match(out, /### Chapter Two/);
@@ -308,14 +311,15 @@ void test("renderHighlightsBody chapterHeading separator groups annotations unde
   );
 });
 
-void test("renderHighlightsBody chapterHeading renders unchaptered highlights without a heading", () => {
+void test("renderHighlightsBody chapter grouping renders unchaptered highlights without a heading", () => {
   const annos = [
     makeAnnotation("a", { page: 1, text: "no chapter data" }),
     makeAnnotation("b", { page: 2, text: "in ch1", chapter: "Chapter One" }),
   ];
   const out = renderHighlightsBody(annos, {
     ...opts,
-    separator: "chapterHeading",
+    grouping: "chapter",
+    separator: "blank",
     showPage: false,
   });
   assert.ok(
@@ -325,14 +329,15 @@ void test("renderHighlightsBody chapterHeading renders unchaptered highlights wi
   assert.match(out, /### Chapter One\n\n> in ch1/);
 });
 
-void test("renderHighlightsBody chapterHeading with no chapter data degrades to blank separation", () => {
+void test("renderHighlightsBody chapter grouping with no chapter data degrades to no grouping", () => {
   const annos = [
     makeAnnotation("a", { page: 1, text: "first" }),
     makeAnnotation("b", { page: 2, text: "second" }),
   ];
   const withChapters = renderHighlightsBody(annos, {
     ...opts,
-    separator: "chapterHeading",
+    grouping: "chapter",
+    separator: "blank",
     showPage: false,
   });
   const withBlank = renderHighlightsBody(annos, {
@@ -349,21 +354,24 @@ void test("group headings nest below the sync heading level", () => {
   ];
   const pages = renderHighlightsBody(annos, {
     ...opts,
-    separator: "pageHeading",
+    grouping: "page",
+    separator: "blank",
     syncHeadingLevel: 3,
     showPage: false,
   });
   assert.match(pages, /^#### Page 1/m);
   const chapters = renderHighlightsBody(annos, {
     ...opts,
-    separator: "chapterHeading",
+    grouping: "chapter",
+    separator: "blank",
     syncHeadingLevel: 3,
   });
   assert.match(chapters, /^#### Chapter One/m);
   // Default level 2 keeps the ### group headings existing notes already have.
   const defaultLevel = renderHighlightsBody(annos, {
     ...opts,
-    separator: "pageHeading",
+    grouping: "page",
+    separator: "blank",
     showPage: false,
   });
   assert.match(defaultLevel, /^### Page 1/m);
@@ -376,7 +384,8 @@ void test("replaceHighlightsSection stays idempotent with group headings at sync
   ];
   const o: RenderOptions = {
     ...opts,
-    separator: "chapterHeading",
+    grouping: "chapter",
+    separator: "blank",
     syncHeadingLevel: 3,
     showPage: false,
   };
@@ -384,6 +393,27 @@ void test("replaceHighlightsSection stays idempotent with group headings at sync
   const twice = replaceHighlightsSection(once, book, annos, o);
   assert.equal(twice, once);
   assert.equal((once.match(/#### Chapter One/g) ?? []).length, 1);
+});
+
+void test("the separator applies between highlights inside a group", () => {
+  const annos = [
+    makeAnnotation("a", { page: 1, text: "one", chapter: "Chapter One" }),
+    makeAnnotation("b", { page: 2, text: "two", chapter: "Chapter One" }),
+  ];
+  const none = renderHighlightsBody(annos, {
+    ...opts,
+    grouping: "chapter",
+    separator: "none",
+    showPage: false,
+  });
+  assert.match(none, /### Chapter One\n\n> one\n> two/);
+  const rule = renderHighlightsBody(annos, {
+    ...opts,
+    grouping: "chapter",
+    separator: "rule",
+    showPage: false,
+  });
+  assert.match(rule, /> one\n\n---\n\n> two/);
 });
 
 void test("renderHighlightsBody rule separator inserts --- between annotations", () => {

@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented here. Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Grouping under page or chapter headings moved out of the Separator dropdown into its own "Group by" setting, so grouping now combines with any separator (horizontal rule, blank line, or none) between the highlights inside a group. Existing settings migrate automatically and notes render unchanged until you pick a different combination.
+
 ## [1.6.0] - 2026-08-08
 
 ### Added
