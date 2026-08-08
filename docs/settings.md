@@ -232,7 +232,7 @@ Per-highlight metadata (page, color).
 
 #### Page number, Color
 
-Each is an independent toggle.
+Each is an independent toggle. The page number is omitted when the Separator is "Group under page headings", since the heading already carries it; under chapter headings it still renders.
 
 #### Render underlines
 
