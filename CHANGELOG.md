@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented here. Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Highlights can be grouped under chapter headings, like Readest's own export: set Separator to "Group under chapter headings" in Rendering settings. Chapter titles come from a table-of-contents cache Readest writes when a book is opened, so if a book shows no chapters, open it once in Readest and re-sync. (#42)
+
+### Fixed
+
+- Page and chapter group headings now nest one level below the sync heading. Previously they were always `###`, so with Heading level set to H3 or H4 a re-sync mistook the first group heading for the end of the section and duplicated the rest. The default heading level is unaffected.
+
 ## [1.5.2] - 2026-07-26
 
 No user-visible changes. The Obsidian 1.13 settings helpers are now resolved at runtime instead of through `super`, which clears the plugin review lint. Behavior on both 1.12.x and 1.13.x is unchanged.

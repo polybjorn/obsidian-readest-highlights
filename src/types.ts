@@ -50,6 +50,9 @@ export interface ReadestAnnotation {
   createdAt: number;
   updatedAt: number;
   deletedAt: number | null;
+  // Not part of Readest's booknote data: derived by this plugin from the
+  // book's cached table of contents (nav.json). Unset when no cache exists.
+  chapter?: string;
 }
 
 export interface ReadestBookConfig {

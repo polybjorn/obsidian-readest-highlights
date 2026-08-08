@@ -482,3 +482,65 @@ void test("annotations are sorted by page ascending", async (t) => {
     ["p1", "p3", "p5"],
   );
 });
+
+// --- chapter stamping from the nav.json TOC cache ---
+
+void test("annotations get chapters from nav.json; missing cache leaves them unset", async (t) => {
+  const dir = await makeBooksDir(
+    t,
+    {
+      withnav: {
+        bookHash: "withnav",
+        booknotes: [
+          {
+            ...baseAnnotation,
+            bookHash: "withnav",
+            id: "a1",
+            cfi: "epubcfi(/6/8!/4/2,/1:0,/1:5)",
+          },
+          {
+            ...baseAnnotation,
+            bookHash: "withnav",
+            id: "a2",
+            cfi: "epubcfi(/6/2!/4/2,/1:0,/1:5)",
+          },
+        ],
+      },
+      nonav: {
+        bookHash: "nonav",
+        booknotes: [
+          {
+            ...baseAnnotation,
+            bookHash: "nonav",
+            id: "b1",
+            cfi: "epubcfi(/6/8!/4/2,/1:0,/1:5)",
+          },
+        ],
+      },
+    },
+    [libraryEntry("withnav"), libraryEntry("nonav")],
+  );
+  await writeFile(
+    join(dir, "withnav", "nav.json"),
+    JSON.stringify({
+      version: 3,
+      toc: [
+        { label: "Title Page", cfi: "epubcfi(/6/4)" },
+        { label: "Chapter One", cfi: "epubcfi(/6/8)" },
+      ],
+    }),
+  );
+  const books = await loadBooksWithAnnotations(dir);
+  const withNav = books.find((b) => b.book.hash === "withnav");
+  const noNav = books.find((b) => b.book.hash === "nonav");
+  assert.equal(
+    withNav?.annotations.find((a) => a.id === "a1")?.chapter,
+    "Chapter One",
+  );
+  // Positioned before the first TOC entry: no chapter is claimed.
+  assert.equal(
+    withNav?.annotations.find((a) => a.id === "a2")?.chapter,
+    undefined,
+  );
+  assert.equal(noNav?.annotations[0]?.chapter, undefined);
+});

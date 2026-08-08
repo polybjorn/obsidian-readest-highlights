@@ -1,5 +1,6 @@
 import { readFile } from "fs/promises";
 import { join } from "path";
+import { chapterForCfi, readNavChapters } from "./nav";
 import type {
   ParsedBook,
   ReadestAnnotation,
@@ -175,6 +176,19 @@ export async function loadBooksWithAnnotations(
     }
     if (filter) annotations = annotations.filter(filter);
     if (onlyWithAnnotations && annotations.length === 0) continue;
+    if (annotations.length > 0) {
+      // Chapter titles come from the TOC cache Readest writes on book open;
+      // books never opened by a cache-aware Readest have none, and the field
+      // simply stays unset (chapter grouping degrades to no headings).
+      const chapters = await readNavChapters(booksDir, book.hash);
+      if (chapters) {
+        for (const a of annotations) {
+          if (!a.cfi) continue;
+          const chapter = chapterForCfi(chapters, a.cfi);
+          if (chapter !== null) a.chapter = chapter;
+        }
+      }
+    }
     annotations.sort((a, b) => (a.page ?? 0) - (b.page ?? 0));
     results.push({ book, annotations });
   }

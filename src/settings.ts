@@ -15,7 +15,12 @@ import type ReadestHighlightsPlugin from "./main";
 import type { AnnotationFilter } from "./filters";
 
 export type HighlightStyle = "blockquote" | "plain" | "callout" | "bullet";
-export type HighlightSeparator = "rule" | "blank" | "pageHeading" | "none";
+export type HighlightSeparator =
+  | "rule"
+  | "blank"
+  | "pageHeading"
+  | "chapterHeading"
+  | "none";
 export type HeadingLevel = 0 | 1 | 2 | 3 | 4;
 export type AuthorFormat = "off" | "plain" | "wikilink";
 export type LinkFormat = "plain" | "wikilink";
@@ -760,6 +765,7 @@ export class ReadestSettingTab extends PluginSettingTab {
                 rule: "Horizontal rule (---)",
                 blank: "Blank line",
                 pageHeading: "Group under page headings",
+                chapterHeading: "Group under chapter headings",
                 none: "None",
               },
             },

@@ -272,6 +272,7 @@ interface GroupedAnnotation {
   key: string;
   text: string;
   page?: number;
+  chapter?: string;
   colors: Set<string>;
   styles: Set<string>;
   notes: string[];
@@ -317,6 +318,9 @@ function groupAnnotations(
         target.cfi = a.cfi;
       }
       if (target.page === undefined && a.page !== undefined) target.page = a.page;
+      if (target.chapter === undefined && a.chapter !== undefined) {
+        target.chapter = a.chapter;
+      }
       if (a.color) target.colors.add(a.color);
       if (a.style) target.styles.add(a.style);
       if (note) target.notes.push(note);
@@ -329,6 +333,7 @@ function groupAnnotations(
         key: location,
         text: cleaned,
         page: a.page,
+        chapter: a.chapter,
         colors: new Set(a.color ? [a.color] : []),
         styles: new Set(a.style ? [a.style] : []),
         notes: note ? [note] : [],
@@ -523,6 +528,7 @@ function joinWithSeparator(
     case "none":
       return parts.join("\n");
     case "pageHeading":
+    case "chapterHeading":
       return parts.join("\n\n");
   }
 }
@@ -536,6 +542,36 @@ export function renderHighlightsBody(
 
   const ids = opts.highlightBlockIds ? buildBlockIds(groups) : null;
 
+  // Group headings sit one level below the sync heading, and never above ###.
+  // A group heading at or above the sync heading level would act as the
+  // section boundary in replaceHighlightsSection/upsertAppendedSection, making
+  // re-sync cut the section at the first group and duplicate the rest.
+  const groupHashes = "#".repeat(Math.max(3, opts.syncHeadingLevel + 1));
+
+  if (opts.separator === "chapterHeading") {
+    // Group in encounter order (groups are already sorted): chapters appear in
+    // book order under page sort, first-highlight order under date sort.
+    // Highlights with no resolved chapter (no nav.json cache, or positioned
+    // before the first TOC entry) collect under an empty key and render with
+    // no heading, so a book without chapter data degrades to plain blank-line
+    // separation.
+    const byChapter = new Map<string, GroupedAnnotation[]>();
+    for (const g of groups) {
+      const c = g.chapter ?? "";
+      const arr = byChapter.get(c) ?? [];
+      arr.push(g);
+      byChapter.set(c, arr);
+    }
+    const sections: string[] = [];
+    for (const [chapter, groupsInChapter] of byChapter) {
+      const body = groupsInChapter
+        .map((g) => renderGroup(g, opts, ids?.get(g)))
+        .join("\n\n");
+      sections.push(chapter ? `${groupHashes} ${chapter}\n\n${body}` : body);
+    }
+    return sections.join("\n\n");
+  }
+
   if (opts.separator === "pageHeading") {
     const byPage = new Map<number, GroupedAnnotation[]>();
     for (const g of groups) {
@@ -548,7 +584,7 @@ export function renderHighlightsBody(
     for (const [page, groupsOnPage] of [...byPage.entries()].sort(
       (a, b) => a[0] - b[0],
     )) {
-      const heading = `### Page ${page}`;
+      const heading = `${groupHashes} Page ${page}`;
       const body = groupsOnPage
         .map((g) => renderGroup(g, opts, ids?.get(g)))
         .join("\n\n");

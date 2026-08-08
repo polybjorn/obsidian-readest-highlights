@@ -202,7 +202,10 @@ How highlights are separated within a book note:
 - **Horizontal rule** (`---` between highlights)
 - **Blank line**
 - **Group under page headings** (`### Page N` between groups, no separator between highlights on the same page)
+- **Group under chapter headings** (`### <chapter title>` between groups, matching Readest's own export)
 - **None** (one per line, no separation)
+
+Chapter titles come from a table-of-contents cache Readest writes the first time a book is opened. If a book shows no chapter headings, open it once in Readest and re-sync. Highlights the cache cannot place (or books without a cache) render without headings.
 
 #### Show count
 
