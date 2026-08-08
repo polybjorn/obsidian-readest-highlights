@@ -12,7 +12,7 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ### Added
 
-- Highlights can be grouped under chapter headings, like Readest's own export: set Separator to "Group under chapter headings" in Rendering settings. Chapter titles come from a table-of-contents cache Readest writes when a book is opened, so if a book shows no chapters, open it once in Readest and re-sync. (#42)
+- Highlights can be grouped under chapter headings, like Readest's own export: set Separator to "Group under chapter headings" in Rendering settings. Chapter titles come from a table-of-contents cache Readest writes when a book is opened, so if a book shows no chapters, open it once in Readest and re-sync. (#42, thanks @reimithebird)
 
 ### Fixed
 
@@ -26,7 +26,7 @@ No user-visible changes. The Obsidian 1.13 settings helpers are now resolved at 
 
 ### Fixed
 
-- Settings are reachable again on Obsidian 1.12.x. Plugin 1.4.0 moved settings to an API that only Obsidian 1.13 provides, which left the settings tab blank for anyone who installed it manually. It also stranded the stable channel, since Obsidian never offers a plugin version above your app version: existing installs stopped updating at 1.3.0, and fresh installs fell all the way back to 1.0.0. Settings now render either way, and the plugin requires Obsidian 1.12.7 again. (#35)
+- Settings are reachable again on Obsidian 1.12.x. Plugin 1.4.0 moved settings to an API that only Obsidian 1.13 provides, which left the settings tab blank for anyone who installed it manually. It also stranded the stable channel, since Obsidian never offers a plugin version above your app version: existing installs stopped updating at 1.3.0, and fresh installs fell all the way back to 1.0.0. Settings now render either way, and the plugin requires Obsidian 1.12.7 again. (#35, thanks @reimithebird)
 - Editing the output folder no longer stacks up one notification per character typed. The warning about a path being adjusted now appears once, after you stop typing, and no longer appears at all for a path that is only briefly invalid while you type it.
 
 ### Added
@@ -45,7 +45,7 @@ On Obsidian 1.12.x the settings appear as one scrolling page rather than four, a
 
 ### Added
 
-- The template tokens (`{title}`, `{author}`, `{hash}`, etc.) are now substituted in "Extra fields" frontmatter, and two new tokens, `{publisher}` and `{language}`, join the set. (#32)
+- The template tokens (`{title}`, `{author}`, `{hash}`, etc.) are now substituted in "Extra fields" frontmatter, and two new tokens, `{publisher}` and `{language}`, join the set. (#32, thanks @reimithebird)
 - Optional block IDs under each highlight, so you can link to a specific highlight from a canvas or another note. Off by default; the ID stays stable across re-syncs. (inspired by #31)
 - Optional "Open in Readest" link under each highlight that jumps to the annotation in the app. Off by default; pick the web (universal) or `readest://` app form.
 
