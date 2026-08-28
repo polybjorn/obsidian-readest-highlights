@@ -2,7 +2,7 @@
 
 [![Obsidian plugin downloads](https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/obsidianmd/obsidian-releases/HEAD/community-plugin-stats.json&query=$['readest-highlights'].downloads&label=Obsidian%20plugin&color=7c3aed&logo=obsidian&logoColor=white&suffix=%20downloads)](https://community.obsidian.md/plugins/readest-highlights)
 
-Highlights you make in [Readest](https://readest.com) stay inside the reader app, where they can't be searched or linked alongside the rest of your notes. Readest stores its library, progress, and annotations locally as JSON, and this plugin reads those files and renders the highlights into your Obsidian vault.
+[Readest](https://readest.com) stores its library, progress, and annotations locally as JSON. This plugin reads those files and renders your highlights into your Obsidian vault, one note per book, where they can be searched and linked with the rest of your notes.
 
 ![A book note synced from Readest](docs/book-note.png)
 
