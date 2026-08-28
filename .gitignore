@@ -24,3 +24,4 @@ data.json
 # Per-machine assistant context (not part of the plugin source)
 CLAUDE.md
 reference.md
+AGENTS.md
