@@ -1,5 +1,6 @@
 import type { ParsedBook, ReadestAnnotation, ReadestLibraryBook } from "./types";
 import type {
+  GenreDestination,
   GenreFormat,
   HeadingLevel,
   HighlightGrouping,
@@ -11,6 +12,7 @@ import type {
   NoteStyle,
   ReadestLinkType,
   ReadestSettings,
+  TagSeparator,
 } from "./settings";
 
 export interface FrontmatterOptions {
@@ -27,6 +29,9 @@ export interface FrontmatterOptions {
   cleanGenres: boolean;
   uninvertGenres: boolean;
   maxGenres: number;
+  genreDestination: GenreDestination;
+  tagPrefix: string;
+  tagSeparator: TagSeparator;
   includeReadestHash: boolean;
   extra: string;
 }
@@ -92,6 +97,9 @@ export function optionsFromSettings(s: ReadestSettings): RenderOptions {
       cleanGenres: s.cleanGenres,
       uninvertGenres: s.uninvertGenres,
       maxGenres: s.maxGenres,
+      genreDestination: s.genreDestination,
+      tagPrefix: s.tagPrefix,
+      tagSeparator: s.tagSeparator,
       includeReadestHash: s.includeReadestHash,
       extra: s.extraFrontmatter,
     },
@@ -140,6 +148,33 @@ function uninvertHeading(s: string): string {
   const tail = m[2];
   if (!head || !tail) return s;
   return `${tail} ${head}${decorator}`;
+}
+
+// Obsidian tags reject spaces and most punctuation, so a genre like
+// "Detective and mystery stories" needs reshaping into one token. Splits on
+// any run of non-alphanumerics and rejoins with the configured separator.
+function slugifyTagSegment(value: string, separator: TagSeparator): string {
+  const words = value
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .split(/[^a-zA-Z0-9]+/)
+    .filter(Boolean);
+  if (!words.length) return "";
+  switch (separator) {
+    case "underscore":
+      return words.join("_").toLowerCase();
+    case "none":
+      return words.join("").toLowerCase();
+    case "camel":
+      return words
+        .map((w, i) =>
+          i === 0 ? w.toLowerCase() : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(),
+        )
+        .join("");
+    case "dash":
+    default:
+      return words.join("-").toLowerCase();
+  }
 }
 
 function dedupePreserveOrder(items: string[]): string[] {
@@ -610,9 +645,34 @@ export function renderFrontmatter(
 
   const lines: string[] = ["---"];
 
-  if (fm.tags.length) {
+  let genreItems: string[] = [];
+  if (fm.includeGenre && subjects.length) {
+    let items = subjects;
+    if (fm.cleanGenres) items = items.map(cleanLcshHeading);
+    if (fm.uninvertGenres) items = items.map(uninvertHeading);
+    if (fm.cleanGenres || fm.uninvertGenres) items = dedupePreserveOrder(items);
+    if (fm.maxGenres > 0) items = items.slice(0, fm.maxGenres);
+    genreItems = items;
+  }
+  const genreToProperty =
+    genreItems.length &&
+    (fm.genreDestination === "genre" || fm.genreDestination === "both");
+  const genreToTags =
+    genreItems.length &&
+    (fm.genreDestination === "tags" || fm.genreDestination === "both");
+
+  const tagList = [...fm.tags];
+  if (genreToTags) {
+    for (const item of genreItems) {
+      const slug = slugifyTagSegment(item, fm.tagSeparator);
+      if (!slug) continue;
+      const tag = `${fm.tagPrefix}${slug}`;
+      if (!tagList.includes(tag)) tagList.push(tag);
+    }
+  }
+  if (tagList.length) {
     lines.push("tags:");
-    for (const t of fm.tags) lines.push(`  - "${yamlQuote(t)}"`);
+    for (const t of tagList) lines.push(`  - "${yamlQuote(t)}"`);
   }
 
   if (fm.authorFormat !== "off" && author) {
@@ -626,17 +686,10 @@ export function renderFrontmatter(
     lines.push(`publisher: ${linkValue(publisher, fm.publisherFormat)}`);
   if (fm.includeLanguage && language)
     lines.push(`language: "${yamlQuote(language)}"`);
-  if (fm.includeGenre && subjects.length) {
-    let items = subjects;
-    if (fm.cleanGenres) items = items.map(cleanLcshHeading);
-    if (fm.uninvertGenres) items = items.map(uninvertHeading);
-    if (fm.cleanGenres || fm.uninvertGenres) items = dedupePreserveOrder(items);
-    if (fm.maxGenres > 0) items = items.slice(0, fm.maxGenres);
-    if (items.length) {
-      lines.push("genre:");
-      for (const s of items) {
-        lines.push(`  - ${linkValue(s, fm.genreFormat)}`);
-      }
+  if (genreToProperty) {
+    lines.push("genre:");
+    for (const s of genreItems) {
+      lines.push(`  - ${linkValue(s, fm.genreFormat)}`);
     }
   }
   if (fm.includeReadestHash) lines.push(`readest-hash: ${book.hash}`);

@@ -58,6 +58,9 @@ const opts: RenderOptions = {
     cleanGenres: true,
     uninvertGenres: false,
     maxGenres: 0,
+    genreDestination: "genre",
+    tagPrefix: "",
+    tagSeparator: "dash",
     includeReadestHash: false,
     extra: "",
   },
@@ -247,6 +250,75 @@ void test("renderFrontmatter wraps author in wikilink format", () => {
     authorFormat: "wikilink",
   });
   assert.match(out, /author: "\[\[Patrick Rothfuss\]\]"/);
+});
+
+// --- genre destination ---
+
+const bookWithSubjects: ReadestLibraryBook = {
+  ...book,
+  metadata: {
+    ...book.metadata,
+    subject: ["Science fiction", "Detective and mystery stories"],
+  },
+};
+
+void test("renderFrontmatter writes genre property by default", () => {
+  const out = renderFrontmatter(bookWithSubjects, {
+    ...opts.frontmatter,
+    enabled: true,
+    includeGenre: true,
+  });
+  assert.match(out, /genre:\n {2}- "Science fiction"\n {2}- "Detective and mystery stories"/);
+  assert.doesNotMatch(out, /tags:/);
+});
+
+void test("renderFrontmatter writes genre values as tags when destination is tags", () => {
+  const out = renderFrontmatter(bookWithSubjects, {
+    ...opts.frontmatter,
+    enabled: true,
+    includeGenre: true,
+    genreDestination: "tags",
+  });
+  assert.match(out, /tags:\n {2}- "science-fiction"\n {2}- "detective-and-mystery-stories"/);
+  assert.doesNotMatch(out, /genre:/);
+});
+
+void test("renderFrontmatter writes genre to both properties", () => {
+  const out = renderFrontmatter(bookWithSubjects, {
+    ...opts.frontmatter,
+    enabled: true,
+    tags: ["Book"],
+    includeGenre: true,
+    genreDestination: "both",
+  });
+  assert.match(
+    out,
+    /tags:\n {2}- "Book"\n {2}- "science-fiction"\n {2}- "detective-and-mystery-stories"/,
+  );
+  assert.match(out, /genre:\n {2}- "Science fiction"\n {2}- "Detective and mystery stories"/);
+});
+
+void test("renderFrontmatter applies tag prefix and separator to genre tags", () => {
+  const out = renderFrontmatter(bookWithSubjects, {
+    ...opts.frontmatter,
+    enabled: true,
+    includeGenre: true,
+    genreDestination: "tags",
+    tagPrefix: "genre/",
+    tagSeparator: "camel",
+  });
+  assert.match(out, /tags:\n {2}- "genre\/scienceFiction"\n {2}- "genre\/detectiveAndMysteryStories"/);
+});
+
+void test("renderFrontmatter skips a genre tag that duplicates an existing tag", () => {
+  const out = renderFrontmatter(bookWithSubjects, {
+    ...opts.frontmatter,
+    enabled: true,
+    tags: ["science-fiction"],
+    includeGenre: true,
+    genreDestination: "tags",
+  });
+  assert.match(out, /tags:\n {2}- "science-fiction"\n {2}- "detective-and-mystery-stories"/);
 });
 
 // --- renderBookNote composition ---

@@ -21,6 +21,8 @@ export type HeadingLevel = 0 | 1 | 2 | 3 | 4;
 export type AuthorFormat = "off" | "plain" | "wikilink";
 export type LinkFormat = "plain" | "wikilink";
 export type GenreFormat = LinkFormat;
+export type GenreDestination = "genre" | "tags" | "both";
+export type TagSeparator = "dash" | "underscore" | "none" | "camel";
 export type NoteStyle = "attached" | "separated" | "callout";
 export type HighlightSortOrder = "page" | "date";
 export type MetadataPlacement = "below" | "inline";
@@ -65,6 +67,9 @@ export interface ReadestSettings {
   cleanGenres: boolean;
   uninvertGenres: boolean;
   maxGenres: number;
+  genreDestination: GenreDestination;
+  tagPrefix: string;
+  tagSeparator: TagSeparator;
   includeReadestHash: boolean;
   extraFrontmatter: string;
 }
@@ -172,6 +177,9 @@ export const DEFAULT_SETTINGS: ReadestSettings = {
   cleanGenres: true,
   uninvertGenres: false,
   maxGenres: 0,
+  genreDestination: "genre",
+  tagPrefix: "",
+  tagSeparator: "dash",
   includeReadestHash: true,
   extraFrontmatter: "",
 };
@@ -559,6 +567,10 @@ export class ReadestSettingTab extends PluginSettingTab {
   private frontmatterItems(): SettingDefinitionItem[] {
     const fmOn = () => this.plugin.settings.includeFrontmatter;
     const genreOn = () => fmOn() && this.plugin.settings.includeGenre;
+    const genrePropertyOn = () =>
+      genreOn() && this.plugin.settings.genreDestination !== "tags";
+    const genreTagsOn = () =>
+      genreOn() && this.plugin.settings.genreDestination !== "genre";
     const linkableOptions = {
       off: "Off",
       plain: "Plain text",
@@ -636,8 +648,22 @@ export class ReadestSettingTab extends PluginSettingTab {
         visible: genreOn,
         items: [
           {
+            name: "Destination",
+            desc: "Where genre values are written.",
+            control: {
+              type: "dropdown",
+              key: "genreDestination",
+              options: {
+                genre: "Genre property",
+                tags: "Tags property",
+                both: "Both",
+              },
+            },
+          },
+          {
             name: "Format",
             desc: "Plain text, or wiki-link for backlinks.",
+            visible: genrePropertyOn,
             control: {
               type: "dropdown",
               key: "genreFormat",
@@ -664,6 +690,31 @@ export class ReadestSettingTab extends PluginSettingTab {
             name: "Clean names",
             desc: 'Strip cataloging suffixes from genres, e.g. "ethics -- early works to 1800" becomes "ethics".',
             control: { type: "toggle", key: "cleanGenres" },
+          },
+          {
+            name: "Tag prefix",
+            desc: 'Prepended to each genre written as a tag, e.g. "genre/" nests them under Genre in the tag pane. Blank writes flat tags.',
+            visible: genreTagsOn,
+            control: {
+              type: "text",
+              key: "tagPrefix",
+              placeholder: "genre/",
+            },
+          },
+          {
+            name: "Tag separator",
+            desc: "How multi-word genres become valid tags.",
+            visible: genreTagsOn,
+            control: {
+              type: "dropdown",
+              key: "tagSeparator",
+              options: {
+                dash: "science-fiction",
+                underscore: "science_fiction",
+                none: "sciencefiction",
+                camel: "scienceFiction",
+              },
+            },
           },
         ],
       },
