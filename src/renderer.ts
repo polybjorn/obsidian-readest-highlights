@@ -150,11 +150,42 @@ function uninvertHeading(s: string): string {
   return `${tail} ${head}${decorator}`;
 }
 
+// Latin letters that NFKD leaves whole, so the split below would read them as
+// separators and cut a word in half ("Skjønnlitteratur" -> "skj-nnlitteratur").
+// Accented forms like "å" and "é" decompose already and need no entry.
+const TAG_CHAR_REPLACEMENTS: Record<string, string> = {
+  "ø": "o",
+  "æ": "ae",
+  "œ": "oe",
+  "ß": "ss",
+  "ð": "d",
+  "þ": "th",
+  "ł": "l",
+  "đ": "d",
+  "ħ": "h",
+  "ı": "i",
+  "ŋ": "n",
+  "ŧ": "t",
+};
+
+const TAG_CHAR_PATTERN = new RegExp(
+  `[${Object.keys(TAG_CHAR_REPLACEMENTS).join("")}]`,
+  "gi",
+);
+
+function replaceUndecomposableLetters(value: string): string {
+  return value.replace(TAG_CHAR_PATTERN, (ch) => {
+    const lower = ch.toLowerCase();
+    const mapped = TAG_CHAR_REPLACEMENTS[lower] ?? ch;
+    return ch === lower ? mapped : mapped.charAt(0).toUpperCase() + mapped.slice(1);
+  });
+}
+
 // Obsidian tags reject spaces and most punctuation, so a genre like
 // "Detective and mystery stories" needs reshaping into one token. Splits on
 // any run of non-alphanumerics and rejoins with the configured separator.
 function slugifyTagSegment(value: string, separator: TagSeparator): string {
-  const words = value
+  const words = replaceUndecomposableLetters(value)
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
     .split(/[^a-zA-Z0-9]+/)

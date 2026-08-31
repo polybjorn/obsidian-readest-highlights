@@ -298,6 +298,57 @@ void test("renderFrontmatter writes genre to both properties", () => {
   assert.match(out, /genre:\n {2}- "Science fiction"\n {2}- "Detective and mystery stories"/);
 });
 
+const nordicSubjects: ReadestLibraryBook = {
+  ...book,
+  metadata: {
+    ...book.metadata,
+    subject: ["Skjønnlitteratur", "Norsk fortællinger", "Bokmål"],
+  },
+};
+
+void test("tag slugs keep words whole across letters NFKD cannot decompose", () => {
+  const out = renderFrontmatter(nordicSubjects, {
+    ...opts.frontmatter,
+    enabled: true,
+    includeGenre: true,
+    genreDestination: "tags",
+  });
+  assert.match(
+    out,
+    /tags:\n {2}- "skjonnlitteratur"\n {2}- "norsk-fortaellinger"\n {2}- "bokmal"/,
+  );
+});
+
+void test("undecomposable letters are replaced in every separator style", () => {
+  const render = (tagSeparator: "underscore" | "none" | "camel") =>
+    renderFrontmatter(
+      { ...book, metadata: { ...book.metadata, subject: ["Straße og ø"] } },
+      {
+        ...opts.frontmatter,
+        enabled: true,
+        includeGenre: true,
+        genreDestination: "tags",
+        tagSeparator,
+      },
+    );
+  assert.match(render("underscore"), /- "strasse_og_o"/);
+  assert.match(render("none"), /- "strasseogo"/);
+  assert.match(render("camel"), /- "strasseOgO"/);
+});
+
+void test("an uppercase undecomposable letter keeps its word", () => {
+  const out = renderFrontmatter(
+    { ...book, metadata: { ...book.metadata, subject: ["Ørkenvandring", "Þingvellir"] } },
+    {
+      ...opts.frontmatter,
+      enabled: true,
+      includeGenre: true,
+      genreDestination: "tags",
+    },
+  );
+  assert.match(out, /tags:\n {2}- "orkenvandring"\n {2}- "thingvellir"/);
+});
+
 void test("renderFrontmatter applies tag prefix and separator to genre tags", () => {
   const out = renderFrontmatter(bookWithSubjects, {
     ...opts.frontmatter,
