@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented here. Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] - 2026-09-04
+
+### Added
+
+- Genre values can be written to the `tags` property instead of (or alongside) `genre`, with a tag prefix and word-separator option so they turn into valid Obsidian tags. `genre` stays the default, so existing vaults are unaffected. Requested by a user whose Readest book subjects were only landing under `genre:`.
+
 ## [1.7.0] - 2026-08-08
 
 ### Changed
