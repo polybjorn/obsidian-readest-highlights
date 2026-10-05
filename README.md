@@ -6,7 +6,10 @@
 
 ![A book note synced from Readest](docs/book-note.png)
 
-**Docs:** [Install](https://github.com/polybjorn/obsidian-readest-highlights/blob/main/docs/install.md), [Settings reference](https://github.com/polybjorn/obsidian-readest-highlights/blob/main/docs/settings.md)
+## Docs
+
+- [Install](https://github.com/polybjorn/obsidian-readest-highlights/blob/main/docs/install.md)
+- [Settings reference](https://github.com/polybjorn/obsidian-readest-highlights/blob/main/docs/settings.md)
 
 ## Commands
 
@@ -22,10 +25,14 @@ Desktop Obsidian with access to a Readest Books folder. Readest's built-in sync 
 
 ## What the plugin accesses
 
-- **Readest folder, read-only.** A path outside your vault, configured in Settings. The plugin only reads `library.json` and each book's `config.json`, and never writes to this folder. Reading outside the vault requires the Node `fs` module because Obsidian's vault API does not cover external paths.
+- **Readest folder, read-only.** A path outside your vault, set in Settings. Left empty, it uses the platform default (`~/Library/Application Support/com.bilingify.readest/Readest/Books` on macOS, `%APPDATA%\com.bilingify.readest\Readest\Books` on Windows, `$XDG_DATA_HOME` or `~/.local/share` plus `com.bilingify.readest/Readest/Books` on Linux), which is also tried after any paths you set. The plugin only reads `library.json` and each book's `config.json`, and never writes to this folder. Reading outside the vault requires the Node `fs` module because Obsidian's vault API does not cover external paths.
 - **Vault, read and write.** Scans notes for the `readest-hash` frontmatter field inside your output folder to match books to existing notes on re-sync, then creates or updates notes there.
 - **No network.** The plugin makes no outbound requests.
 
 ## Disclaimer
 
 Independent community plugin, not affiliated with Readest.
+
+## License
+
+MIT, see [LICENSE](LICENSE).
