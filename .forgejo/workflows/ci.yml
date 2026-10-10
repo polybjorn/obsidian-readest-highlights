@@ -39,6 +39,10 @@ jobs:
           HEAD_SHA: ${{ github.sha }}
           BASE_REF: ${{ github.event.pull_request.base.ref }}
           BEFORE: ${{ github.event.before }}
+          # Forge issue numbers restart at 1 while GitHub's do not, so a synced
+          # `closes #N` would close GitHub's #N too. Commits write
+          # `bjorn/obsidian-readest-highlights#N` instead.
+          QUALIFIED_REFS: "true"
         run: GITHUB_ACTION_PATH="${RUNNER_TEMP:-/tmp}/ci-actions/attribution" bash "${RUNNER_TEMP:-/tmp}/ci-actions/attribution/run.sh"
 
   test:
