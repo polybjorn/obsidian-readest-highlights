@@ -21,6 +21,7 @@ export type HeadingLevel = 0 | 1 | 2 | 3 | 4;
 export type AuthorFormat = "off" | "plain" | "wikilink";
 export type LinkFormat = "plain" | "wikilink";
 export type GenreFormat = LinkFormat;
+export type GenreDestination = "genre" | "tags" | "nested-tags";
 export type NoteStyle = "attached" | "separated" | "callout";
 export type HighlightSortOrder = "page" | "date";
 export type MetadataPlacement = "below" | "inline";
@@ -65,6 +66,7 @@ export interface ReadestSettings {
   cleanGenres: boolean;
   uninvertGenres: boolean;
   maxGenres: number;
+  genreDestination: GenreDestination;
   includeReadestHash: boolean;
   extraFrontmatter: string;
 }
@@ -172,6 +174,7 @@ export const DEFAULT_SETTINGS: ReadestSettings = {
   cleanGenres: true,
   uninvertGenres: false,
   maxGenres: 0,
+  genreDestination: "genre",
   includeReadestHash: true,
   extraFrontmatter: "",
 };
@@ -559,6 +562,8 @@ export class ReadestSettingTab extends PluginSettingTab {
   private frontmatterItems(): SettingDefinitionItem[] {
     const fmOn = () => this.plugin.settings.includeFrontmatter;
     const genreOn = () => fmOn() && this.plugin.settings.includeGenre;
+    const genrePropertyOn = () =>
+      genreOn() && this.plugin.settings.genreDestination === "genre";
     const linkableOptions = {
       off: "Off",
       plain: "Plain text",
@@ -636,8 +641,22 @@ export class ReadestSettingTab extends PluginSettingTab {
         visible: genreOn,
         items: [
           {
+            name: "Destination",
+            desc: "Where genres are written.",
+            control: {
+              type: "dropdown",
+              key: "genreDestination",
+              options: {
+                genre: "Genre property",
+                tags: "Tags: #science-fiction",
+                "nested-tags": "Nested tags: #genre/science-fiction",
+              },
+            },
+          },
+          {
             name: "Format",
             desc: "Plain text, or wiki-link for backlinks.",
+            visible: genrePropertyOn,
             control: {
               type: "dropdown",
               key: "genreFormat",

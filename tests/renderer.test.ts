@@ -58,6 +58,7 @@ const opts: RenderOptions = {
     cleanGenres: true,
     uninvertGenres: false,
     maxGenres: 0,
+    genreDestination: "genre",
     includeReadestHash: false,
     extra: "",
   },
@@ -247,6 +248,121 @@ void test("renderFrontmatter wraps author in wikilink format", () => {
     authorFormat: "wikilink",
   });
   assert.match(out, /author: "\[\[Patrick Rothfuss\]\]"/);
+});
+
+// --- genre destination ---
+
+const bookWithSubjects: ReadestLibraryBook = {
+  ...book,
+  metadata: {
+    ...book.metadata,
+    subject: ["Science fiction", "Detective and mystery stories"],
+  },
+};
+
+void test("renderFrontmatter writes genre property by default", () => {
+  const out = renderFrontmatter(bookWithSubjects, {
+    ...opts.frontmatter,
+    enabled: true,
+    includeGenre: true,
+  });
+  assert.match(out, /genre:\n {2}- "Science fiction"\n {2}- "Detective and mystery stories"/);
+  assert.doesNotMatch(out, /tags:/);
+});
+
+void test("renderFrontmatter writes genre values as tags when destination is tags", () => {
+  const out = renderFrontmatter(bookWithSubjects, {
+    ...opts.frontmatter,
+    enabled: true,
+    includeGenre: true,
+    genreDestination: "tags",
+  });
+  assert.match(out, /tags:\n {2}- "science-fiction"\n {2}- "detective-and-mystery-stories"/);
+  assert.doesNotMatch(out, /genre:/);
+});
+
+void test("renderFrontmatter nests genre tags under genre/ after the static tags", () => {
+  const out = renderFrontmatter(bookWithSubjects, {
+    ...opts.frontmatter,
+    enabled: true,
+    tags: ["Book"],
+    includeGenre: true,
+    genreDestination: "nested-tags",
+  });
+  assert.match(
+    out,
+    /tags:\n {2}- "Book"\n {2}- "genre\/science-fiction"\n {2}- "genre\/detective-and-mystery-stories"/,
+  );
+  assert.doesNotMatch(out, /genre:/);
+});
+
+void test("renderFrontmatter falls back to the genre property for an unknown destination", () => {
+  const out = renderFrontmatter(bookWithSubjects, {
+    ...opts.frontmatter,
+    enabled: true,
+    includeGenre: true,
+    genreDestination: "both" as never,
+  });
+  assert.match(out, /genre:\n {2}- "Science fiction"/);
+  assert.doesNotMatch(out, /tags:/);
+});
+
+const nordicSubjects: ReadestLibraryBook = {
+  ...book,
+  metadata: {
+    ...book.metadata,
+    subject: ["Skjønnlitteratur", "Norsk fortællinger", "Bokmål"],
+  },
+};
+
+void test("tag slugs keep words whole across letters NFKD cannot decompose", () => {
+  const out = renderFrontmatter(nordicSubjects, {
+    ...opts.frontmatter,
+    enabled: true,
+    includeGenre: true,
+    genreDestination: "tags",
+  });
+  assert.match(
+    out,
+    /tags:\n {2}- "skjonnlitteratur"\n {2}- "norsk-fortaellinger"\n {2}- "bokmal"/,
+  );
+});
+
+void test("undecomposable letters are spelled out, including a lone one", () => {
+  const out = renderFrontmatter(
+    { ...book, metadata: { ...book.metadata, subject: ["Straße og ø"] } },
+    {
+      ...opts.frontmatter,
+      enabled: true,
+      includeGenre: true,
+      genreDestination: "tags",
+    },
+  );
+  assert.match(out, /- "strasse-og-o"/);
+});
+
+void test("an uppercase undecomposable letter keeps its word", () => {
+  const out = renderFrontmatter(
+    { ...book, metadata: { ...book.metadata, subject: ["Ørkenvandring", "Þingvellir"] } },
+    {
+      ...opts.frontmatter,
+      enabled: true,
+      includeGenre: true,
+      genreDestination: "tags",
+    },
+  );
+  assert.match(out, /tags:\n {2}- "orkenvandring"\n {2}- "thingvellir"/);
+});
+
+void test("renderFrontmatter skips a genre tag that duplicates an existing tag", () => {
+  const out = renderFrontmatter(bookWithSubjects, {
+    ...opts.frontmatter,
+    enabled: true,
+    tags: ["science-fiction"],
+    includeGenre: true,
+    genreDestination: "tags",
+  });
+  assert.match(out, /tags:\n {2}- "science-fiction"\n {2}- "detective-and-mystery-stories"/);
 });
 
 // --- renderBookNote composition ---

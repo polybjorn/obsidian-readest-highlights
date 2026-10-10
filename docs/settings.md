@@ -112,11 +112,21 @@ Single toggles. Each adds the corresponding field to frontmatter when its value 
 
 ### Genre
 
-Master toggle for the genre field. Genres come from the book's metadata as exposed by Readest. The field is free-form and varies by source, so the four sub-options below normalize the more structured forms.
+Master toggle for genres. Genres come from the book's metadata as exposed by Readest. The field is free-form and varies by source, so Max genres, Natural order and Clean names below normalize the more structured forms. They apply before Destination decides where genres go.
+
+#### Destination
+
+Where genres are written:
+
+- **Genre property** (default): a `genre` list, shaped by Format below.
+- **Tags** (`#science-fiction`): added to `tags`, after any from the [Tags](#tags) setting and skipping duplicates.
+- **Nested tags** (`#genre/science-fiction`): the same, nested under `genre/` so they group under Genre in the tag pane.
+
+As tags, genres are lowercased and joined with dashes, since Obsidian tags can't contain spaces or most punctuation: `Detective and mystery stories` becomes `detective-and-mystery-stories`. Accents are dropped and letters with no plain form are spelled out (`ø` -> `o`, `æ` -> `ae`, `ß` -> `ss`), so `Skjønnlitteratur` becomes `skjonnlitteratur`.
 
 #### Format
 
-`Plain` or `Wiki-link`. Same idea as Author. Defaults to `Plain`.
+`Plain` or `Wiki-link`. Same idea as Author. Defaults to `Plain`. Shown only when Destination is Genre property.
 
 Wiki-links for genres fragment more easily than for authors because the underlying values can shift when you toggle the sub-options below. Opt in to wiki-link once your other genre settings are stable.
 

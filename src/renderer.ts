@@ -1,5 +1,6 @@
 import type { ParsedBook, ReadestAnnotation, ReadestLibraryBook } from "./types";
 import type {
+  GenreDestination,
   GenreFormat,
   HeadingLevel,
   HighlightGrouping,
@@ -27,6 +28,7 @@ export interface FrontmatterOptions {
   cleanGenres: boolean;
   uninvertGenres: boolean;
   maxGenres: number;
+  genreDestination: GenreDestination;
   includeReadestHash: boolean;
   extra: string;
 }
@@ -92,6 +94,7 @@ export function optionsFromSettings(s: ReadestSettings): RenderOptions {
       cleanGenres: s.cleanGenres,
       uninvertGenres: s.uninvertGenres,
       maxGenres: s.maxGenres,
+      genreDestination: s.genreDestination,
       includeReadestHash: s.includeReadestHash,
       extra: s.extraFrontmatter,
     },
@@ -140,6 +143,42 @@ function uninvertHeading(s: string): string {
   const tail = m[2];
   if (!head || !tail) return s;
   return `${tail} ${head}${decorator}`;
+}
+
+// Latin letters that NFKD leaves whole, so the split below would read them as
+// separators and cut a word in half ("Skjønnlitteratur" -> "skj-nnlitteratur").
+// Accented forms like "å" and "é" decompose already and need no entry.
+const TAG_CHAR_REPLACEMENTS: Record<string, string> = {
+  "ø": "o",
+  "æ": "ae",
+  "œ": "oe",
+  "ß": "ss",
+  "ð": "d",
+  "þ": "th",
+  "ł": "l",
+  "đ": "d",
+  "ħ": "h",
+  "ı": "i",
+  "ŋ": "n",
+  "ŧ": "t",
+};
+
+const TAG_CHAR_PATTERN = new RegExp(
+  `[${Object.keys(TAG_CHAR_REPLACEMENTS).join("")}]`,
+  "g",
+);
+
+// Obsidian tags reject spaces and most punctuation, so a genre like
+// "Detective and mystery stories" needs reshaping into one token.
+function slugifyTag(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(TAG_CHAR_PATTERN, (ch) => TAG_CHAR_REPLACEMENTS[ch] ?? ch)
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean)
+    .join("-");
 }
 
 function dedupePreserveOrder(items: string[]): string[] {
@@ -610,9 +649,31 @@ export function renderFrontmatter(
 
   const lines: string[] = ["---"];
 
-  if (fm.tags.length) {
+  let genreItems: string[] = [];
+  if (fm.includeGenre && subjects.length) {
+    let items = subjects;
+    if (fm.cleanGenres) items = items.map(cleanLcshHeading);
+    if (fm.uninvertGenres) items = items.map(uninvertHeading);
+    if (fm.cleanGenres || fm.uninvertGenres) items = dedupePreserveOrder(items);
+    if (fm.maxGenres > 0) items = items.slice(0, fm.maxGenres);
+    genreItems = items;
+  }
+  const genreToTags =
+    fm.genreDestination === "tags" || fm.genreDestination === "nested-tags";
+  const tagPrefix = fm.genreDestination === "nested-tags" ? "genre/" : "";
+
+  const tagList = [...fm.tags];
+  if (genreToTags) {
+    for (const item of genreItems) {
+      const slug = slugifyTag(item);
+      if (!slug) continue;
+      const tag = `${tagPrefix}${slug}`;
+      if (!tagList.includes(tag)) tagList.push(tag);
+    }
+  }
+  if (tagList.length) {
     lines.push("tags:");
-    for (const t of fm.tags) lines.push(`  - "${yamlQuote(t)}"`);
+    for (const t of tagList) lines.push(`  - "${yamlQuote(t)}"`);
   }
 
   if (fm.authorFormat !== "off" && author) {
@@ -626,17 +687,10 @@ export function renderFrontmatter(
     lines.push(`publisher: ${linkValue(publisher, fm.publisherFormat)}`);
   if (fm.includeLanguage && language)
     lines.push(`language: "${yamlQuote(language)}"`);
-  if (fm.includeGenre && subjects.length) {
-    let items = subjects;
-    if (fm.cleanGenres) items = items.map(cleanLcshHeading);
-    if (fm.uninvertGenres) items = items.map(uninvertHeading);
-    if (fm.cleanGenres || fm.uninvertGenres) items = dedupePreserveOrder(items);
-    if (fm.maxGenres > 0) items = items.slice(0, fm.maxGenres);
-    if (items.length) {
-      lines.push("genre:");
-      for (const s of items) {
-        lines.push(`  - ${linkValue(s, fm.genreFormat)}`);
-      }
+  if (!genreToTags && genreItems.length) {
+    lines.push("genre:");
+    for (const s of genreItems) {
+      lines.push(`  - ${linkValue(s, fm.genreFormat)}`);
     }
   }
   if (fm.includeReadestHash) lines.push(`readest-hash: ${book.hash}`);
