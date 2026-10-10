@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented here. Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] - 2026-10-10
+
+### Added
+
+- Genres can go to `tags` instead of the `genre` property: set Frontmatter > Genre > Destination to Tags, or to Nested tags to group them as `#genre/science-fiction`. Multi-word genres become dash-joined tags. Genre property stays the default, so existing notes are unaffected.
+
 ## [1.7.0] - 2026-08-08
 
 ### Changed
