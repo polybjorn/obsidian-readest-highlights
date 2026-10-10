@@ -20,7 +20,9 @@ ln -s "$(pwd)" /path/to/your/vault/.obsidian/plugins/readest-highlights
 
 The target folder name must be `readest-highlights` (matching `manifest.id`), regardless of where the repo lives.
 
-Enable the plugin in Settings -> Community plugins. To pick up a rebuild, toggle the plugin off and back on in that same panel.
+Enable the plugin in Settings -> Community plugins. To pick up a rebuild, toggle the plugin off and back on in that same panel, or install [Hot Reload](https://github.com/pjeby/hot-reload), which reloads it whenever `main.js` changes.
+
+Working on a branch in a git worktree, run `npm run preview` there: it builds and copies `main.js` (and `styles.css`, if the branch changed it) into the main checkout, which is the folder Obsidian loads. `npm run build` in the main checkout switches back.
 
 ## Scripts
 
@@ -28,6 +30,7 @@ Enable the plugin in Settings -> Community plugins. To pick up a rebuild, toggle
 |---|---|
 | `npm run dev` | Watch build (esbuild). |
 | `npm run build` | One-shot production build, runs `tsc --noEmit` first. |
+| `npm run preview` | Build, then copy the build into the main checkout (for worktrees). |
 | `npm run lint` | ESLint with the Obsidian plugin ruleset. |
 | `npm test` | Run the test suite (`tsx --test tests/*.test.ts`). |
 
