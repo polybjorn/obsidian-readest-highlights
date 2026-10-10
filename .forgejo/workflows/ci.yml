@@ -1,0 +1,80 @@
+# The forge is origin and GitHub is a fast-forward copy with the full history,
+# because Obsidian's plugin directory reads manifest.json and the release
+# assets from GitHub, and GitHub Actions build and attest those releases from
+# the synced tag. Nothing is forced, so a commit made on GitHub stops the sync
+# until it is pulled into the forge. The sync waits for the attribution check
+# and the tests.
+#
+# ci-actions is cloned through $GITHUB_SERVER_URL and its scripts run directly,
+# not through `uses:`. That form needs the CI host written out, this file goes
+# to GitHub with the history, and the denylist gate refuses the host name.
+name: CI
+
+on:
+  push:
+    branches: [main]
+    # Obsidian requires the release tag to equal the manifest version, so the
+    # tags carry no v prefix.
+    tags: ['[0-9]*']
+  pull_request:
+    branches: [main]
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  attribution:
+    runs-on: docker
+    timeout-minutes: 5
+    steps:
+      - name: Fetch ci-actions
+        run: git clone -q --depth 1 --branch v1 "$GITHUB_SERVER_URL/bjorn/ci-actions.git" "${RUNNER_TEMP:-/tmp}/ci-actions"
+      - name: Self-test the pattern
+        run: bash "${RUNNER_TEMP:-/tmp}/ci-actions/attribution/check-attribution.sh" selftest
+      - name: Check the commits and the PR description
+        env:
+          TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          HEAD_SHA: ${{ github.sha }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          BEFORE: ${{ github.event.before }}
+        run: GITHUB_ACTION_PATH="${RUNNER_TEMP:-/tmp}/ci-actions/attribution" bash "${RUNNER_TEMP:-/tmp}/ci-actions/attribution/run.sh"
+
+  test:
+    runs-on: docker
+    timeout-minutes: 10
+    steps:
+      - name: Fetch ci-actions
+        run: git clone -q --depth 1 --branch v1 "$GITHUB_SERVER_URL/bjorn/ci-actions.git" "${RUNNER_TEMP:-/tmp}/ci-actions"
+      - name: Checkout
+        env:
+          TOKEN: ${{ github.token }}
+        run: bash "${RUNNER_TEMP:-/tmp}/ci-actions/checkout/checkout.sh"
+      - run: npm ci
+        timeout-minutes: 5
+      - run: npm run build
+      - run: npm run lint
+      - run: npm test
+
+  github-sync:
+    if: github.event_name == 'push'
+    needs: [attribution, test]
+    runs-on: docker
+    timeout-minutes: 10
+    steps:
+      - name: Fetch ci-actions
+        run: git clone -q --depth 1 --branch v1 "$GITHUB_SERVER_URL/bjorn/ci-actions.git" "${RUNNER_TEMP:-/tmp}/ci-actions"
+      - name: Checkout
+        env:
+          TOKEN: ${{ github.token }}
+          DEPTH: "0"
+        run: bash "${RUNNER_TEMP:-/tmp}/ci-actions/checkout/checkout.sh"
+      - name: Push to GitHub
+        env:
+          DEPLOY_KEY: ${{ secrets.PUBLISH_DEPLOY_KEY }}
+          DENYLIST: ${{ secrets.DEPLOY_DENYLIST }}
+          REPO: polybjorn/obsidian-readest-highlights
+          REF: ${{ github.ref }}
+          TAGS: '[0-9]*'
+        run: bash "${RUNNER_TEMP:-/tmp}/ci-actions/github-sync/github-sync.sh"
