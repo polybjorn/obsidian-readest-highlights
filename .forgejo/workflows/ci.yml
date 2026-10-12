@@ -55,6 +55,13 @@ jobs:
         env:
           TOKEN: ${{ github.token }}
         run: bash "${RUNNER_TEMP:-/tmp}/ci-actions/checkout/checkout.sh"
+      # Offline against the runner's /osv cache, so the package list never
+      # reaches osv.dev. It reads the lockfile, so it sits ahead of npm ci.
+      # A finding to live with goes in osv-scanner.toml as [[IgnoredVulns]].
+      - name: Self-test the OSV gate
+        run: bash "${RUNNER_TEMP:-/tmp}/ci-actions/osv-scan/selftest.sh"
+      - name: Known vulnerabilities in dependencies
+        run: bash "${RUNNER_TEMP:-/tmp}/ci-actions/osv-scan/scan.sh"
       - run: npm ci
         timeout-minutes: 5
       - run: npm run build
