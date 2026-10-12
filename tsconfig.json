@@ -15,6 +15,9 @@
 		"isolatedModules": true,
 		"strictNullChecks": true,
 		"strictBindCallApply": true,
+		"strictFunctionTypes": true,
+		"strictPropertyInitialization": true,
+		"strictBuiltinIteratorReturn": true,
 		"allowSyntheticDefaultImports": true,
 		"useUnknownInCatchVariables": true,
 		"lib": [
