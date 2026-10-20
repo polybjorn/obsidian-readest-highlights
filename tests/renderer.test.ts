@@ -1042,3 +1042,80 @@ void test("renderFrontmatter keeps series and publisher plain by default", () =>
   assert.match(out, /series: "Kingkiller Chronicle"/);
   assert.match(out, /publisher: "DAW Books"/);
 });
+
+// --- reading progress and status tokens ---
+
+const fmOn = { ...opts.frontmatter, enabled: true };
+
+void test("{progress} renders a whole percentage in extra fields", () => {
+  const reading = { ...book, progress: [123, 400] as [number, number] };
+  const out = renderFrontmatter(reading, { ...fmOn, extra: "progress: {progress}" });
+  assert.match(out, /\nprogress: 31\n/);
+});
+
+void test("{progress} is empty when progress is null or total is 0", () => {
+  for (const progress of [null, [5, 0] as [number, number], undefined]) {
+    const out = renderFrontmatter(
+      { ...book, progress },
+      { ...fmOn, extra: 'progress: "{progress}"' },
+    );
+    assert.match(out, /\nprogress: ""\n/);
+  }
+});
+
+void test("{progress} clamps to 0-100", () => {
+  const over = { ...book, progress: [410, 400] as [number, number] };
+  const out = renderFrontmatter(over, { ...fmOn, extra: "progress: {progress}" });
+  assert.match(out, /\nprogress: 100\n/);
+});
+
+void test("{status} renders readingStatus in extra fields, empty when unset", () => {
+  const finished = { ...book, readingStatus: "finished" };
+  assert.match(
+    renderFrontmatter(finished, { ...fmOn, extra: "status: {status}" }),
+    /\nstatus: finished\n/,
+  );
+  assert.match(
+    renderFrontmatter(book, { ...fmOn, extra: 'status: "{status}"' }),
+    /\nstatus: ""\n/,
+  );
+});
+
+void test("{progress} and {status} substitute empty outside extra fields", () => {
+  const reading = {
+    ...book,
+    progress: [200, 400] as [number, number],
+    readingStatus: "reading",
+  };
+  assert.equal(bookFilename(reading, "{title} {progress}{status}"), "The Name of the Wind.md");
+  assert.equal(applyTemplate("{title} {status}", reading), "The Name of the Wind");
+});
+
+void test("1.8.0 settings render byte-identical output for a book with progress and status", () => {
+  // Every existing option on, with 1.8.0's tokens in the templates and extra
+  // fields; none of the new tokens appear, so the new book fields change nothing.
+  const full: RenderOptions = {
+    ...opts,
+    showHighlightCount: true,
+    syncHeadingTemplate: "{title} by {author}",
+    frontmatter: {
+      ...fmOn,
+      tags: ["book"],
+      authorFormat: "wikilink",
+      includeYear: true,
+      includeIsbn: true,
+      seriesFormat: "plain",
+      includeReadestHash: true,
+      extra: 'source: "readest://book/{hash}"',
+    },
+  };
+  const annotations = [makeAnnotation("1"), makeAnnotation("2", { page: 3 })];
+  const reading = {
+    ...book,
+    progress: [200, 400] as [number, number],
+    readingStatus: "reading",
+  };
+  const before = renderBookNote({ book, annotations }, full);
+  assert.equal(renderBookNote({ book: reading, annotations }, full), before);
+  assert.equal(bookFilename(reading, full.filenameTemplate), bookFilename(book, full.filenameTemplate));
+});

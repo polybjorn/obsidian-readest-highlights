@@ -10,6 +10,7 @@ export interface ReadestLibraryBook {
   deletedAt?: number | null;
   downloadedAt?: number | null;
   progress?: [number, number] | null;
+  readingStatus?: string;
   metadata?: {
     identifier?: string;
     title?: string;

@@ -21,6 +21,10 @@ Several settings accept token-based templates. Available tokens:
 | `{publisher}` | Publisher |
 | `{language}` | Language |
 | `{hash}` | Readest's internal book hash |
+| `{progress}` | Reading progress as a whole percentage, 0-100 with no `%`. Extra fields only |
+| `{status}` | Readest's reading status: `unread`, `reading`, `finished` or `abandoned`. Extra fields only |
+
+Tokens marked Extra fields only resolve in [Extra fields](#extra-fields) and substitute empty everywhere else, so a filename or heading never changes as you read. A token with no value (no progress recorded, or a book with no status set) is empty.
 
 Empty tokens collapse cleanly: surrounding whitespace, separators (`-`, `_`), a trailing `by`, and empty parentheses/brackets are trimmed.
 
@@ -168,6 +172,8 @@ If two notes accidentally share the same `readest-hash` (e.g. you duplicated a n
 ### Extra fields
 
 Free-form YAML appended inside the frontmatter block. [Tokens](#templates) are substituted, so `rating: ""` or `readest-id: "{hash}"` resolve against the book. Lines containing only `---` are stripped so a stray fence cannot break the block. Otherwise the content is spliced in as-is, so invalid YAML will break the frontmatter; you own the contents (if a substituted value could contain a colon or quote, wrap the field value in quotes).
+
+`progress: {progress}` and `status: {status}` give Bases a sortable number and a filterable status. A note using `{progress}` changes whenever your reading progress does, so each sync rewrites it more often than a note that only changes when highlights do.
 
 ## Rendering
 

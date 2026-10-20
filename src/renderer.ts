@@ -247,6 +247,27 @@ function capFilenameBytes(name: string, maxBytes: number): string {
   return out.trim();
 }
 
+// Reading progress as a whole percentage, with no "%" so Bases treats it as a
+// number. Readest stores [current page, total pages]; empty when unknown.
+function progressPercent(book: ReadestLibraryBook): string {
+  const p = book.progress;
+  if (!Array.isArray(p) || p.length < 2) return "";
+  const [current, total] = p;
+  if (!Number.isFinite(current) || !Number.isFinite(total) || total <= 0)
+    return "";
+  const pct = Math.round((current / total) * 100);
+  return String(Math.min(100, Math.max(0, pct)));
+}
+
+// Tokens that change as the book is read. They resolve only in extra fields,
+// so a filename or heading never moves with reading progress.
+function extraFieldTokens(book: ReadestLibraryBook): Record<string, string> {
+  return {
+    progress: progressPercent(book),
+    status: book.readingStatus ?? "",
+  };
+}
+
 function tokenMap(book: ReadestLibraryBook): Record<string, string> {
   return {
     title: book.title ?? "",
@@ -270,8 +291,11 @@ function tokenMap(book: ReadestLibraryBook): Record<string, string> {
 export function substituteTokens(
   template: string,
   book: ReadestLibraryBook,
+  extraFields = false,
 ): string {
-  const tokens = tokenMap(book);
+  const tokens = extraFields
+    ? { ...tokenMap(book), ...extraFieldTokens(book) }
+    : tokenMap(book);
   return template.replace(/\{(\w+)\}/g, (_, key: string) => tokens[key] ?? "");
 }
 
@@ -740,7 +764,7 @@ export function renderFrontmatter(
   }
   if (fm.includeReadestHash) lines.push(`readest-hash: ${book.hash}`);
 
-  const extra = substituteTokens(fm.extra, book)
+  const extra = substituteTokens(fm.extra, book, true)
     .split("\n")
     .filter((l) => l.trim() !== "---")
     .join("\n")

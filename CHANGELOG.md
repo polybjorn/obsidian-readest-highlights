@@ -8,6 +8,7 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 - Callout-style highlights can take a callout type per Readest highlight color, such as `[!quote-yellow]`, colored by the plugin's stylesheet: turn on Rendering > Highlights > Callout per color. Off by default, so existing notes render unchanged.
 - A Reset to defaults button at the bottom of the settings tab restores every setting to its default after a confirmation. It keeps the source paths and the output folder, so existing notes are still found on the next sync.
+- `{progress}` and `{status}` tokens for Extra fields: reading progress as a whole percentage (a number Bases can sort and filter) and Readest's reading status (`unread`, `reading`, `finished`, `abandoned`). Name the properties yourself, e.g. `progress: {progress}`. A note using `{progress}` is rewritten on each sync where your progress has moved. Both substitute empty in filename and heading templates.
 
 ### Changed
 
