@@ -11,6 +11,9 @@ import {
 } from "../src/renderer";
 import type { ReadestAnnotation, ReadestLibraryBook } from "../src/types";
 import type { RenderOptions } from "../src/renderer";
+import { optionsFromSettings } from "../src/renderer";
+import { DEFAULT_SETTINGS } from "../src/settings";
+import type { ReadestSettings } from "../src/settings";
 
 const book: ReadestLibraryBook = {
   hash: "abc123",
@@ -33,6 +36,7 @@ const opts: RenderOptions = {
   sortOrder: "page",
   showPage: true,
   showColor: false,
+  colorCallouts: false,
   showHighlightCount: false,
   collapseHighlightLineBreaks: false,
   renderUnderlines: true,
@@ -669,6 +673,64 @@ void test("highlightStyle callout wraps text in > [!quote] block", () => {
   );
   assert.match(out, /> \[!quote\]/);
   assert.match(out, /> quote text/);
+});
+
+void test("colorCallouts gives Readest's named colors their own callout type", () => {
+  const out = renderHighlightsBody(
+    [
+      makeAnnotation("a", { text: "red one", color: "red", page: 1 }),
+      makeAnnotation("b", { text: "violet one", color: "violet", page: 2 }),
+      makeAnnotation("c", { text: "hex one", color: "#ff8800", page: 3 }),
+      makeAnnotation("d", { text: "no color", color: null, page: 4 }),
+    ],
+    { ...opts, style: "callout", showPage: false, colorCallouts: true },
+  );
+  assert.match(out, /> \[!quote-red\]\n> red one/);
+  assert.match(out, /> \[!quote-violet\]\n> violet one/);
+  assert.match(out, /> \[!quote\]\n> hex one/);
+  assert.match(out, /> \[!quote\]\n> no color/);
+});
+
+void test("colorCallouts leaves non-callout styles alone", () => {
+  const out = renderHighlightsBody(
+    [makeAnnotation("a", { text: "quote text", color: "red" })],
+    { ...opts, style: "blockquote", showPage: false, colorCallouts: true },
+  );
+  assert.doesNotMatch(out, /quote-red/);
+  assert.match(out, /^> quote text/m);
+});
+
+void test("1.8.0 settings without colorCallouts render byte-identical output", () => {
+  // A data.json saved by 1.8.0 has no colorCallouts key; loadSettings fills it
+  // from DEFAULT_SETTINGS, which must reproduce the 1.8.0 output exactly.
+  const saved: Partial<ReadestSettings> = {
+    highlightStyle: "callout",
+    showColor: true,
+    showPage: true,
+  };
+  const settings: ReadestSettings = Object.assign({}, DEFAULT_SETTINGS, saved);
+  const out = renderHighlightsBody(
+    [
+      makeAnnotation("a", { text: "first", color: "yellow", page: 1 }),
+      makeAnnotation("b", { text: "second", color: "red", page: 2, note: "why" }),
+    ],
+    optionsFromSettings(settings),
+  );
+  assert.equal(
+    out,
+    [
+      "> [!quote]",
+      "> first",
+      ">",
+      "> *page 1 · yellow*",
+      "",
+      "> [!quote]",
+      "> second",
+      ">",
+      "> *page 2 · red*",
+      "> **Note:** why",
+    ].join("\n"),
+  );
 });
 
 // --- note placement and metadata ---

@@ -39,6 +39,7 @@ export interface ReadestSettings {
   appendHeadingTemplate: string;
   preserveManualEdits: boolean;
   highlightStyle: HighlightStyle;
+  colorCallouts: boolean;
   highlightSeparator: HighlightSeparator;
   highlightGrouping: HighlightGrouping;
   highlightSortOrder: HighlightSortOrder;
@@ -145,6 +146,7 @@ export const DEFAULT_SETTINGS: ReadestSettings = {
   appendHeadingTemplate: "{title} by {author}",
   preserveManualEdits: true,
   highlightStyle: "bullet",
+  colorCallouts: false,
   highlightSeparator: "blank",
   highlightGrouping: "none",
   highlightSortOrder: "page",
@@ -279,6 +281,7 @@ export class ReadestSettingTab extends PluginSettingTab {
     }
     if (
       key === "syncHeadingLevel" ||
+      key === "highlightStyle" ||
       key === "includeFrontmatter" ||
       key === "includeGenre"
     ) {
@@ -756,6 +759,13 @@ export class ReadestSettingTab extends PluginSettingTab {
                 bullet: "Bullet (- text)",
               },
             },
+          },
+          {
+            name: "Callout per color",
+            desc: "Use a callout type per Readest highlight color, such as [!quote-yellow]. Needs this plugin's styles to show the color.",
+            aliases: ["colour"],
+            visible: () => this.plugin.settings.highlightStyle === "callout",
+            control: { type: "toggle", key: "colorCallouts" },
           },
           {
             name: "Collapse line breaks",

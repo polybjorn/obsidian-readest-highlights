@@ -40,6 +40,7 @@ export interface RenderOptions {
   sortOrder: HighlightSortOrder;
   showPage: boolean;
   showColor: boolean;
+  colorCallouts: boolean;
   showHighlightCount: boolean;
   collapseHighlightLineBreaks: boolean;
   renderUnderlines: boolean;
@@ -69,6 +70,7 @@ export function optionsFromSettings(s: ReadestSettings): RenderOptions {
     sortOrder: s.highlightSortOrder,
     showPage: s.showPage,
     showColor: s.showColor,
+    colorCallouts: s.colorCallouts,
     showHighlightCount: s.showHighlightCount,
     collapseHighlightLineBreaks: s.collapseHighlightLineBreaks,
     renderUnderlines: s.renderUnderlines,
@@ -470,10 +472,25 @@ function metadataParts(
   return meta;
 }
 
+// Readest's predefined highlight colors (DEFAULT_HIGHLIGHT_COLORS in its
+// src/types/book.ts). Anything else, such as a custom hex color, keeps the
+// plain quote callout. styles.css styles one callout type per name.
+const CALLOUT_COLORS = new Set(["red", "yellow", "green", "blue", "violet"]);
+
+function calloutType(g: GroupedAnnotation, opts: RenderOptions): string {
+  if (!opts.colorCallouts) return "quote";
+  // A merged group can carry several colors; the first one recorded wins.
+  const [first] = g.colors;
+  return first !== undefined && CALLOUT_COLORS.has(first)
+    ? `quote-${first}`
+    : "quote";
+}
+
 function wrapStyle(
   textLines: string[],
   extras: string[],
   style: HighlightStyle,
+  callout = "quote",
 ): string {
   // An extra (e.g. an attached multi-line note) can span lines; every line
   // needs the style prefix or it escapes the blockquote/callout/bullet.
@@ -488,7 +505,7 @@ function wrapStyle(
       return out.join("\n");
     }
     case "callout": {
-      const out = ["> [!quote]"];
+      const out = [`> [!${callout}]`];
       for (const l of textLines) out.push(`> ${l}`);
       if (extraLines.length) {
         out.push(">");
@@ -541,7 +558,12 @@ function renderGroup(
   const linkUrl = readestLinkUrl(g, opts.readestLink);
   if (linkUrl) innerExtras.push(`[Open in Readest](${linkUrl})`);
 
-  const highlight = wrapStyle(textLines, innerExtras, opts.style);
+  const highlight = wrapStyle(
+    textLines,
+    innerExtras,
+    opts.style,
+    calloutType(g, opts),
+  );
 
   // Anchor the block ID to the highlight itself (on its own line after a blank
   // line, the placement Obsidian resolves for every style), so `#^id` links land

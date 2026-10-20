@@ -34,3 +34,33 @@
 .readest-inline-error:not(:empty) {
   margin-top: var(--size-4-1);
 }
+
+/* Callout types written by Rendering > Highlights > Callout per color, one per
+   Readest predefined highlight color. */
+.callout[data-callout="quote-red"],
+.callout[data-callout="quote-yellow"],
+.callout[data-callout="quote-green"],
+.callout[data-callout="quote-blue"],
+.callout[data-callout="quote-violet"] {
+  --callout-icon: lucide-quote;
+}
+
+.callout[data-callout="quote-red"] {
+  --callout-color: var(--color-red-rgb);
+}
+
+.callout[data-callout="quote-yellow"] {
+  --callout-color: var(--color-yellow-rgb);
+}
+
+.callout[data-callout="quote-green"] {
+  --callout-color: var(--color-green-rgb);
+}
+
+.callout[data-callout="quote-blue"] {
+  --callout-color: var(--color-blue-rgb);
+}
+
+.callout[data-callout="quote-violet"] {
+  --callout-color: var(--color-purple-rgb);
+}

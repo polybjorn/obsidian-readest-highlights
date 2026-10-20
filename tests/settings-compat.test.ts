@@ -173,6 +173,13 @@ void test("visibility predicates hide dependent rows", () => {
     false,
     "frontmatter rows hide when the master toggle is off",
   );
+
+  const callout = (style: ReadestSettings["highlightStyle"]) =>
+    render(makeTab(makePlugin({ highlightStyle: style }))).some(
+      (r) => r.name === "Callout per color",
+    );
+  assert.equal(callout("callout"), true);
+  assert.equal(callout("bullet"), false, "per-color row shows only for callouts");
 });
 
 void test("source list wires add, remove and reorder to backing-array indices", async () => {
@@ -317,6 +324,21 @@ void test("dependent-row changes re-render the tab on 1.12", async () => {
     "refreshDomState must rebuild the tab when the old API is in play",
   );
   assert.deepEqual(superCalls, [], "no 1.13-only base method was called");
+});
+
+void test("switching Style to callout re-renders to show the per-color row", async () => {
+  const plugin = makePlugin({ highlightStyle: "bullet" });
+  const tab = makeTab(plugin);
+  render(tab);
+  const has = () =>
+    rowsOf(container(tab)).some((r) => r.name === "Callout per color");
+  assert.equal(has(), false);
+
+  const dropdown = rowNamed(rowsOf(container(tab)), "Style").components[0];
+  assert.ok(dropdown instanceof DropdownComponent);
+  dropdown.emit("callout");
+  await wait(0);
+  assert.equal(has(), true);
 });
 
 void test("on 1.13 the tab delegates to the declarative base instead", async () => {
