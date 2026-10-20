@@ -259,12 +259,16 @@ function progressPercent(book: ReadestLibraryBook): string {
   return String(Math.min(100, Math.max(0, pct)));
 }
 
-// Tokens that change as the book is read. They resolve only in extra fields,
-// so a filename or heading never moves with reading progress.
-function extraFieldTokens(book: ReadestLibraryBook): Record<string, string> {
+// Tokens that resolve only in extra fields. Progress and status change as the
+// book is read, so a filename or heading would move with them.
+function extraFieldTokens(
+  book: ReadestLibraryBook,
+  cover: string,
+): Record<string, string> {
   return {
     progress: progressPercent(book),
     status: book.readingStatus ?? "",
+    cover,
   };
 }
 
@@ -292,9 +296,10 @@ export function substituteTokens(
   template: string,
   book: ReadestLibraryBook,
   extraFields = false,
+  cover = "",
 ): string {
   const tokens = extraFields
-    ? { ...tokenMap(book), ...extraFieldTokens(book) }
+    ? { ...tokenMap(book), ...extraFieldTokens(book, cover) }
     : tokenMap(book);
   return template.replace(/\{(\w+)\}/g, (_, key: string) => tokens[key] ?? "");
 }
@@ -706,6 +711,7 @@ export function renderHighlightsBody(
 export function renderFrontmatter(
   book: ReadestLibraryBook,
   fm: FrontmatterOptions,
+  cover = "",
 ): string {
   if (!fm.enabled) return "";
   const author = authorName(book);
@@ -764,7 +770,7 @@ export function renderFrontmatter(
   }
   if (fm.includeReadestHash) lines.push(`readest-hash: ${book.hash}`);
 
-  const extra = substituteTokens(fm.extra, book, true)
+  const extra = substituteTokens(fm.extra, book, true, cover)
     .split("\n")
     .filter((l) => l.trim() !== "---")
     .join("\n")
@@ -851,8 +857,8 @@ export function renderBookNote(
   parsed: ParsedBook,
   opts: RenderOptions,
 ): string {
-  const { book, annotations } = parsed;
-  const frontmatter = renderFrontmatter(book, opts.frontmatter);
+  const { book, annotations, cover } = parsed;
+  const frontmatter = renderFrontmatter(book, opts.frontmatter, cover);
   const heading = renderHeadingLine(book, opts);
   const body = prependHighlightCount(
     renderHighlightsBody(annotations, opts),
@@ -872,9 +878,10 @@ export function replaceHighlightsSection(
   book: ReadestLibraryBook,
   annotations: ReadestAnnotation[],
   opts: RenderOptions,
+  cover?: string,
 ): string {
   if (opts.syncHeadingLevel === 0) {
-    return renderBookNote({ book, annotations }, opts);
+    return renderBookNote({ book, annotations, cover }, opts);
   }
 
   const heading = renderHeadingLine(book, opts);

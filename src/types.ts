@@ -67,4 +67,8 @@ export interface ReadestBookConfig {
 export interface ParsedBook {
   book: ReadestLibraryBook;
   annotations: ReadestAnnotation[];
+  // Not part of Readest's data: vault path of the cover this plugin copied
+  // into the vault, for the {cover} token. Unset when copying is off or the
+  // book has no cover.
+  cover?: string;
 }

@@ -25,8 +25,8 @@ Desktop Obsidian with access to a Readest Books folder. Readest's built-in sync 
 
 ## What the plugin accesses
 
-- **Readest folder, read-only.** The plugin reads `library.json` and each book's `config.json`, and never writes there. The folder is set in Settings, and if left empty the [platform default](https://github.com/polybjorn/obsidian-readest-highlights/blob/main/docs/settings.md#source) is used. Because this folder is outside the vault, the plugin uses Node's `fs` module to read it.
-- **Vault, read and write.** On re-sync, the plugin matches books to existing notes in your output folder by their `readest-hash` frontmatter field, then creates or updates notes there.
+- **Readest folder, read-only.** The plugin reads `library.json`, each book's `config.json` and, if Cover folder is set, its `cover.png`, and never writes there. The folder is set in Settings, and if left empty the [platform default](https://github.com/polybjorn/obsidian-readest-highlights/blob/main/docs/settings.md#source) is used. Because this folder is outside the vault, the plugin uses Node's `fs` module to read it.
+- **Vault, read and write.** On re-sync, the plugin matches books to existing notes in your output folder by their `readest-hash` frontmatter field, then creates or updates notes there. If Cover folder is set, it also copies each book's `cover.png` into that folder as an image; covers are never deleted.
 - **No network.** The plugin makes no outbound requests.
 
 ## Disclaimer

@@ -32,6 +32,7 @@ export type { AnnotationFilter };
 export interface ReadestSettings {
   booksDirs: string[];
   outputFolder: string;
+  coverFolder: string;
   autoSyncOnStartup: boolean;
   autoSyncIntervalMinutes: number;
   filenameTemplate: string;
@@ -124,21 +125,28 @@ export async function resolveBooksDir(s: ReadestSettings): Promise<string> {
   );
 }
 
-// Keeps the output folder a safe vault-relative path: strips leading slashes
+// Keeps a folder setting a safe vault-relative path: strips leading slashes
 // (which would mean the vault root) and any "." / ".." segments (which could
-// escape the vault). Empty result falls back to the default folder.
-export function sanitizeOutputFolder(raw: string): string {
-  const segments = raw
+// escape the vault). May return empty.
+export function sanitizeVaultFolder(raw: string): string {
+  return raw
     .trim()
     .split("/")
     .map((s) => s.trim())
-    .filter((s) => s !== "" && s !== "." && s !== "..");
-  return segments.join("/") || DEFAULT_SETTINGS.outputFolder;
+    .filter((s) => s !== "" && s !== "." && s !== "..")
+    .join("/");
+}
+
+// The output folder can't be empty: that falls back to the default folder.
+export function sanitizeOutputFolder(raw: string): string {
+  return sanitizeVaultFolder(raw) || DEFAULT_SETTINGS.outputFolder;
 }
 
 export const DEFAULT_SETTINGS: ReadestSettings = {
   booksDirs: [],
   outputFolder: "Readest",
+  // Empty turns cover copying off, so an upgrade writes no new files.
+  coverFolder: "",
   autoSyncOnStartup: false,
   autoSyncIntervalMinutes: 0,
   filenameTemplate: "{title} ({year})",
@@ -249,7 +257,7 @@ export class ReadestSettingTab extends PluginSettingTab {
   private readonly notifyFolderSanitized = debounce(
     () => {
       new Notice(
-        "Readest: output folder adjusted to a safe vault-relative path.",
+        "Readest: folder adjusted to a safe vault-relative path.",
       );
     },
     800,
@@ -282,6 +290,14 @@ export class ReadestSettingTab extends PluginSettingTab {
           this.notifyFolderSanitized.cancel();
         }
         s.outputFolder = safe;
+        break;
+      }
+      case "coverFolder": {
+        const raw = String(value).trim();
+        const safe = sanitizeVaultFolder(raw);
+        if (safe !== raw) this.notifyFolderSanitized();
+        else this.notifyFolderSanitized.cancel();
+        s.coverFolder = safe;
         break;
       }
       case "filenameTemplate":
@@ -531,6 +547,15 @@ export class ReadestSettingTab extends PluginSettingTab {
               type: "text",
               key: "filenameTemplate",
               placeholder: DEFAULT_SETTINGS.filenameTemplate,
+            },
+          },
+          {
+            name: "Cover folder",
+            desc: "Vault folder to copy book covers into, for the {cover} token in Extra fields. Leave empty to copy none.",
+            control: {
+              type: "folder",
+              key: "coverFolder",
+              placeholder: "Off",
             },
           },
         ],

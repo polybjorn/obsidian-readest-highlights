@@ -9,6 +9,7 @@ import {
   normalizePath,
   requireApiVersion,
 } from "obsidian";
+import { syncCover } from "./covers";
 import { loadBooksWithAnnotations } from "./readest";
 import { buildAnnotationFilter } from "./filters";
 import {
@@ -172,8 +173,8 @@ export default class ReadestHighlightsPlugin extends Plugin {
     this.syncing = true;
     const notice = quiet ? null : new Notice("Readest: syncing...", 0);
     try {
-      const books = await this.loadBooks();
-      await this.ensureFolder(this.settings.outputFolder);
+      const { booksDir, books } = await this.loadBooks();
+      await this.ensureOutputFolders();
       await this.layoutReady();
       const { index: hashIndex, duplicateHashes } = this.buildHashIndex();
       this.warnIfDuplicateHashes(duplicateHashes);
@@ -185,7 +186,12 @@ export default class ReadestHighlightsPlugin extends Plugin {
 
       for (const parsed of books) {
         try {
-          const result = await this.writeBookNote(parsed, hashIndex, usedPaths);
+          const result = await this.writeBookNote(
+            parsed,
+            booksDir,
+            hashIndex,
+            usedPaths,
+          );
           if (result.action === "created") created++;
           else if (result.action === "updated") updated++;
         } catch (e) {
@@ -238,7 +244,7 @@ export default class ReadestHighlightsPlugin extends Plugin {
       return;
     }
     try {
-      const books = await this.loadBooks();
+      const { booksDir, books } = await this.loadBooks();
       if (books.length === 0) {
         new Notice("Readest: no books with highlights found.");
         return;
@@ -255,12 +261,13 @@ export default class ReadestHighlightsPlugin extends Plugin {
             }
             this.syncing = true;
             try {
-              await this.ensureFolder(this.settings.outputFolder);
+              await this.ensureOutputFolders();
               await this.layoutReady();
               const { index, duplicateHashes } = this.buildHashIndex();
               this.warnIfDuplicateHashes(duplicateHashes);
               const result = await this.writeBookNote(
                 picked,
+                booksDir,
                 index,
                 new Set<string>(),
               );
@@ -284,7 +291,7 @@ export default class ReadestHighlightsPlugin extends Plugin {
 
   async openAppendPicker(targetFile: TFile) {
     try {
-      const books = await this.loadBooks();
+      const { books } = await this.loadBooks();
       if (books.length === 0) {
         new Notice("Readest: no books with highlights found.");
         return;
@@ -326,11 +333,14 @@ export default class ReadestHighlightsPlugin extends Plugin {
     }
   }
 
-  private async loadBooks(): Promise<ParsedBook[]> {
+  private async loadBooks(): Promise<{
+    booksDir: string;
+    books: ParsedBook[];
+  }> {
     const filter = buildAnnotationFilter(this.settings.annotationFilter);
     const dir = await resolveBooksDir(this.settings);
     await this.rememberBooksDir(dir);
-    return loadBooksWithAnnotations(dir, {
+    const books = await loadBooksWithAnnotations(dir, {
       filter,
       onUnreadableHighlights: (count) => {
         new Notice(
@@ -345,6 +355,7 @@ export default class ReadestHighlightsPlugin extends Plugin {
         );
       },
     });
+    return { booksDir: dir, books };
   }
 
   private async rememberBooksDir(dir: string) {
@@ -400,10 +411,23 @@ export default class ReadestHighlightsPlugin extends Plugin {
   }
 
   private async writeBookNote(
-    parsed: ParsedBook,
+    book: ParsedBook,
+    booksDir: string,
     hashIndex: Map<string, TFile>,
     usedPaths: Set<string> = new Set(),
   ): Promise<SyncResult> {
+    const coverFolder = this.settings.coverFolder;
+    const parsed: ParsedBook = coverFolder
+      ? {
+          ...book,
+          cover: await syncCover(
+            this.app.vault,
+            booksDir,
+            book.book.hash,
+            normalizePath(coverFolder),
+          ),
+        }
+      : book;
     const opts = optionsFromSettings(this.settings);
     const filename = bookFilename(parsed.book, this.settings.filenameTemplate);
     let templatedPath = normalizePath(
@@ -439,6 +463,7 @@ export default class ReadestHighlightsPlugin extends Plugin {
               parsed.book,
               parsed.annotations,
               opts,
+              parsed.cover,
             )
           : renderBookNote(parsed, opts);
       // Cheap pre-check so an unchanged note is not rewritten: vault.process
@@ -514,6 +539,13 @@ export default class ReadestHighlightsPlugin extends Plugin {
     });
   }
 
+  private async ensureOutputFolders() {
+    await this.ensureFolder(this.settings.outputFolder);
+    if (this.settings.coverFolder) {
+      await this.ensureFolder(this.settings.coverFolder);
+    }
+  }
+
   private async ensureFolder(path: string) {
     const normalized = normalizePath(path);
     const existing = this.app.vault.getAbstractFileByPath(normalized);
@@ -521,7 +553,7 @@ export default class ReadestHighlightsPlugin extends Plugin {
       await this.app.vault.createFolder(normalized);
     } else if (!(existing instanceof TFolder)) {
       throw new Error(
-        `Output folder path "${normalized}" is a file, not a folder.`,
+        `Folder path "${normalized}" is a file, not a folder.`,
       );
     }
   }

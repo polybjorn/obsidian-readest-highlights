@@ -23,6 +23,7 @@ Several settings accept token-based templates. Available tokens:
 | `{hash}` | Readest's internal book hash |
 | `{progress}` | Reading progress as a whole percentage, 0-100 with no `%`. Extra fields only |
 | `{status}` | Readest's reading status: `unread`, `reading`, `finished` or `abandoned`. Extra fields only |
+| `{cover}` | Vault path of the book's copied cover, e.g. `Covers/<hash>.png`. Extra fields only; empty when [Cover folder](#cover-folder) is unset or the book has no cover |
 
 Tokens marked Extra fields only resolve in [Extra fields](#extra-fields) and substitute empty everywhere else, so a filename or heading never changes as you read. A token with no value (no progress recorded, or a book with no status set) is empty.
 
@@ -57,6 +58,12 @@ Vault folder where book notes live. Defaults to `Readest`. Existing vault folder
 Token-aware. Default `{title} ({year})`. The result is sanitized (Windows-reserved characters stripped) and capped at 200 characters to stay under common filesystem limits.
 
 If two books produce the same filename, the second is written to `<filename> (<hash8>).md` instead of overwriting the first.
+
+#### Cover folder
+
+Vault folder to copy book covers into. Empty by default, which turns copying off. When set, each synced book's cover (`cover.png` in its Readest folder) is copied to `<folder>/<hash>.png`; naming by hash keeps the path stable when a title or the filename template changes. A cover is only written when it is missing or differs from Readest's, so background syncs do not rewrite images. Covers are never deleted, including those of books removed from Readest.
+
+The plugin adds no cover property itself. Name one in [Extra fields](#extra-fields) with the `{cover}` token, for example `poster: "[[{cover}]]"`, to show covers in Bases card views. Existing notes pick it up on the next sync only when [Preserve manual edits](#preserve-manual-edits) is off or [Heading level](#heading-level) is `None`, since preserving leaves frontmatter alone.
 
 ### Auto-sync
 
