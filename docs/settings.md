@@ -248,6 +248,8 @@ Group highlights under headings (one level below the sync heading):
 
 Chapter titles come from a table-of-contents cache Readest writes the first time a book is opened. If a book shows no chapter headings, open it once in Readest and re-sync. Highlights the cache cannot place (or books without a cache) render without headings.
 
+Readest writes no such cache for PDFs, so for a PDF the plugin reads the chapter titles from the bookmarks (outline) in the PDF file Readest keeps, and places each highlight by its page. A PDF without bookmarks renders without headings.
+
 #### Separator
 
 How highlights are separated, also within groups:

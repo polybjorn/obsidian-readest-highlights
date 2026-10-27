@@ -6,6 +6,7 @@ import {
   Plugin,
   TFile,
   TFolder,
+  loadPdfJs,
   normalizePath,
   requireApiVersion,
 } from "obsidian";
@@ -342,6 +343,7 @@ export default class ReadestHighlightsPlugin extends Plugin {
     await this.rememberBooksDir(dir);
     const books = await loadBooksWithAnnotations(dir, {
       filter,
+      loadPdf: loadPdfJs,
       onUnreadableHighlights: (count) => {
         new Notice(
           `Readest: ${count} highlight(s) could not be read. Readest's note format may have changed - update the Readest Highlights plugin if highlights are missing.`,

@@ -1,6 +1,7 @@
 import { readFile } from "fs/promises";
 import { join } from "path";
 import { chapterForCfi, readNavChapters } from "./nav";
+import { chapterForPage, readPdfChapters, type PdfJs } from "./pdf-nav";
 import type {
   ParsedBook,
   ReadestAnnotation,
@@ -96,12 +97,16 @@ export async function loadBooksWithAnnotations(
     filter,
     onUnreadableHighlights,
     onNewerSchemaVersion,
+    loadPdf,
   }: {
     includeDeleted?: boolean;
     onlyWithAnnotations?: boolean;
     filter?: (a: ReadestAnnotation) => boolean;
     onUnreadableHighlights?: (count: number) => void;
     onNewerSchemaVersion?: (versions: number[]) => void;
+    // pdf.js loader for PDF chapter titles (Obsidian's loadPdfJs). Without
+    // one, PDFs get no chapters, as before.
+    loadPdf?: () => Promise<PdfJs>;
   } = {},
 ): Promise<ParsedBook[]> {
   const library = await readLibrary(booksDir);
@@ -186,6 +191,16 @@ export async function loadBooksWithAnnotations(
           if (!a.cfi) continue;
           const chapter = chapterForCfi(chapters, a.cfi);
           if (chapter !== null) a.chapter = chapter;
+        }
+      } else if (loadPdf && book.format.toUpperCase() === "PDF") {
+        // Readest writes no nav.json for PDFs; read the file's outline instead.
+        const pdfChapters = await readPdfChapters(booksDir, book.hash, loadPdf);
+        if (pdfChapters) {
+          for (const a of annotations) {
+            if (!a.page) continue;
+            const chapter = chapterForPage(pdfChapters, a.page);
+            if (chapter !== null) a.chapter = chapter;
+          }
         }
       }
     }

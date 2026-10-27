@@ -10,6 +10,7 @@ All notable changes to this project are documented here. Format based on [Keep a
 - A Reset to defaults button at the bottom of the settings tab restores every setting to its default after a confirmation. It keeps the source paths and the output folder, so existing notes are still found on the next sync.
 - `{progress}` and `{status}` tokens for Extra fields: reading progress as a whole percentage (a number Bases can sort and filter) and Readest's reading status (`unread`, `reading`, `finished`, `abandoned`). Name the properties yourself, e.g. `progress: {progress}`. Sync keeps these fields current, with Preserve manual edits on as well, and leaves the rest of the frontmatter as it is, so a note using `{progress}` is rewritten whenever your progress moves. Both substitute empty in filename and heading templates.
 - Book covers can be copied into the vault: set Setup > Output > Cover folder, and each book's cover is saved as `<folder>/<hash>.png`. A new `{cover}` token gives its path in Extra fields, e.g. `poster: "[[{cover}]]"` for Bases card views. Off by default, so existing vaults get no new files.
+- Chapter headings now work for PDFs. Readest keeps no table-of-contents cache for them, so the chapter titles are read from the PDF's own bookmarks and highlights are placed by page. PDFs without bookmarks render without headings, as before. (#58, thanks @a-rock-lobster)
 
 ### Changed
 
