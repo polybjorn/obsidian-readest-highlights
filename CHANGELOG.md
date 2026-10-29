@@ -8,21 +8,22 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ### Added
 
-- Callout-style highlights can take a callout type per Readest highlight color, such as `[!quote-yellow]`, colored by the plugin's stylesheet: turn on Rendering > Highlights > Callout per color. Off by default, so existing notes render unchanged. On mobile, where the plugin does not run, a CSS snippet from the docs shows the colors.
-- A Reset to defaults button at the bottom of the settings tab restores every setting to its default after a confirmation. It keeps the source paths and the output folder, so existing notes are still found on the next sync.
-- `{progress}` and `{status}` tokens for Extra fields: reading progress as a whole percentage (a number Bases can sort and filter) and Readest's reading status (`unread`, `reading`, `finished`, `abandoned`). Name the properties yourself, e.g. `progress: {progress}`. Sync keeps these fields current, with Preserve manual edits on as well, and leaves the rest of the frontmatter as it is, so a note using `{progress}` is rewritten whenever your progress moves. Both substitute empty in filename and heading templates.
-- Book covers can be copied into the vault: set Setup > Output > Cover folder, and each book's cover is saved as `<folder>/<hash>.png`. A new `{cover}` token gives its path in Extra fields, e.g. `poster: "[[{cover}]]"` for Bases card views. Off by default, so existing vaults get no new files.
-- Chapter headings now work for PDFs. Readest keeps no table-of-contents cache for them, so the chapter titles are read from the PDF's own bookmarks and highlights are placed by page. PDFs without bookmarks render without headings, as before. (#58, thanks @a-rock-lobster)
+- Callout per color (Rendering > Highlights): callout-style highlights get a callout type per Readest color, such as `[!quote-yellow]`, styled by the plugin. Off by default. The plugin doesn't run on mobile, so the docs have a CSS snippet for the colors there.
+- A Reset to defaults button at the bottom of the settings tab. It asks first, and keeps the source paths and output folder so the next sync still finds your notes.
+- `{progress}` and `{status}` tokens for Extra fields, e.g. `progress: {progress}`. Progress is a whole percentage that Bases can sort and filter; status is Readest's `unread`, `reading`, `finished` or `abandoned`. Sync updates these fields even with Preserve manual edits on, so a note using `{progress}` changes whenever your progress does. They are empty in filename and heading templates.
+- Cover folder (Setup > Output) copies each book's cover into the vault as `<folder>/<hash>.png`, and the new `{cover}` token gives its path, e.g. `poster: "[[{cover}]]"` for Bases card views. Off by default.
+- Chapter headings for PDFs, taken from the PDF's bookmarks since Readest keeps no table of contents for them. PDFs without bookmarks still have no headings. (#58, thanks @a-rock-lobster)
 
 ### Changed
 
-- Separator None keeps each highlight its own paragraph: blockquotes and callouts run on as one block with a paragraph per highlight (with Callout per color, a new color starts a new callout), and plain text renders as with Blank line. Before, highlights ran together line by line, so a highlight read as part of the previous one's page line.
-- The default tag on new notes is now `book` instead of `Book`, matching Obsidian's lowercase tag convention and the plugin's genre tags. It applies to new installs and to settings never changed from the defaults; Obsidian counts both spellings as one tag.
+- Separator None no longer runs highlights together. Each highlight gets its own paragraph, blockquotes and callouts stay one block, and plain text renders as with Blank line. With Callout per color, a new color starts a new callout.
+- The default tag is now `book` instead of `Book`, matching Obsidian's lowercase convention and the genre tags. This applies to new installs and to settings still at the default.
 
 ### Fixed
 
-- Readest's squiggly underline now renders as an underline when Render underlines is on, drawn wavy in Obsidian on desktop. Before, it looked like a plain highlight.
-- Separator None with the Callout style merged every highlight into the first callout and left the later callout headers as literal text. A highlight after a separated note, a note callout or a block ID no longer runs into it: in the Plain style it joined that paragraph, and after a note callout a blockquote or callout highlight became part of the note.
+- Readest's squiggly underline renders as a wavy underline when Render underlines is on, instead of as a plain highlight.
+- Separator None with the Callout style put every highlight into the first callout and left the later callout headers as literal text.
+- A highlight after a separated note, a note callout or a block ID no longer merges into it.
 
 ## [1.8.0] - 2026-10-10
 
