@@ -204,13 +204,23 @@ How each highlight is rendered in markdown:
 - **Blockquote** (`> text`)
 - **Plain text**
 - **Callout** (`> [!quote]` block)
-- **Bullet** (`- text`)
+- **Bullet** (`- text`, default)
 
 #### Callout per color
 
 Shown when Style is Callout. Off by default, which keeps every highlight a `> [!quote]` callout. On, a highlight in one of Readest's predefined colors (red, yellow, green, blue, violet) becomes a callout of its own type, `> [!quote-yellow]` and so on, which the plugin's stylesheet colors to match and shows without a title bar. A custom hex color stays `> [!quote]`, and a highlight merged from records of several colors takes the first.
 
-The colors come from this plugin's `styles.css`. A vault without it, for example the same notes opened on a device where the plugin is not installed or is disabled, renders these as default callouts: Obsidian treats an unknown callout type as a plain note callout with the type as its title.
+The colors come from this plugin's `styles.css`. The plugin runs on desktop only, so on a phone or tablet, and in a vault where it is not installed or is disabled, these render as default callouts: Obsidian treats an unknown callout type as a plain note callout with the type as its title. To show the colors there, save this as a `.css` file in the vault's `.obsidian/snippets/` folder and turn it on under Settings -> Appearance -> CSS snippets (Obsidian 1.13 or later):
+
+```css
+.callout[data-callout^="quote-"] { --callout-icon: lucide-quote; }
+.callout[data-callout^="quote-"] > .callout-title { display: none; }
+.callout[data-callout="quote-red"] { --callout-color: var(--color-red); }
+.callout[data-callout="quote-yellow"] { --callout-color: var(--color-yellow); }
+.callout[data-callout="quote-green"] { --callout-color: var(--color-green); }
+.callout[data-callout="quote-blue"] { --callout-color: var(--color-blue); }
+.callout[data-callout="quote-violet"] { --callout-color: var(--color-purple); }
+```
 
 #### Sort order
 
