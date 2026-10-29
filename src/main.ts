@@ -7,6 +7,7 @@ import {
   TFile,
   TFolder,
   normalizePath,
+  requireApiVersion,
 } from "obsidian";
 import { loadBooksWithAnnotations } from "./readest";
 import { buildAnnotationFilter } from "./filters";
@@ -73,6 +74,13 @@ export default class ReadestHighlightsPlugin extends Plugin {
     });
 
     this.addSettingTab(new ReadestSettingTab(this.app, this));
+
+    // The per-color callout CSS changes convention at 1.13 (see styles.css);
+    // no CSS feature query can tell the two apart, so the version picks it.
+    if (!requireApiVersion("1.13.0")) {
+      document.body.addClass("readest-legacy-callouts");
+      this.register(() => document.body.removeClass("readest-legacy-callouts"));
+    }
 
     if (this.settings.autoSyncOnStartup) {
       // The hash index that re-finds renamed notes reads frontmatter from

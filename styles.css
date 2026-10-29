@@ -45,22 +45,74 @@
   --callout-icon: lucide-quote;
 }
 
+/* The color carries the meaning, and a typed callout otherwise titles itself
+   after its type ("Quote green"). */
+.callout[data-callout="quote-red"] > .callout-title,
+.callout[data-callout="quote-yellow"] > .callout-title,
+.callout[data-callout="quote-green"] > .callout-title,
+.callout[data-callout="quote-blue"] > .callout-title,
+.callout[data-callout="quote-violet"] > .callout-title {
+  display: none;
+}
+
+/* Obsidian trims the outer paragraph margins in a blockquote but not in a
+   callout, where the title sits above them; without the title they read as
+   blank lines. */
+.callout[data-callout="quote-red"] > .callout-content > :first-child,
+.callout[data-callout="quote-yellow"] > .callout-content > :first-child,
+.callout[data-callout="quote-green"] > .callout-content > :first-child,
+.callout[data-callout="quote-blue"] > .callout-content > :first-child,
+.callout[data-callout="quote-violet"] > .callout-content > :first-child {
+  margin-top: 0;
+}
+
+.callout[data-callout="quote-red"] > .callout-content > :last-child,
+.callout[data-callout="quote-yellow"] > .callout-content > :last-child,
+.callout[data-callout="quote-green"] > .callout-content > :last-child,
+.callout[data-callout="quote-blue"] > .callout-content > :last-child,
+.callout[data-callout="quote-violet"] > .callout-content > :last-child {
+  margin-bottom: 0;
+}
+
 .callout[data-callout="quote-red"] {
-  --callout-color: var(--color-red-rgb);
+  --callout-color: var(--color-red);
 }
 
 .callout[data-callout="quote-yellow"] {
-  --callout-color: var(--color-yellow-rgb);
+  --callout-color: var(--color-yellow);
 }
 
 .callout[data-callout="quote-green"] {
-  --callout-color: var(--color-green-rgb);
+  --callout-color: var(--color-green);
 }
 
 .callout[data-callout="quote-blue"] {
-  --callout-color: var(--color-blue-rgb);
+  --callout-color: var(--color-blue);
 }
 
 .callout[data-callout="quote-violet"] {
+  --callout-color: var(--color-purple);
+}
+
+/* Obsidian 1.12 wraps --callout-color in rgba() itself, so it needs the bare
+   r,g,b triplet; 1.13+ mixes it with color-mix(), which needs a full color.
+   main.ts sets the class below 1.13. */
+.readest-legacy-callouts .callout[data-callout="quote-red"] {
+  --callout-color: var(--color-red-rgb);
+}
+
+.readest-legacy-callouts .callout[data-callout="quote-yellow"] {
+  --callout-color: var(--color-yellow-rgb);
+}
+
+.readest-legacy-callouts .callout[data-callout="quote-green"] {
+  --callout-color: var(--color-green-rgb);
+}
+
+.readest-legacy-callouts .callout[data-callout="quote-blue"] {
+  --callout-color: var(--color-blue-rgb);
+}
+
+.readest-legacy-callouts .callout[data-callout="quote-violet"] {
   --callout-color: var(--color-purple-rgb);
 }

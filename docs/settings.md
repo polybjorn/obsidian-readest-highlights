@@ -191,7 +191,7 @@ How each highlight is rendered in markdown:
 
 #### Callout per color
 
-Shown when Style is Callout. Off by default, which keeps every highlight a `> [!quote]` callout. On, a highlight in one of Readest's predefined colors (red, yellow, green, blue, violet) becomes a callout of its own type, `> [!quote-yellow]` and so on, which the plugin's stylesheet colors to match. A custom hex color stays `> [!quote]`, and a highlight merged from records of several colors takes the first.
+Shown when Style is Callout. Off by default, which keeps every highlight a `> [!quote]` callout. On, a highlight in one of Readest's predefined colors (red, yellow, green, blue, violet) becomes a callout of its own type, `> [!quote-yellow]` and so on, which the plugin's stylesheet colors to match and shows without a title bar. A custom hex color stays `> [!quote]`, and a highlight merged from records of several colors takes the first.
 
 The colors come from this plugin's `styles.css`. A vault without it, for example the same notes opened on a device where the plugin is not installed or is disabled, renders these as default callouts: Obsidian treats an unknown callout type as a plain note callout with the type as its title.
 
