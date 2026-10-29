@@ -1,6 +1,6 @@
 # Contributing
 
-This is a small community plugin maintained by a single author; bug reports, small fixes, and well-scoped feature PRs are all welcome.
+This is a small community plugin with one maintainer; bug reports, small fixes, and well-scoped feature PRs are all welcome.
 
 ## Development setup
 
