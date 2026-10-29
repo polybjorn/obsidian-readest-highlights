@@ -4,6 +4,8 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-10-29
+
 ### Added
 
 - Callout-style highlights can take a callout type per Readest highlight color, such as `[!quote-yellow]`, colored by the plugin's stylesheet: turn on Rendering > Highlights > Callout per color. Off by default, so existing notes render unchanged. On mobile, where the plugin does not run, a CSS snippet from the docs shows the colors.
@@ -197,7 +199,11 @@ Requires Obsidian 1.13.0 or later. Users on older Obsidian versions stay on plug
 
 - Initial release.
 
-[Unreleased]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.5.2...HEAD
+[Unreleased]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.9.0...HEAD
+[1.9.0]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.8.0...1.9.0
+[1.8.0]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.7.0...1.8.0
+[1.7.0]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.6.0...1.7.0
+[1.6.0]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.5.2...1.6.0
 [1.5.2]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.5.1...1.5.2
 [1.5.1]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.5.0...1.5.1
 [1.5.0]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.4.0...1.5.0
