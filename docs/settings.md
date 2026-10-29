@@ -199,7 +199,7 @@ Which annotations to include:
 
 #### Style
 
-How each highlight is rendered in markdown:
+How each highlight is rendered in markdown. Underlines and squiggly underlines count as highlights here: they get the same block, and [Render underlines](#render-underlines) marks them inside it.
 
 - **Blockquote** (`> text`)
 - **Plain text**
@@ -289,7 +289,7 @@ Each is an independent toggle. The page number is omitted when grouping by page 
 
 #### Render underlines
 
-When on, underlined annotations are wrapped in `<u>...</u>` so they render with an underline in preview.
+When on, underlined annotations are wrapped in `<u>...</u>` so they render with an underline in preview. Readest's squiggly style gets `<u class="readest-squiggly">`, which the plugin's stylesheet draws as a wavy underline; where the plugin does not run, as on mobile, it shows as a plain underline.
 
 #### Placement
 

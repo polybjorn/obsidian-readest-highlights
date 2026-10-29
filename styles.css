@@ -39,6 +39,12 @@
   margin-top: var(--size-4-1);
 }
 
+/* Readest's squiggly style. Without this stylesheet, as on mobile, the <u>
+   still shows a plain underline. */
+u.readest-squiggly {
+  text-decoration-style: wavy;
+}
+
 /* Callout types written by Rendering > Highlights > Callout per color, one per
    Readest predefined highlight color. */
 .callout[data-callout="quote-red"],

@@ -561,10 +561,13 @@ function renderGroup(
   opts: RenderOptions,
   blockId?: string,
 ): string {
-  const text =
-    opts.renderUnderlines && g.styles.has("underline")
+  const text = !opts.renderUnderlines
+    ? g.text
+    : g.styles.has("underline")
       ? `<u>${g.text}</u>`
-      : g.text;
+      : g.styles.has("squiggly")
+        ? `<u class="readest-squiggly">${g.text}</u>`
+        : g.text;
   const textLines = text.split("\n");
   const parts = metadataParts(g, opts);
   const metaBelow = parts.length ? `*${parts.join(" · ")}*` : null;

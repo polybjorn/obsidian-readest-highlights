@@ -19,6 +19,7 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ### Fixed
 
+- Readest's squiggly underline now renders as an underline when Render underlines is on, drawn wavy in Obsidian on desktop. Before, it looked like a plain highlight.
 - Separator None with the Callout style merged every highlight into the first callout and left the later callout headers as literal text. A highlight after a separated note, a note callout or a block ID no longer runs into it: in the Plain style it joined that paragraph, and after a note callout a blockquote or callout highlight became part of the note.
 
 ## [1.8.0] - 2026-10-10

@@ -1184,3 +1184,16 @@ void test("preserve-mode sync keeps {progress} current in the frontmatter", () =
   assert.match(out, /^---\nprogress: 50\nstatus: reading\n---/);
   assert.match(out, /> text 1/);
 });
+
+void test("a squiggly annotation renders as a wavy-classed underline", () => {
+  const out = renderBookNote(
+    { book, annotations: [makeAnnotation("1", { text: "wavy bit", style: "squiggly" })] },
+    opts,
+  );
+  assert.match(out, /<u class="readest-squiggly">wavy bit<\/u>/);
+  const off = renderBookNote(
+    { book, annotations: [makeAnnotation("1", { text: "wavy bit", style: "squiggly" })] },
+    { ...opts, renderUnderlines: false },
+  );
+  assert.doesNotMatch(off, /<u/);
+});
