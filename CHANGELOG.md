@@ -14,6 +14,7 @@ All notable changes to this project are documented here. Format based on [Keep a
 ### Changed
 
 - Separator None keeps each highlight its own paragraph: blockquotes and callouts run on as one block with a paragraph per highlight (with Callout per color, a new color starts a new callout), and plain text renders as with Blank line. Before, highlights ran together line by line, so a highlight read as part of the previous one's page line.
+- The default tag on new notes is now `book` instead of `Book`, matching Obsidian's lowercase tag convention and the plugin's genre tags. It applies to new installs and to settings never changed from the defaults; Obsidian counts both spellings as one tag.
 
 ### Fixed
 

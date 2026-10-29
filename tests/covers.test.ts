@@ -113,6 +113,7 @@ void test("1.8.0 settings with no cover keys render byte-identical output", () =
   // Saved data from 1.8.0 has no coverFolder; loadSettings merges defaults.
   const saved: Partial<ReadestSettings> = {
     ...DEFAULT_SETTINGS,
+    frontmatterTags: "Book",
     extraFrontmatter: 'rating: ""\nposter: "{hash}"',
   };
   delete saved.coverFolder;

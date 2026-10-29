@@ -171,7 +171,7 @@ export const DEFAULT_SETTINGS: ReadestSettings = {
   readestLink: "off",
   annotationFilter: "all",
   includeFrontmatter: true,
-  frontmatterTags: "Book",
+  frontmatterTags: "book",
   authorFormat: "wikilink",
   includeYear: true,
   includeIsbn: true,
