@@ -7,7 +7,6 @@ All notable changes to this project are documented here. Format based on [Keep a
 ### Added
 
 - Callout-style highlights can take a callout type per Readest highlight color, such as `[!quote-yellow]`, colored by the plugin's stylesheet: turn on Rendering > Highlights > Callout per color. Off by default, so existing notes render unchanged.
-- `docs/gallery`: sample notes that render one book under each settings area, to compare the options in a vault.
 
 ### Changed
 
@@ -15,7 +14,7 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ### Fixed
 
-- Separator None with the Callout style merged every highlight into the first callout and left the later callout headers as literal text. A highlight followed by a separated note, a note callout or a block ID now ends its block in every style, so the next highlight no longer runs into it.
+- Separator None with the Callout style merged every highlight into the first callout and left the later callout headers as literal text. A highlight after a separated note, a note callout or a block ID no longer runs into it: in the Plain style it joined that paragraph, and after a note callout a blockquote or callout highlight became part of the note.
 
 ## [1.8.0] - 2026-10-10
 
