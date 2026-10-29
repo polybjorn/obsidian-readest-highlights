@@ -63,7 +63,7 @@ If two books produce the same filename, the second is written to `<filename> (<h
 
 Vault folder to copy book covers into. Empty by default, which turns copying off. When set, each synced book's cover (`cover.png` in its Readest folder) is copied to `<folder>/<hash>.png`; naming by hash keeps the path stable when a title or the filename template changes. A cover is only written when it is missing or differs from Readest's, so background syncs do not rewrite images. Covers are never deleted, including those of books removed from Readest.
 
-The plugin adds no cover property itself. Name one in [Extra fields](#extra-fields) with the `{cover}` token, for example `poster: "[[{cover}]]"`, to show covers in Bases card views. Existing notes pick it up on the next sync only when [Preserve manual edits](#preserve-manual-edits) is off or [Heading level](#heading-level) is `None`, since preserving leaves frontmatter alone.
+The plugin adds no cover property itself. Name one in [Extra fields](#extra-fields) with the `{cover}` token, for example `poster: "[[{cover}]]"`, to show covers in Bases card views. Existing notes pick it up on the next sync.
 
 ### Auto-sync
 
@@ -95,7 +95,7 @@ Token-aware heading text used by the "Append one book to current note..." comman
 
 ### Preserve manual edits
 
-When on (default), re-sync rewrites only the section under the sync heading. Frontmatter and any other content outside that section are preserved across syncs. When off, sync rewrites the entire file including frontmatter.
+When on (default), re-sync rewrites only the section under the sync heading, plus the [Extra fields](#extra-fields) that use `{progress}`, `{status}` or `{cover}`. The rest of the frontmatter and any other content outside that section are preserved across syncs. When off, sync rewrites the entire file including frontmatter.
 
 Force-disabled when Heading level is `None`.
 
@@ -180,7 +180,9 @@ If two notes accidentally share the same `readest-hash` (e.g. you duplicated a n
 
 Free-form YAML appended inside the frontmatter block. [Tokens](#templates) are substituted, so `rating: ""` or `readest-id: "{hash}"` resolve against the book. Lines containing only `---` are stripped so a stray fence cannot break the block. Otherwise the content is spliced in as-is, so invalid YAML will break the frontmatter; you own the contents (if a substituted value could contain a colon or quote, wrap the field value in quotes).
 
-`progress: {progress}` and `status: {status}` give Bases a sortable number and a filterable status. A note using `{progress}` changes whenever your reading progress does, so each sync rewrites it more often than a note that only changes when highlights do.
+`progress: {progress}` and `status: {status}` give Bases a sortable number and a filterable status.
+
+With [Preserve manual edits](#preserve-manual-edits) on, sync keeps the fields that use `{progress}`, `{status}` or `{cover}` up to date and adds them to notes that lack them. Every other field stays as it is, so hand edits survive, and a field added here later reaches existing notes only if it uses one of those three tokens. A field is kept up to date only when it fits on one line; one that a note has turned into a list, or holds twice or with its key in quotes, is left alone. A note using `{progress}` changes whenever your reading progress does, so it is rewritten more often than a note that only changes when highlights do.
 
 ## Rendering
 

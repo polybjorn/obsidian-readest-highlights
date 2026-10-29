@@ -781,6 +781,49 @@ export function renderFrontmatter(
   return lines.join("\n");
 }
 
+// Preserve mode leaves frontmatter alone, which would freeze {progress},
+// {status} and {cover} at the values the note was created with. A field whose
+// template uses one of them only ever holds that value, so it is kept current.
+// Every other field may carry hand edits and stays as it is, which also keeps
+// notes written before these tokens existed byte-identical.
+export function syncExtraFields(
+  existing: string,
+  book: ReadestLibraryBook,
+  fm: FrontmatterOptions,
+  cover = "",
+): string {
+  if (!fm.enabled || !fm.extra.trim()) return existing;
+  const lines = existing.split("\n");
+  if (lines[0] !== "---") return existing;
+  // Matching only an exact "---" would skip a fence with trailing spaces and
+  // take a horizontal rule further down the body as the end.
+  const close = lines.findIndex((l, i) => i > 0 && l.trimEnd() === "---");
+  if (close === -1 || lines[close] !== "---") return existing;
+
+  const live = new RegExp(
+    `\\{(${Object.keys(extraFieldTokens(book, cover)).join("|")})\\}`,
+  );
+  const continues = (l: string | undefined) => /^(\s|-)/.test(l ?? "");
+  const template = fm.extra.split("\n").filter((l) => l.trim() !== "---");
+  const body = lines.slice(1, close);
+  for (let t = 0; t < template.length; t++) {
+    const line = template[t] ?? "";
+    const key = /^([\w-]+):\s/.exec(line)?.[1];
+    // A multi-line value has no reliable end to replace up to.
+    if (!key || !live.test(line) || continues(template[t + 1])) continue;
+    const own = new RegExp(`^${escapeRegex(key)}:(\\s|$)`);
+    const quoted = new RegExp(`^(["'])${escapeRegex(key)}\\1:`);
+    const at = body.flatMap((l, i) => (own.test(l) ? [i] : []));
+    // A quoted or repeated key would leave YAML two values to choose from.
+    if (at.length > 1 || body.some((l) => quoted.test(l))) continue;
+    const rendered = substituteTokens(line, book, true, cover);
+    const i = at[0];
+    if (i === undefined) body.push(rendered);
+    else if (!continues(body[i + 1])) body[i] = rendered;
+  }
+  return ["---", ...body, ...lines.slice(close)].join("\n");
+}
+
 function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -883,6 +926,7 @@ export function replaceHighlightsSection(
   if (opts.syncHeadingLevel === 0) {
     return renderBookNote({ book, annotations, cover }, opts);
   }
+  existing = syncExtraFields(existing, book, opts.frontmatter, cover);
 
   const heading = renderHeadingLine(book, opts);
   const headingText = renderSyncHeading(book, opts.syncHeadingTemplate);

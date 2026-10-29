@@ -7,6 +7,7 @@ import {
   renderFrontmatter,
   renderHighlightsBody,
   replaceHighlightsSection,
+  syncExtraFields,
   upsertAppendedSection,
 } from "../src/renderer";
 import type { ReadestAnnotation, ReadestLibraryBook } from "../src/types";
@@ -1118,4 +1119,68 @@ void test("1.8.0 settings render byte-identical output for a book with progress 
   const before = renderBookNote({ book, annotations }, full);
   assert.equal(renderBookNote({ book: reading, annotations }, full), before);
   assert.equal(bookFilename(reading, full.filenameTemplate), bookFilename(book, full.filenameTemplate));
+});
+
+// --- extra fields under Preserve manual edits ---
+
+const liveFm = {
+  ...fmOn,
+  extra:
+    'progress: {progress}\nstatus: {status}\nname: "{title}"\nrating: ""\naliases:\n  - "{title}"',
+};
+const halfway = {
+  ...book,
+  progress: [50, 100] as [number, number],
+  readingStatus: "reading",
+};
+
+void test("syncExtraFields keeps live-token fields current and nothing else", () => {
+  const existing =
+    '---\nprogress: 10\nname: "Nickname"\nmine: kept\n---\n\nbody\n';
+  assert.equal(
+    syncExtraFields(existing, halfway, liveFm),
+    '---\nprogress: 50\nname: "Nickname"\nmine: kept\nstatus: reading\n---\n\nbody\n',
+  );
+});
+
+void test("syncExtraFields leaves a note alone when no field uses a live token", () => {
+  const existing = "---\nmine: kept\n---\nbody\n";
+  const staticFm = { ...fmOn, extra: 'name: "{title}"\nrating: ""' };
+  assert.equal(syncExtraFields(existing, halfway, staticFm), existing);
+});
+
+void test("syncExtraFields skips quoted, repeated and multi-line fields", () => {
+  for (const field of [
+    '"progress": 10',
+    "progress: 10\nprogress: 20",
+    "progress:\n  - 10",
+  ]) {
+    const existing = `---\n${field}\nstatus: reading\n---\nbody\n`;
+    assert.equal(syncExtraFields(existing, halfway, liveFm), existing);
+  }
+});
+
+void test("syncExtraFields leaves notes with unclear or no frontmatter unchanged", () => {
+  for (const existing of [
+    "body\n",
+    "---\nprogress: 10\n--- \nbody\n\n---\n\nmore\n",
+    "---\r\nprogress: 10\r\n---\r\nbody\r\n",
+  ]) {
+    assert.equal(syncExtraFields(existing, halfway, liveFm), existing);
+  }
+  const existing = "---\nprogress: 10\n---\nbody\n";
+  assert.equal(syncExtraFields(existing, halfway, { ...liveFm, extra: "" }), existing);
+  assert.equal(syncExtraFields(existing, halfway, { ...liveFm, enabled: false }), existing);
+});
+
+void test("preserve-mode sync keeps {progress} current in the frontmatter", () => {
+  const existing = "---\nprogress: 10\n---\n\n## Highlights\n\n> old\n";
+  const out = replaceHighlightsSection(
+    existing,
+    halfway,
+    [makeAnnotation("1")],
+    { ...opts, frontmatter: liveFm },
+  );
+  assert.match(out, /^---\nprogress: 50\nstatus: reading\n---/);
+  assert.match(out, /> text 1/);
 });
