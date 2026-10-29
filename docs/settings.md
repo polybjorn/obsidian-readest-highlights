@@ -229,7 +229,7 @@ Order of highlights within a book note:
 - **Book position** (default): by page, ties broken by creation time
 - **Highlight date**: by when you made the highlight, ties broken by page
 
-With the "Group under page headings" separator, highlights are still bucketed by page; the sort order then only affects ordering within each page.
+With [Group by](#group-by) set to Page, highlights are still bucketed by page; the sort order then only affects ordering within each page.
 
 #### Collapse line breaks
 
@@ -275,7 +275,7 @@ Off by default. Adds an `Open in Readest` link under each highlight that opens t
 - **Web link** (`https://web.readest.com/o/book/{hash}/annotation/{id}`): a universal link. On mobile it opens the Readest app; on desktop it resolves to Readest's web landing page. More robust - no OS handler registration needed.
 - **App link** (`readest://book/{hash}/annotation/{id}`): the custom scheme. Only works if the Readest desktop/mobile app has registered the `readest://` handler with the OS.
 
-Both mirror the link formats Readest itself uses for markdown export. The web form is the safer default.
+Both mirror the link formats Readest itself uses for markdown export. Of the two, the web form is the safer choice.
 
 ### Metadata
 
