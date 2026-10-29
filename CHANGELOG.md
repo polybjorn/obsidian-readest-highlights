@@ -7,6 +7,7 @@ All notable changes to this project are documented here. Format based on [Keep a
 ### Added
 
 - Callout-style highlights can take a callout type per Readest highlight color, such as `[!quote-yellow]`, colored by the plugin's stylesheet: turn on Rendering > Highlights > Callout per color. Off by default, so existing notes render unchanged.
+- `docs/gallery`: sample notes that render one book under each settings area, to compare the options in a vault.
 
 ### Changed
 

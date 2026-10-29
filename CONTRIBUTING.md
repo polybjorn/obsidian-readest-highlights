@@ -32,6 +32,7 @@ Working on a branch in a git worktree, run `npm run preview` there: it builds an
 | `npm run build` | One-shot production build, runs `tsc --noEmit` first. |
 | `npm run preview` | Build, then copy the build into the main checkout (for worktrees). |
 | `npm run lint` | ESLint with the Obsidian plugin ruleset. |
+| `npm run gallery` | Regenerate `docs/gallery`, or write it to a folder given after `--`. `npm test` fails while it is out of date. |
 | `npm test` | Run the test suite (`tsx --test tests/*.test.ts`). |
 
 ## Commit messages

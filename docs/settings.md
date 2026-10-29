@@ -4,6 +4,8 @@ The settings tab has four pages: Setup, Heading, Frontmatter, and Rendering. Cli
 
 On Obsidian 1.12.x the same settings render as one scrolling page with the four names as headings. Source paths reorder with up and down buttons instead of dragging, the output folder has no autocomplete, and settings are not indexed by settings search. Every setting below is present either way; the screenshots show the 1.13 layout.
 
+To compare the rendering settings side by side, copy the [`gallery`](gallery/) folder into your vault with the plugin enabled. Each note there renders the same sample book under one settings area, starting from the defaults.
+
 ## Templates
 
 Several settings accept token-based templates. Available tokens:
