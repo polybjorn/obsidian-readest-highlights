@@ -2,13 +2,13 @@
 
 The settings tab has four pages: Setup, Heading, Frontmatter, and Rendering. Click a page to open it; the back arrow returns to the overview. All settings are indexed by Obsidian's settings search.
 
-![The Highlights settings on the Rendering page, at their defaults](rendering-settings.png)
+<img src="rendering-settings.png" width="500" alt="The Highlights settings on the Rendering page, at their defaults">
 
 *The Highlights section of the Rendering page, at its defaults. The other pages and sections are in the table below.*
 
 On Obsidian 1.12.x the same settings render as one scrolling page with the four names as headings. Source paths reorder with up and down buttons instead of dragging, the output folder has no autocomplete, and settings are not indexed by settings search. Every setting below is present either way.
 
-To compare the rendering settings side by side, copy the [`gallery`](gallery/) folder into your vault with the plugin enabled. Each note there renders the same sample book under one settings area, starting from the defaults.
+To compare the rendering settings side by side, use the [example notes](gallery/). Each one shows the same sample book with one group of settings changed from the defaults. They are written for Obsidian and look broken on GitHub, so copy the folder into your vault with the plugin enabled to view them.
 
 | Section | Settings |
 |---|---|

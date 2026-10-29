@@ -10,7 +10,6 @@
 
 - [Install](https://github.com/polybjorn/obsidian-readest-highlights/blob/main/docs/install.md)
 - [Settings reference](https://github.com/polybjorn/obsidian-readest-highlights/blob/main/docs/settings.md)
-- [Gallery](https://github.com/polybjorn/obsidian-readest-highlights/tree/main/docs/gallery): example notes for each rendering setting, to copy into a vault
 
 ## Commands
 
