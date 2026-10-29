@@ -1,6 +1,6 @@
 # Contributing
 
-This is a small community plugin with one maintainer; bug reports, small fixes, and well-scoped feature PRs are all welcome.
+Bug reports, fixes and focused feature PRs are welcome. The plugin has one maintainer, so open an issue before starting a larger feature.
 
 ## Development setup
 
@@ -12,44 +12,37 @@ npm ci
 
 ## Running the plugin locally
 
-The build outputs `main.js` next to `manifest.json` and `styles.css`. To use the dev build inside Obsidian, symlink the repo into a vault's plugin folder:
+The build writes `main.js` next to `manifest.json` and `styles.css`. Symlink the repo into a vault's plugin folder under the name `readest-highlights`, which must match `manifest.id`:
 
 ```sh
 ln -s "$(pwd)" /path/to/your/vault/.obsidian/plugins/readest-highlights
 ```
 
-The target folder name must be `readest-highlights` (matching `manifest.id`), regardless of where the repo lives.
+Enable the plugin in Settings -> Community plugins. To load a rebuild, toggle it off and on there, or install [Hot Reload](https://github.com/pjeby/hot-reload), which reloads it whenever `main.js` changes.
 
-Enable the plugin in Settings -> Community plugins. To pick up a rebuild, toggle the plugin off and back on in that same panel, or install [Hot Reload](https://github.com/pjeby/hot-reload), which reloads it whenever `main.js` changes.
-
-Working on a branch in a git worktree, run `npm run preview` there: it builds and copies `main.js` (and `styles.css`, if the branch changed it) into the main checkout, which is the folder Obsidian loads. `npm run build` in the main checkout switches back.
+In a git worktree, `npm run preview` builds and copies the result into the main checkout, the folder Obsidian loads. `npm run build` in the main checkout switches back.
 
 ## Scripts
 
 | Script | Purpose |
 |---|---|
-| `npm run dev` | Watch build (esbuild). |
-| `npm run build` | One-shot production build, runs `tsc --noEmit` first. |
-| `npm run preview` | Build, then copy the build into the main checkout (for worktrees). |
-| `npm run lint` | ESLint with the Obsidian plugin ruleset. |
-| `npm run gallery` | Regenerate `docs/gallery`, or write it to a folder given after `--`. `npm test` fails while it is out of date. |
-| `npm test` | Run the test suite (`tsx --test tests/*.test.ts`). |
+| `npm run dev` | Rebuild on every change |
+| `npm run build` | Type-check, then a production build |
+| `npm run preview` | Build, then copy it into the main checkout |
+| `npm run lint` | ESLint with the Obsidian plugin rules |
+| `npm test` | Run the tests |
+| `npm run gallery` | Regenerate `docs/gallery` (or a folder given after `--`); `npm test` fails while it is out of date |
 
 ## Commit messages
 
-Conventional Commits:
-
-```
-type: short imperative description
-```
-
-Types: `feat`, `fix`, `chore`, `docs`, `style`, `refactor`, `test`, `ci`, `build`, `perf`, `revert`. PRs that don't follow this convention may be squashed with a rewritten message on merge.
+[Conventional Commits](https://www.conventionalcommits.org/): `type: short imperative description`, where type is one of `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `ci`, `build`, `perf`, `style` or `revert`. Messages that don't fit may be rewritten when the PR lands.
 
 ## Pull requests
 
-- Branch from `main`.
-- Keep the change focused; one PR per concern.
-- Include a test plan in the PR description (what you ran, what you observed). For UI changes, a screenshot helps.
-- New or changed user-visible behavior should come with tests in `tests/`. `tests/readest.test.ts` covers the on-disk reader (uses tmpdir fixtures); `tests/renderer.test.ts` covers rendering (uses inline fixtures).
-- Changes that add, rename, or remove a setting, command, or output behavior should update `docs/settings.md` (settings) or `README.md` (commands / requirements) in the same PR.
-- For changes that touch UI, settings, rendering, or the build, test the plugin against a real Obsidian vault before opening the PR. CI runs lint, tests, and build, but does not load the bundle in Obsidian.
+- Branch from `main`, one concern per PR.
+- Fill in the test plan in the PR template. A screenshot helps for UI changes.
+- Add tests for new or changed behavior. Tests live in `tests/`, named after the `src/` module they cover.
+- Update `docs/settings.md` when a setting or the output changes, and `README.md` when a command or requirement does.
+- Add a line under `## [Unreleased]` in `CHANGELOG.md` for anything users will notice. It becomes the release notes, so write it for them.
+- Keep the plugin working on the Obsidian version in `minAppVersion`. Feature-detect a newer API instead of raising it.
+- Test in a real vault before opening the PR. CI runs lint, tests and build, but never loads the plugin in Obsidian.
