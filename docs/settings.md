@@ -279,3 +279,7 @@ Toggle for including notes at all.
 - **Attached** (inside the highlight block, prefixed `**Note:**`)
 - **Separated** (below the highlight, plain `**Note:**`)
 - **Callout** (`> [!note]` block below the highlight)
+
+## Reset to defaults
+
+The **Reset** button at the bottom of the settings tab returns every setting to its default after a confirmation. The source paths and the output folder are kept, so the next sync still finds the notes it already wrote instead of creating duplicates elsewhere. Book notes keep their current formatting until that sync, which rewrites them with the defaults.

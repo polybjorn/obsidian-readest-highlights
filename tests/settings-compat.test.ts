@@ -14,6 +14,7 @@ import {
   ExtraButtonComponent,
   PluginSettingTab,
   notices,
+  openModals,
   superCalls,
   resetMock,
   setDeclarativeSupport,
@@ -368,4 +369,75 @@ void test("PluginSettingTab prototype shape drives the version gate", () => {
     typeof (PluginSettingTab.prototype as { update?: unknown }).update,
     "function",
   );
+});
+
+// Changes one setting of each kind, and the two that reset must keep.
+const customised: Partial<ReadestSettings> = {
+  booksDirs: ["/books/a", "/books/b"],
+  outputFolder: "Reading/Books",
+  highlightStyle: "callout",
+  syncHeadingLevel: 3,
+  autoSyncIntervalMinutes: 15,
+  includeFrontmatter: false,
+  extraFrontmatter: "rating: 5",
+};
+
+function confirmReset(rows: Setting[], label: "Reset" | "Cancel"): void {
+  const open = rowNamed(rows, "Reset to defaults").components[0];
+  assert.ok(open instanceof ButtonComponent);
+  open.click();
+  const modal = openModals[0];
+  assert.ok(modal, "reset asks for confirmation first");
+  const buttons = rowsOf(modal.contentEl).flatMap((r) => r.components);
+  const button = buttons.find(
+    (b) => b instanceof ButtonComponent && b.label === label,
+  );
+  assert.ok(button instanceof ButtonComponent, `no ${label} button`);
+  button.click();
+}
+
+void test("reset restores defaults but keeps source paths and output folder", async () => {
+  const plugin = makePlugin(customised);
+  const tab = makeTab(plugin);
+  const settings = plugin.settings;
+  confirmReset(render(tab), "Reset");
+  await wait(0);
+
+  assert.equal(plugin.settings, settings, "reset mutates the settings in place");
+  assert.deepEqual(plugin.settings, {
+    ...DEFAULT_SETTINGS,
+    booksDirs: ["/books/a", "/books/b"],
+    outputFolder: "Reading/Books",
+  });
+  assert.equal(openModals.length, 0, "the modal closes");
+  assert.ok(plugin.saveCount >= 1, "reset persists");
+  assert.equal(plugin.autoSyncApplied, 1, "the interval timer is re-armed");
+  // The 1.12 path re-renders the tab with the restored values.
+  const style = rowNamed(rowsOf(container(tab)), "Style").components[0];
+  assert.ok(style instanceof DropdownComponent);
+  assert.equal(style.value, DEFAULT_SETTINGS.highlightStyle);
+});
+
+void test("cancelling the reset changes nothing", async () => {
+  const plugin = makePlugin(customised);
+  confirmReset(render(makeTab(plugin)), "Cancel");
+  await wait(0);
+
+  assert.deepEqual(plugin.settings, { ...DEFAULT_SETTINGS, ...customised });
+  assert.equal(plugin.saveCount, 0);
+  assert.equal(openModals.length, 0);
+});
+
+void test("on 1.13 the reset is the last root group and refreshes via update()", async () => {
+  setDeclarativeSupport(true);
+  const plugin = makePlugin(customised);
+  const tab = makeTab(plugin);
+  const last = tab.getSettingDefinitions().at(-1);
+  assert.ok(last && "type" in last && last.type === "group");
+  assert.equal(last.items?.[0]?.name, "Reset to defaults");
+
+  await tab.resetToDefaults();
+  assert.equal(plugin.settings.highlightStyle, DEFAULT_SETTINGS.highlightStyle);
+  assert.equal(plugin.settings.outputFolder, "Reading/Books");
+  assert.deepEqual(superCalls, ["update"]);
 });

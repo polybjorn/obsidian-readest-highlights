@@ -7,6 +7,7 @@ All notable changes to this project are documented here. Format based on [Keep a
 ### Added
 
 - Callout-style highlights can take a callout type per Readest highlight color, such as `[!quote-yellow]`, colored by the plugin's stylesheet: turn on Rendering > Highlights > Callout per color. Off by default, so existing notes render unchanged.
+- A Reset to defaults button at the bottom of the settings tab restores every setting to its default after a confirmation. It keeps the source paths and the output folder, so existing notes are still found on the next sync.
 
 ### Changed
 

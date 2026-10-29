@@ -1,6 +1,7 @@
 import {
   App,
   debounce,
+  Modal,
   Notice,
   parseYaml,
   PluginSettingTab,
@@ -208,6 +209,37 @@ async function pickDirectory(defaultPath?: string): Promise<PickResult> {
   return { available: true, path: result.filePaths[0] ?? null };
 }
 
+// Built on Modal rather than ConfirmationModal, which arrived in 1.13, so the
+// pre-1.13 fallback gets the same confirmation.
+export class ResetSettingsModal extends Modal {
+  constructor(
+    app: App,
+    private readonly onConfirm: () => Promise<void>,
+  ) {
+    super(app);
+  }
+
+  onOpen(): void {
+    this.titleEl.setText("Reset settings to defaults?");
+    this.contentEl.createEl("p", {
+      text: "This can't be undone. Your book notes stay as they are until the next sync, which rewrites them with the default formatting.",
+    });
+    new Setting(this.contentEl)
+      .addButton((b) => b.setButtonText("Cancel").onClick(() => this.close()))
+      .addButton((b) => {
+        b.setButtonText("Reset").onClick(async () => {
+          this.close();
+          await this.onConfirm();
+        });
+        b.buttonEl.addClass("mod-warning");
+      });
+  }
+
+  onClose(): void {
+    this.contentEl.empty();
+  }
+}
+
 export class ReadestSettingTab extends PluginSettingTab {
   plugin: ReadestHighlightsPlugin;
 
@@ -289,6 +321,21 @@ export class ReadestSettingTab extends PluginSettingTab {
     }
   }
 
+  // Keeps the source paths and the output folder: a reset that moved the
+  // output folder would make the next sync miss existing notes and write
+  // duplicates. Mutates in place so nothing holding the settings object goes
+  // stale.
+  async resetToDefaults(): Promise<void> {
+    const { booksDirs, outputFolder } = this.plugin.settings;
+    Object.assign(this.plugin.settings, DEFAULT_SETTINGS, {
+      booksDirs,
+      outputFolder,
+    });
+    await this.plugin.saveSettings();
+    this.plugin.applyAutoSyncInterval();
+    this.update();
+  }
+
   private renderCompat(): void {
     renderFallback(this, this.containerEl, this.getSettingDefinitions());
   }
@@ -347,6 +394,33 @@ export class ReadestSettingTab extends PluginSettingTab {
         name: "Rendering",
         desc: "How highlights, metadata, and notes are formatted.",
         items: this.renderingItems(),
+      },
+      // A group of its own, spaced off the pages, so the reset does not read
+      // as one of them and is harder to hit by accident.
+      {
+        type: "group",
+        cls: "readest-reset-group",
+        items: [
+          {
+            name: "Reset to defaults",
+            desc: "Restore every setting to its default. Source paths and the output folder are kept.",
+            aliases: ["restore", "default"],
+            render: (setting: Setting) => {
+              setting.setName("Reset to defaults");
+              setting.setDesc(
+                "Restore every setting to its default. Source paths and the output folder are kept.",
+              );
+              setting.addButton((b) => {
+                b.setButtonText("Reset").onClick(() => {
+                  new ResetSettingsModal(this.app, () =>
+                    this.resetToDefaults(),
+                  ).open();
+                });
+                b.buttonEl.addClass("mod-warning");
+              });
+            },
+          },
+        ],
       },
     ];
   }

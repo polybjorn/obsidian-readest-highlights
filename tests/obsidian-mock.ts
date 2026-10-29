@@ -42,6 +42,12 @@ export class FakeEl {
     this.parentElement = null;
   }
 
+  createEl(_tag: string, o?: { text?: string; cls?: string }): FakeEl {
+    const el = this.createDiv(o);
+    if (o?.text) el.text = o.text;
+    return el;
+  }
+
   addClass(c: string): void {
     this.cls.push(c);
   }
@@ -252,6 +258,26 @@ export function setDeclarativeSupport(supported: boolean): void {
 }
 setDeclarativeSupport(false);
 
+// Modals record themselves while open so a test can reach their buttons.
+export const openModals: Modal[] = [];
+
+export class Modal {
+  titleEl = new FakeEl();
+  contentEl = new FakeEl();
+  constructor(public app: unknown) {}
+  open(): void {
+    openModals.push(this);
+    this.onOpen();
+  }
+  close(): void {
+    const i = openModals.indexOf(this);
+    if (i >= 0) openModals.splice(i, 1);
+    this.onClose();
+  }
+  onOpen(): void {}
+  onClose(): void {}
+}
+
 export const notices: string[] = [];
 
 export class Notice {
@@ -263,6 +289,7 @@ export class Notice {
 export function resetMock(): void {
   notices.length = 0;
   superCalls.length = 0;
+  openModals.length = 0;
 }
 
 // Real Obsidian semantics: resetTimer restarts the countdown on each call.
