@@ -227,7 +227,9 @@ How highlights are separated, also within groups:
 
 - **Horizontal rule** (`---` between highlights)
 - **Blank line**
-- **None** (one per line, no separation)
+- **None** (no gap between highlights)
+
+Under None, bullets form one tight list, and blockquotes and callouts run on as one block with a paragraph per highlight. With Callout per color on, a highlight in a different color starts a new callout. Plain text has no block to share, so it renders as with Blank line. A highlight followed by a separated note, a note callout or a block ID ends its block, since the next highlight would otherwise run into it.
 
 #### Show count
 

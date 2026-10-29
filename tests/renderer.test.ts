@@ -526,7 +526,7 @@ void test("the separator applies between highlights inside a group", () => {
     separator: "none",
     showPage: false,
   });
-  assert.match(none, /### Chapter One\n\n> one\n> two/);
+  assert.match(none, /### Chapter One\n\n> one\n>\n> two/);
   const rule = renderHighlightsBody(annos, {
     ...opts,
     grouping: "chapter",
@@ -545,6 +545,45 @@ void test("renderHighlightsBody rule separator inserts --- between annotations",
     { ...opts, separator: "rule", showPage: false },
   );
   assert.match(out, /first\n\n---\n\n> second/);
+});
+
+void test("separator none runs same-type callouts into one callout", () => {
+  const out = renderHighlightsBody(
+    [
+      makeAnnotation("a", { text: "one", color: "green", page: 1 }),
+      makeAnnotation("b", { text: "two", color: "green", page: 2 }),
+      makeAnnotation("c", { text: "three", color: "yellow", page: 3 }),
+    ],
+    { ...opts, style: "callout", colorCallouts: true, separator: "none", showPage: false },
+  );
+  assert.equal(
+    out,
+    "> [!quote-green]\n> one\n>\n> two\n\n> [!quote-yellow]\n> three",
+  );
+});
+
+void test("separator none runs quotes into one block until a note block", () => {
+  const out = renderHighlightsBody(
+    [
+      makeAnnotation("a", { text: "one", page: 1 }),
+      makeAnnotation("b", { text: "two", page: 2, note: "why" }),
+      makeAnnotation("c", { text: "three", page: 3 }),
+      makeAnnotation("d", { text: "four", page: 4 }),
+    ],
+    { ...opts, separator: "none", noteStyle: "callout", showPage: false },
+  );
+  assert.equal(
+    out,
+    "> one\n>\n> two\n\n> [!note]\n> why\n\n> three\n>\n> four",
+  );
+});
+
+void test("separator none keeps plain text highlights apart", () => {
+  const out = renderHighlightsBody(
+    [makeAnnotation("a", { text: "one" }), makeAnnotation("b", { text: "two" })],
+    { ...opts, style: "plain", separator: "none", showPage: false },
+  );
+  assert.equal(out, "one\n\ntwo");
 });
 
 // --- block IDs ---

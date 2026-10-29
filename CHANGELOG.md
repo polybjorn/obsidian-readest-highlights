@@ -8,6 +8,14 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 - Callout-style highlights can take a callout type per Readest highlight color, such as `[!quote-yellow]`, colored by the plugin's stylesheet: turn on Rendering > Highlights > Callout per color. Off by default, so existing notes render unchanged.
 
+### Changed
+
+- Separator None keeps each highlight its own paragraph: blockquotes and callouts run on as one block with a paragraph per highlight (with Callout per color, a new color starts a new callout), and plain text renders as with Blank line. Before, highlights ran together line by line, so a highlight read as part of the previous one's page line.
+
+### Fixed
+
+- Separator None with the Callout style merged every highlight into the first callout and left the later callout headers as literal text. A highlight followed by a separated note, a note callout or a block ID now ends its block in every style, so the next highlight no longer runs into it.
+
 ## [1.8.0] - 2026-10-10
 
 ### Added

@@ -583,6 +583,7 @@ function renderGroup(
 function joinWithSeparator(
   parts: string[],
   separator: HighlightSeparator,
+  style: HighlightStyle,
 ): string {
   switch (separator) {
     case "rule":
@@ -590,7 +591,28 @@ function joinWithSeparator(
     case "blank":
       return parts.join("\n\n");
     case "none":
-      return parts.join("\n");
+      // None drops the gap between highlights where the style can share a
+      // block: bullets form a tight list, and quotes and callouts run on as one
+      // block with a paragraph per highlight, since bare lines blend into each
+      // other. Plain text has no block to share, so it keeps the blank line. A
+      // part closing on a note or block ID would absorb the next highlight, so
+      // it keeps one too. A second callout header inside one callout renders as
+      // literal text, so a callout continues without it, and a new type starts
+      // a new callout.
+      if (style === "plain") return parts.join("\n\n");
+      return parts
+        .map((part, i) => {
+          if (i === 0) return part;
+          const prev = parts[i - 1] ?? "";
+          if (prev.includes("\n\n")) return `\n\n${part}`;
+          if (style === "bullet") return `\n${part}`;
+          if (style === "blockquote") return `\n>\n${part}`;
+          const header = part.slice(0, part.indexOf("\n") + 1);
+          return prev.startsWith(header)
+            ? `\n>\n${part.slice(header.length)}`
+            : `\n\n${part}`;
+        })
+        .join("");
   }
 }
 
@@ -613,6 +635,7 @@ export function renderHighlightsBody(
     joinWithSeparator(
       gs.map((g) => renderGroup(g, opts, ids?.get(g))),
       opts.separator,
+      opts.style,
     );
 
   if (opts.grouping === "chapter") {
