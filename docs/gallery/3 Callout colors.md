@@ -38,6 +38,11 @@ Style Callout with Callout per color, which takes the colors from the plugin's s
 >
 > *page 6*
 
+> [!quote-green]
+> <u class="readest-squiggly">The tea-plant, a native of southern China, was known from very early times to Chinese botany and medicine.</u>
+>
+> *page 10*
+
 > [!quote-blue]
 > Tea is a work of art and needs a master hand to bring out its noblest qualities.
 > We have good and bad tea, as we have good and bad paintings.
@@ -78,6 +83,11 @@ Style Callout with Callout per color, which takes the colors from the plugin's s
 > the ethereal aroma
 >
 > *page 6*
+
+> [!quote]
+> <u class="readest-squiggly">The tea-plant, a native of southern China, was known from very early times to Chinese botany and medicine.</u>
+>
+> *page 10*
 
 > [!quote]
 > Tea is a work of art and needs a master hand to bring out its noblest qualities.

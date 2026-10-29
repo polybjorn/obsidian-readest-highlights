@@ -2,9 +2,22 @@
 
 The settings tab has four pages: Setup, Heading, Frontmatter, and Rendering. Click a page to open it; the back arrow returns to the overview. All settings are indexed by Obsidian's settings search.
 
-On Obsidian 1.12.x the same settings render as one scrolling page with the four names as headings. Source paths reorder with up and down buttons instead of dragging, the output folder has no autocomplete, and settings are not indexed by settings search. Every setting below is present either way; the screenshots show the 1.13 layout.
+![The Highlights settings on the Rendering page, at their defaults](rendering-settings.png)
+
+*The Highlights section of the Rendering page, at its defaults. The other pages and sections are in the table below.*
+
+On Obsidian 1.12.x the same settings render as one scrolling page with the four names as headings. Source paths reorder with up and down buttons instead of dragging, the output folder has no autocomplete, and settings are not indexed by settings search. Every setting below is present either way.
 
 To compare the rendering settings side by side, copy the [`gallery`](gallery/) folder into your vault with the plugin enabled. Each note there renders the same sample book under one settings area, starting from the defaults.
+
+| Section | Settings |
+|---|---|
+| [Templates](#templates) | Tokens used by the filename, heading and extra field templates |
+| [Setup](#setup) | [Source](#source), [Output](#output), [Auto-sync](#auto-sync) |
+| [Heading](#heading) | [Heading level](#heading-level), [Sync heading](#sync-heading), [Append heading](#append-heading), [Preserve manual edits](#preserve-manual-edits) |
+| [Frontmatter](#frontmatter) | [Include frontmatter](#include-frontmatter), [Tags](#tags), [Author](#author), [Series and publisher](#series-publisher), [Year, ISBN and language](#year-isbn-language), [Genre](#genre), [Readest hash](#readest-hash), [Extra fields](#extra-fields) |
+| [Rendering](#rendering) | [Highlights](#highlights), [Metadata](#metadata), [Notes](#notes) |
+| [Reset to defaults](#reset-to-defaults) | Restoring every setting at once |
 
 ## Templates
 
@@ -30,8 +43,6 @@ Tokens marked Extra fields only resolve in [Extra fields](#extra-fields) and sub
 Empty tokens collapse cleanly: surrounding whitespace, separators (`-`, `_`), a trailing `by`, and empty parentheses/brackets are trimmed.
 
 ## Setup
-
-![Setup tab](setup-settings.png)
 
 ### Source
 

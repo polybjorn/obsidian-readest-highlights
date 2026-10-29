@@ -28,6 +28,9 @@ Page number, color, underlines and line breaks.
 - the ethereal aroma
   *page 6*
 
+- <u class="readest-squiggly">The tea-plant, a native of southern China, was known from very early times to Chinese botany and medicine.</u>
+  *page 10*
+
 - Tea is a work of art and needs a master hand to bring out its noblest qualities.
   We have good and bad tea, as we have good and bad paintings.
   *page 12*
@@ -49,6 +52,8 @@ Page number, color, underlines and line breaks.
 - <u>Perhaps we reveal ourselves too much in small things because we have so little of the great to hide.</u> *(page 5)*
 
 - the ethereal aroma *(page 6)*
+
+- <u class="readest-squiggly">The tea-plant, a native of southern China, was known from very early times to Chinese botany and medicine.</u> *(page 10)*
 
 - Tea is a work of art and needs a master hand to bring out its noblest qualities.
   We have good and bad tea, as we have good and bad paintings. *(page 12)*
@@ -75,6 +80,9 @@ Page number, color, underlines and line breaks.
 - the ethereal aroma
   *page 6 · #8e44ad*
 
+- <u class="readest-squiggly">The tea-plant, a native of southern China, was known from very early times to Chinese botany and medicine.</u>
+  *page 10 · green*
+
 - Tea is a work of art and needs a master hand to bring out its noblest qualities.
   We have good and bad tea, as we have good and bad paintings.
   *page 12 · blue*
@@ -96,6 +104,8 @@ Page number, color, underlines and line breaks.
 - <u>Perhaps we reveal ourselves too much in small things because we have so little of the great to hide.</u>
 
 - the ethereal aroma
+
+- <u class="readest-squiggly">The tea-plant, a native of southern China, was known from very early times to Chinese botany and medicine.</u>
 
 - Tea is a work of art and needs a master hand to bring out its noblest qualities.
   We have good and bad tea, as we have good and bad paintings.
@@ -121,6 +131,9 @@ Page number, color, underlines and line breaks.
 
 - the ethereal aroma
   *page 6*
+
+- The tea-plant, a native of southern China, was known from very early times to Chinese botany and medicine.
+  *page 10*
 
 - Tea is a work of art and needs a master hand to bring out its noblest qualities.
   We have good and bad tea, as we have good and bad paintings.
@@ -148,6 +161,9 @@ Page number, color, underlines and line breaks.
 
 - the ethereal aroma
   *page 6*
+
+- <u class="readest-squiggly">The tea-plant, a native of southern China, was known from very early times to Chinese botany and medicine.</u>
+  *page 10*
 
 - Tea is a work of art and needs a master hand to bring out its noblest qualities. We have good and bad tea, as we have good and bad paintings.
   *page 12*

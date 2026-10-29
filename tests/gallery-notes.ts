@@ -56,9 +56,9 @@ const anno = (
   };
 };
 
-// Covers every predefined color plus a custom hex, an underline, a multi-line
-// highlight, single and multi-line notes, two highlights on one page, and two
-// chapters.
+// Covers every predefined color plus a custom hex, an underline, a squiggly
+// underline, a multi-line highlight, single and multi-line notes, two
+// highlights on one page, and two chapters.
 const annotations: ReadestAnnotation[] = [
   anno(3, CH1, "Tea began as a medicine and grew into a beverage."),
   anno(
@@ -77,6 +77,12 @@ const annotations: ReadestAnnotation[] = [
     { color: "red", style: "underline" },
   ),
   anno(6, CH1, "the ethereal aroma", { color: "#8e44ad" }),
+  anno(
+    10,
+    CH2,
+    "The tea-plant, a native of southern China, was known from very early times to Chinese botany and medicine.",
+    { color: "green", style: "squiggly" },
+  ),
   anno(
     12,
     CH2,

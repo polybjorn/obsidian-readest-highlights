@@ -38,18 +38,23 @@ Block IDs make each highlight linkable as `[[note#^id]]`; the Readest link opens
 
 ^rdst-14o9qpa
 
+- <u class="readest-squiggly">The tea-plant, a native of southern China, was known from very early times to Chinese botany and medicine.</u>
+  *page 10*
+
+^rdst-ccyyuo
+
 - Tea is a work of art and needs a master hand to bring out its noblest qualities.
   We have good and bad tea, as we have good and bad paintings.
   *page 12*
 
-^rdst-ccyyuo
+^rdst-1j2s8z6
 
 - the gentle arts of peace
   *page 13*
   **Note:** A note over two lines.
   The second line.
 
-^rdst-1j2s8z6
+^rdst-qrhh4k
 
 ## Readest link, web
 
@@ -74,16 +79,20 @@ Block IDs make each highlight linkable as `[[note#^id]]`; the Readest link opens
   *page 6*
   [Open in Readest](https://web.readest.com/o/book/gallery0book0hash/annotation/g5?cfi=epubcfi(%2F6%2F10!%2F4%2F2))
 
+- <u class="readest-squiggly">The tea-plant, a native of southern China, was known from very early times to Chinese botany and medicine.</u>
+  *page 10*
+  [Open in Readest](https://web.readest.com/o/book/gallery0book0hash/annotation/g6?cfi=epubcfi(%2F6%2F12!%2F4%2F2))
+
 - Tea is a work of art and needs a master hand to bring out its noblest qualities.
   We have good and bad tea, as we have good and bad paintings.
   *page 12*
-  [Open in Readest](https://web.readest.com/o/book/gallery0book0hash/annotation/g6?cfi=epubcfi(%2F6%2F12!%2F4%2F2))
+  [Open in Readest](https://web.readest.com/o/book/gallery0book0hash/annotation/g7?cfi=epubcfi(%2F6%2F14!%2F4%2F2))
 
 - the gentle arts of peace
   *page 13*
   **Note:** A note over two lines.
   The second line.
-  [Open in Readest](https://web.readest.com/o/book/gallery0book0hash/annotation/g7?cfi=epubcfi(%2F6%2F14!%2F4%2F2))
+  [Open in Readest](https://web.readest.com/o/book/gallery0book0hash/annotation/g8?cfi=epubcfi(%2F6%2F16!%2F4%2F2))
 
 ## Readest link, app
 
@@ -108,13 +117,17 @@ Block IDs make each highlight linkable as `[[note#^id]]`; the Readest link opens
   *page 6*
   [Open in Readest](readest://book/gallery0book0hash/annotation/g5?cfi=epubcfi(%2F6%2F10!%2F4%2F2))
 
+- <u class="readest-squiggly">The tea-plant, a native of southern China, was known from very early times to Chinese botany and medicine.</u>
+  *page 10*
+  [Open in Readest](readest://book/gallery0book0hash/annotation/g6?cfi=epubcfi(%2F6%2F12!%2F4%2F2))
+
 - Tea is a work of art and needs a master hand to bring out its noblest qualities.
   We have good and bad tea, as we have good and bad paintings.
   *page 12*
-  [Open in Readest](readest://book/gallery0book0hash/annotation/g6?cfi=epubcfi(%2F6%2F12!%2F4%2F2))
+  [Open in Readest](readest://book/gallery0book0hash/annotation/g7?cfi=epubcfi(%2F6%2F14!%2F4%2F2))
 
 - the gentle arts of peace
   *page 13*
   **Note:** A note over two lines.
   The second line.
-  [Open in Readest](readest://book/gallery0book0hash/annotation/g7?cfi=epubcfi(%2F6%2F14!%2F4%2F2))
+  [Open in Readest](readest://book/gallery0book0hash/annotation/g8?cfi=epubcfi(%2F6%2F16!%2F4%2F2))
