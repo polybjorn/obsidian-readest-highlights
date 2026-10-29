@@ -24,7 +24,7 @@ Obsidian's community plugin updater will overwrite a manually installed copy whe
 ## First-run configuration
 
 1. Settings -> Community plugins -> Readest Highlights -> gear icon.
-2. On the "Setup" tab: if Readest is in the default platform location, leave Source empty; otherwise click the folder icon to pick the Readest Books folder.
+2. On the Setup page: if Readest is in the default platform location, leave Source empty; otherwise click the folder icon to pick the Readest Books folder.
 3. Try "Sync one book to folder..." from the command palette to verify the source path resolves and one note renders as expected, before running "Sync all books to folder".
 
 See [settings.md](settings.md) for the full configuration reference.
