@@ -32,6 +32,7 @@ In a git worktree, `npm run preview` builds and copies the result into the main 
 | `npm run lint` | ESLint with the Obsidian plugin rules |
 | `npm test` | Run the tests |
 | `npm run gallery` | Regenerate `docs/gallery` (or a folder given after `--`); `npm test` fails while it is out of date |
+| `npm run demo-vault -- <folder>` | Write a demo vault of public-domain books for the screenshots in `docs/`; run `npm run build` first |
 
 ## Commit messages
 

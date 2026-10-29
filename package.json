@@ -11,7 +11,8 @@
     "version": "node version-bump.mjs && git add manifest.json versions.json",
     "lint": "eslint .",
     "test": "tsx --tsconfig tsconfig.test.json --test tests/*.test.ts",
-    "gallery": "tsx --tsconfig tsconfig.test.json tests/gallery.ts"
+    "gallery": "tsx --tsconfig tsconfig.test.json tests/gallery.ts",
+    "demo-vault": "tsx --tsconfig tsconfig.test.json tests/demo-vault.ts"
   },
   "keywords": [
     "obsidian",
