@@ -648,27 +648,39 @@ function joinWithSeparator(
   }
 }
 
+// Group headings sit one level below the sync heading, and never above ###.
+// A group heading at or above the sync heading level would act as the section
+// boundary in replaceHighlightsSection/upsertAppendedSection, making re-sync
+// cut the section at the first group and duplicate the rest.
+function groupHeadingHashes(opts: RenderOptions): string {
+  return "#".repeat(Math.max(3, opts.syncHeadingLevel + 1));
+}
+
+// `comments` maps a block ID to the user's comment callouts kept from the
+// previous sync. Each one placed under its highlight is deleted from the map,
+// so what is left belongs to highlights that are gone.
 export function renderHighlightsBody(
   annotations: ReadestAnnotation[],
   opts: RenderOptions,
+  comments?: Map<string, string[]>,
 ): string {
   const groups = groupAnnotations(annotations, opts);
   if (groups.length === 0) return "";
 
   const ids = opts.highlightBlockIds ? buildBlockIds(groups) : null;
+  const groupHashes = groupHeadingHashes(opts);
 
-  // Group headings sit one level below the sync heading, and never above ###.
-  // A group heading at or above the sync heading level would act as the
-  // section boundary in replaceHighlightsSection/upsertAppendedSection, making
-  // re-sync cut the section at the first group and duplicate the rest.
-  const groupHashes = "#".repeat(Math.max(3, opts.syncHeadingLevel + 1));
+  const renderPart = (g: GroupedAnnotation) => {
+    const id = ids?.get(g);
+    const part = renderGroup(g, opts, id);
+    const own = id ? comments?.get(id) : undefined;
+    if (!id || !own) return part;
+    comments?.delete(id);
+    return [part, ...own].join("\n\n");
+  };
 
   const renderRun = (gs: GroupedAnnotation[]) =>
-    joinWithSeparator(
-      gs.map((g) => renderGroup(g, opts, ids?.get(g))),
-      opts.separator,
-      opts.style,
-    );
+    joinWithSeparator(gs.map(renderPart), opts.separator, opts.style);
 
   if (opts.grouping === "chapter") {
     // Group in encounter order (groups are already sorted): chapters appear in
@@ -919,6 +931,41 @@ export function renderBookNote(
     : `${highlights}\n`;
 }
 
+const COMMENT_CALLOUT_RE = /^>\s*\[!comment\][+-]?(\s|$)/i;
+const BLOCK_ID_LINE_RE = /^\^(rdst-[a-z0-9]+(?:-\d+)?)\s*$/;
+
+// Collects the `> [!comment]` callouts in the old sync section, keyed by the
+// block ID of the highlight above them. A heading resets the key, so comments
+// under a group heading with no highlight yet, or under the heading for
+// comments whose highlight is gone, stay unattached (key "").
+function extractComments(
+  lines: string[],
+  masked: boolean[],
+): Map<string, string[]> {
+  const comments = new Map<string, string[]>();
+  let anchor = "";
+  for (let i = 0; i < lines.length; i++) {
+    if (masked[i]) continue;
+    const line = lines[i] ?? "";
+    if (/^#{1,6}\s/.test(line)) {
+      anchor = "";
+      continue;
+    }
+    const id = BLOCK_ID_LINE_RE.exec(line);
+    if (id) {
+      anchor = id[1] ?? "";
+      continue;
+    }
+    if (!COMMENT_CALLOUT_RE.test(line)) continue;
+    let end = i + 1;
+    while (end < lines.length && (lines[end] ?? "").startsWith(">")) end++;
+    const block = lines.slice(i, end).map((l) => l.trimEnd()).join("\n");
+    comments.set(anchor, [...(comments.get(anchor) ?? []), block]);
+    i = end - 1;
+  }
+  return comments;
+}
+
 export function replaceHighlightsSection(
   existing: string,
   book: ReadestLibraryBook,
@@ -934,12 +981,6 @@ export function replaceHighlightsSection(
   const heading = renderHeadingLine(book, opts);
   const headingText = renderSyncHeading(book, opts.syncHeadingTemplate);
   const hashes = "#".repeat(opts.syncHeadingLevel);
-  const body = prependHighlightCount(
-    renderHighlightsBody(annotations, opts),
-    annotations,
-    opts,
-  );
-  const section = `${heading}\n\n${body}`.trimEnd();
 
   const headingRe = new RegExp(`^${hashes} ${escapeRegex(headingText)}\\s*$`);
   const lines = existing.split("\n");
@@ -947,17 +988,40 @@ export function replaceHighlightsSection(
   const startLineIdx = lines.findIndex(
     (l, i) => !masked[i] && headingRe.test(l),
   );
-  if (startLineIdx === -1) {
-    return existing.trimEnd() + "\n\n" + section + "\n";
-  }
 
   const boundaryRe = new RegExp(`^#{1,${opts.syncHeadingLevel}}\\s+`);
   let endLineIdx = lines.length;
-  for (let i = startLineIdx + 1; i < lines.length; i++) {
+  for (let i = startLineIdx + 1; startLineIdx !== -1 && i < lines.length; i++) {
     if (!masked[i] && boundaryRe.test(lines[i] ?? "")) {
       endLineIdx = i;
       break;
     }
+  }
+
+  const comments =
+    startLineIdx === -1
+      ? new Map<string, string[]>()
+      : extractComments(
+          lines.slice(startLineIdx + 1, endLineIdx),
+          masked.slice(startLineIdx + 1, endLineIdx),
+        );
+  const body = prependHighlightCount(
+    renderHighlightsBody(annotations, opts, comments),
+    annotations,
+    opts,
+  );
+  // Whatever renderHighlightsBody did not place has lost its highlight (or
+  // block IDs are off). It is kept under its own heading rather than dropped.
+  const unattached = [...comments.values()].flat();
+  const leftover = unattached.length
+    ? `${groupHeadingHashes(opts)} Comments without a highlight\n\n${unattached.join("\n\n")}`
+    : "";
+  const section = [heading, body.trimEnd(), leftover]
+    .filter(Boolean)
+    .join("\n\n");
+
+  if (startLineIdx === -1) {
+    return existing.trimEnd() + "\n\n" + section + "\n";
   }
 
   const before = lines.slice(0, startLineIdx).join("\n").trimEnd();
