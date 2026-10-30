@@ -1197,3 +1197,90 @@ void test("a squiggly annotation renders as a wavy-classed underline", () => {
   );
   assert.doesNotMatch(off, /<u/);
 });
+
+const commentOpts: RenderOptions = {
+  ...opts,
+  highlightBlockIds: true,
+  separator: "blank",
+  showPage: false,
+};
+
+// Types a comment callout under the highlight whose text is `after`, the way a
+// user would: a blank line after that highlight's block ID line.
+const addComment = (note: string, after: string, comment: string): string => {
+  const lines = note.split("\n");
+  const at = lines.findIndex((l) => l.includes(after));
+  const idLine = lines.findIndex((l, i) => i > at && l.startsWith("^rdst-"));
+  lines.splice(idLine + 1, 0, "", comment);
+  return lines.join("\n");
+};
+
+void test("a comment callout stays under its highlight across re-syncs", () => {
+  const annos = [
+    makeAnnotation("a", { page: 1, text: "first" }),
+    makeAnnotation("b", { page: 2, text: "second" }),
+  ];
+  const synced = replaceHighlightsSection("", book, annos, commentOpts);
+  const edited = addComment(synced, "first", "> [!comment]\n> my thought #idea");
+
+  const resynced = replaceHighlightsSection(edited, book, annos, commentOpts);
+  assert.equal(resynced, edited);
+  assert.equal(replaceHighlightsSection(resynced, book, annos, commentOpts), resynced);
+
+  // A highlight added in front moves the comment along with "first".
+  const more = [makeAnnotation("z", { page: 0, text: "zeroth" }), ...annos];
+  const grown = replaceHighlightsSection(edited, book, more, commentOpts);
+  assert.match(grown, /> first\n\n\^rdst-[a-z0-9]+\n\n> \[!comment\]\n> my thought #idea\n\n> second/);
+});
+
+void test("a comment whose highlight is gone is kept under its own heading", () => {
+  const annos = [
+    makeAnnotation("a", { page: 1, text: "first" }),
+    makeAnnotation("b", { page: 2, text: "second" }),
+  ];
+  const synced = replaceHighlightsSection("", book, annos, commentOpts);
+  const edited = addComment(synced, "first", "> [!comment] Title\n> keep me");
+
+  const pruned = replaceHighlightsSection(edited, book, [annos[1]!], commentOpts);
+  assert.doesNotMatch(pruned, /> first/);
+  assert.match(pruned, /### Comments without a highlight\n\n> \[!comment\] Title\n> keep me\n$/);
+  // It stays there, and does not attach to the highlight above the heading.
+  assert.equal(replaceHighlightsSection(pruned, book, [annos[1]!], commentOpts), pruned);
+});
+
+void test("with block IDs off, comment callouts are kept but unattached", () => {
+  const annos = [makeAnnotation("a", { page: 1, text: "first" })];
+  const o = { ...commentOpts, highlightBlockIds: false };
+  const synced = replaceHighlightsSection("", book, annos, o);
+  const edited = synced.replace("> first\n", "> first\n\n> [!comment]\n> note\n");
+  const out = replaceHighlightsSection(edited, book, annos, o);
+  assert.match(out, /> first\n\n### Comments without a highlight\n\n> \[!comment\]\n> note\n$/);
+  assert.equal(replaceHighlightsSection(out, book, annos, o), out);
+});
+
+void test("a comment goes below the highlight's Readest note and ends a callout run", () => {
+  const annos = [
+    makeAnnotation("a", { page: 1, text: "first", note: "from readest" }),
+    makeAnnotation("b", { page: 2, text: "second" }),
+  ];
+  const o: RenderOptions = {
+    ...commentOpts,
+    style: "callout",
+    separator: "none",
+    noteStyle: "callout",
+  };
+  const synced = replaceHighlightsSection("", book, annos, o);
+  const idLine = synced.split("\n").find((l) => l.startsWith("^rdst-"))!;
+  // Typed between the block ID and the note callout; sync moves it below the note.
+  const edited = synced.replace(`${idLine}\n`, `${idLine}\n\n> [!comment]\n> mine\n`);
+  const out = replaceHighlightsSection(edited, book, annos, o);
+  assert.match(out, /> \[!note\]\n> from readest\n\n> \[!comment\]\n> mine\n\n> \[!quote\]\n> second/);
+  assert.equal(replaceHighlightsSection(out, book, annos, o), out);
+});
+
+void test("text that is not a comment callout is still regenerated", () => {
+  const annos = [makeAnnotation("a", { page: 1, text: "first" })];
+  const synced = replaceHighlightsSection("", book, annos, commentOpts);
+  const edited = addComment(synced, "first", "loose text\n\n> [!note]\n> not mine to keep");
+  assert.equal(replaceHighlightsSection(edited, book, annos, commentOpts), synced);
+});

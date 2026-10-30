@@ -4,6 +4,10 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ## [Unreleased]
 
+### Added
+
+- Your own comments on a highlight: a `> [!comment]` callout typed below a highlight survives re-sync and stays under that highlight, so notes and tags written in Obsidian sit next to the passage. Needs Preserve manual edits and Block IDs on. A comment whose highlight is removed in Readest moves to a heading at the end of the section instead of being lost. (#60, thanks @a-rock-lobster)
+
 ## [1.9.0] - 2026-10-29
 
 ### Added

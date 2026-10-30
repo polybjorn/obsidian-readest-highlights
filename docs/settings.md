@@ -110,6 +110,17 @@ When on (default), re-sync rewrites only the section under the sync heading, plu
 
 Force-disabled when Heading level is `None`.
 
+#### Your own comments on a highlight
+
+Inside the sync section, a callout of type `comment` is yours and survives re-sync. Type it below a highlight:
+
+```markdown
+> [!comment]
+> Your thoughts, #tags and links.
+```
+
+Sync puts each comment back under the highlight it followed, after that highlight's Readest note if it has one. This needs [Block IDs](#block-ids) on, since the block ID is what ties a comment to its highlight. Comments it can't place, because the highlight was removed in Readest or Block IDs are off, move to a `Comments without a highlight` heading at the end of the section instead of being dropped. Any other text you type inside the section is still replaced on the next sync.
+
 ## Frontmatter
 
 Optional YAML block at the top of book notes.
@@ -279,7 +290,7 @@ When on, a `Total highlights: N` line is rendered under the highlights heading. 
 
 Off by default. When on, each highlight gets a stable Obsidian block ID (`^rdst-<hash>`) on its own line, letting you link to a specific highlight from anywhere - another note, a daily note, or a canvas card - with `[[Book note#^rdst-abc123]]`. The ID is derived from the highlight's Readest location, so it stays the same across re-syncs and existing links keep working.
 
-The ID line is hidden in reading view but visible in source and live-preview mode, which is why this is off by default. If Readest re-anchors a highlight (its location changes), that highlight's ID changes and links to the old ID break.
+The ID line is hidden in reading view but visible in source and live-preview mode, which is why this is off by default. If Readest re-anchors a highlight (its location changes), that highlight's ID changes and links to the old ID break, and a [comment](#your-own-comments-on-a-highlight) under it moves to the end of the section.
 
 #### Readest link
 
