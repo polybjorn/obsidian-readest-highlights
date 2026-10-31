@@ -21,6 +21,10 @@ For an offline install or a specific version:
 
 Obsidian's community plugin updater will overwrite a manually installed copy when a newer release publishes.
 
+## Beta versions
+
+Betas are GitHub pre-releases, which Obsidian's own updater never offers. To try one, install [BRAT](https://github.com/TfTHacker/obsidian42-brat) from the community plugins, run "BRAT: Add a beta plugin for testing", enter `polybjorn/obsidian-readest-highlights` and pick the latest version. BRAT then updates it to each new beta. Once the stable release is out, pick it in BRAT or remove the plugin from BRAT's list so Obsidian's updater takes over.
+
 ## First-run configuration
 
 1. Settings -> Community plugins -> Readest Highlights -> gear icon.

@@ -47,3 +47,12 @@ In a git worktree, `npm run preview` builds and copies the result into the main 
 - Add a line under `## [Unreleased]` in `CHANGELOG.md` for anything users will notice. It becomes the release notes, so write it for them.
 - Keep the plugin working on the Obsidian version in `minAppVersion`. Feature-detect a newer API instead of raising it.
 - Test in a real vault before opening the PR. CI runs lint, tests and build, but never loads the plugin in Obsidian.
+
+## Beta releases
+
+A tag like `1.10.0-beta.1` publishes a GitHub pre-release that only [BRAT](https://github.com/TfTHacker/obsidian42-brat) users see. Obsidian's updater reads `manifest.json` on `main` and fetches the release it names, so a beta reaches nobody else as long as `main` stays at the last stable version.
+
+1. Add a `## [1.10.0-beta.1]` section to `CHANGELOG.md` above the last release. It becomes the release notes; without it GitHub generates them.
+2. Tag the commit on `main` without bumping the version: `git tag 1.10.0-beta.1 && git push origin 1.10.0-beta.1`. Don't run `npm version`, which writes `manifest.json` and `versions.json`.
+3. The release workflow sets the version in the uploaded `manifest.json` to the tag and marks the release as a pre-release.
+4. For the stable release, fold the beta sections into one `## [1.10.0]` section and release as usual.
