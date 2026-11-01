@@ -4,6 +4,8 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ## [Unreleased]
 
+## [1.10.0-beta.1] - 2026-11-01
+
 ### Added
 
 - Your own comments on a highlight: a `> [!comment]` callout typed below a highlight survives re-sync and stays under that highlight, so notes and tags written in Obsidian sit next to the passage. Needs Preserve manual edits and Block IDs on, and works with any heading level. A comment whose highlight is removed in Readest moves to a heading at the end of the section instead of being lost. (#60, thanks @a-rock-lobster)
@@ -204,7 +206,8 @@ Requires Obsidian 1.13.0 or later. Users on older Obsidian versions stay on plug
 
 - Initial release.
 
-[Unreleased]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.9.0...HEAD
+[Unreleased]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.10.0-beta.1...HEAD
+[1.10.0-beta.1]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.9.0...1.10.0-beta.1
 [1.9.0]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.8.0...1.9.0
 [1.8.0]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.7.0...1.8.0
 [1.7.0]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.6.0...1.7.0
