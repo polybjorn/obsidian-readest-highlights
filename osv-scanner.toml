@@ -1,0 +1,10 @@
+# Read by the CI dependency gate (bjorn/ci-actions osv-scan).
+
+# A crafted glob pattern can slow minimatch down. It comes in only through
+# eslint and its plugins, which match this repo's own file patterns and never
+# ship in main.js, and none of them accepts minimatch 11 yet. The date makes
+# the gate fail again, so the ignore is rechecked rather than kept for good.
+[[IgnoredVulns]]
+id = "GHSA-g3hv-75wg-m249"
+ignoreUntil = 2027-02-01
+reason = "minimatch < 11.0.1 is dev-only, through eslint and its plugins, which glob this repo's own files; no eslint release accepts minimatch 11 yet"
