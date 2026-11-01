@@ -1284,3 +1284,18 @@ void test("text that is not a comment callout is still regenerated", () => {
   const edited = addComment(synced, "first", "loose text\n\n> [!note]\n> not mine to keep");
   assert.equal(replaceHighlightsSection(edited, book, annos, commentOpts), synced);
 });
+
+void test("comments survive with Heading level None, where the whole note is rewritten", () => {
+  const annos = [
+    makeAnnotation("a", { page: 1, text: "first" }),
+    makeAnnotation("b", { page: 2, text: "second" }),
+  ];
+  const o = { ...commentOpts, syncHeadingLevel: 0 as const };
+  const synced = replaceHighlightsSection("", book, annos, o);
+  const edited = addComment(synced, "first", "> [!comment]\n> kept");
+  assert.equal(replaceHighlightsSection(edited, book, annos, o), edited);
+
+  const pruned = replaceHighlightsSection(edited, book, [annos[1]!], o);
+  assert.match(pruned, /### Comments without a highlight\n\n> \[!comment\]\n> kept\n$/);
+  assert.equal(replaceHighlightsSection(pruned, book, [annos[1]!], o), pruned);
+});

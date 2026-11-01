@@ -911,21 +911,34 @@ function prependHighlightCount(
   return body ? `${line}\n\n${body}` : line;
 }
 
+// Whatever renderHighlightsBody did not place has lost its highlight (or block
+// IDs are off). It is kept under its own heading rather than dropped.
+function unattachedComments(
+  comments: Map<string, string[]> | undefined,
+  opts: RenderOptions,
+): string {
+  const left = [...(comments?.values() ?? [])].flat();
+  return left.length
+    ? `${groupHeadingHashes(opts)} Comments without a highlight\n\n${left.join("\n\n")}`
+    : "";
+}
+
 export function renderBookNote(
   parsed: ParsedBook,
   opts: RenderOptions,
+  comments?: Map<string, string[]>,
 ): string {
   const { book, annotations, cover } = parsed;
   const frontmatter = renderFrontmatter(book, opts.frontmatter, cover);
   const heading = renderHeadingLine(book, opts);
   const body = prependHighlightCount(
-    renderHighlightsBody(annotations, opts),
+    renderHighlightsBody(annotations, opts, comments),
     annotations,
     opts,
   );
-  const highlights = heading
-    ? `${heading}\n\n${body}`.trimEnd()
-    : body.trimEnd();
+  const highlights = [heading, body.trimEnd(), unattachedComments(comments, opts)]
+    .filter(Boolean)
+    .join("\n\n");
   return frontmatter
     ? `${frontmatter}\n\n${highlights}\n`
     : `${highlights}\n`;
@@ -974,7 +987,11 @@ export function replaceHighlightsSection(
   cover?: string,
 ): string {
   if (opts.syncHeadingLevel === 0) {
-    return renderBookNote({ book, annotations, cover }, opts);
+    // With no heading to bound a section the whole note is rewritten, so the
+    // comments are collected from all of it.
+    const all = existing.split("\n");
+    const comments = extractComments(all, fenceMask(all));
+    return renderBookNote({ book, annotations, cover }, opts, comments);
   }
   existing = syncExtraFields(existing, book, opts.frontmatter, cover);
 
@@ -1010,13 +1027,7 @@ export function replaceHighlightsSection(
     annotations,
     opts,
   );
-  // Whatever renderHighlightsBody did not place has lost its highlight (or
-  // block IDs are off). It is kept under its own heading rather than dropped.
-  const unattached = [...comments.values()].flat();
-  const leftover = unattached.length
-    ? `${groupHeadingHashes(opts)} Comments without a highlight\n\n${unattached.join("\n\n")}`
-    : "";
-  const section = [heading, body.trimEnd(), leftover]
+  const section = [heading, body.trimEnd(), unattachedComments(comments, opts)]
     .filter(Boolean)
     .join("\n\n");
 

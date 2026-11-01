@@ -119,7 +119,7 @@ Inside the sync section, a callout of type `comment` is yours and survives re-sy
 > Your thoughts, #tags and links.
 ```
 
-Sync puts each comment back under the highlight it followed, after that highlight's Readest note if it has one. This needs [Block IDs](#block-ids) on, since the block ID is what ties a comment to its highlight. Comments it can't place, because the highlight was removed in Readest or Block IDs are off, move to a `Comments without a highlight` heading at the end of the section instead of being dropped. Any other text you type inside the section is still replaced on the next sync.
+Sync puts each comment back under the highlight it followed, after that highlight's Readest note if it has one. This works with any [Heading level](#heading-level), None included, but needs [Block IDs](#block-ids) on, since the block ID is what ties a comment to its highlight. Comments it can't place, because the highlight was removed in Readest or Block IDs are off, move to a `Comments without a highlight` heading at the end of the section instead of being dropped. Any other text you type inside the section, or anywhere in the note with Heading level None, is still replaced on the next sync.
 
 ## Frontmatter
 
