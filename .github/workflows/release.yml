@@ -21,7 +21,26 @@ jobs:
               with:
                   node-version: 26.x
                   cache: "npm"
+            # A stable tag is what Obsidian's updater installs, so it has to be code
+            # main carries and name the version manifest.json names. A beta reaches
+            # only BRAT users and may test a branch before it merges.
+            - name: Check the tag
+              if: ${{ !contains(github.ref_name, '-') }}
+              env:
+                  TAG: ${{ github.ref_name }}
+              run: |
+                  if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+                      echo "::error::$TAG is not on main"
+                      exit 1
+                  fi
+                  version=$(node -p 'require("./manifest.json").version')
+                  if [ "$TAG" != "$version" ]; then
+                      echo "::error::$TAG does not match manifest.json version $version"
+                      exit 1
+                  fi
             - run: npm ci
+            - run: npm run lint
+            - run: npm test
             - run: npm run build
             # A tag like 1.10.0-beta.1 is a pre-release for BRAT testers. main's
             # manifest.json stays at the last stable version, because Obsidian's
