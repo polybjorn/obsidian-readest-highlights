@@ -32,7 +32,8 @@ In a git worktree, `npm run preview` builds and copies the result into the main 
 | `npm run lint` | ESLint with the Obsidian plugin rules |
 | `npm test` | Run the tests |
 | `npm run gallery` | Regenerate `docs/gallery` (or a folder given after `--`); `npm test` fails while it is out of date |
-| `npm run demo-vault -- <folder>` | Write a demo vault of public-domain books for the screenshots in `docs/`; run `npm run build` first |
+| `npm run demo-vault -- <folder>` | Write a demo vault of public-domain books for the screenshots in `docs/`; run `npm run build` first. `--readest <folder>` also writes the books as a Readest Books folder to sync from |
+| `npm run record-sync` | Record `docs/sync.gif`, the README's sync GIF, from the demo vault in a separate Obsidian instance. Needs [ffmpeg](https://ffmpeg.org) and Obsidian in `/Applications` |
 
 ## Commit messages
 

@@ -45,6 +45,7 @@ export default defineConfig(
 		"dist",
 		"esbuild.config.mjs",
 		"preview.mjs",
+		"scripts",
 		"version-bump.mjs",
 		"versions.json",
 		"main.js",

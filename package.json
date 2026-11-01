@@ -12,7 +12,8 @@
     "lint": "eslint .",
     "test": "tsx --tsconfig tsconfig.test.json --test tests/*.test.ts",
     "gallery": "tsx --tsconfig tsconfig.test.json tests/gallery.ts",
-    "demo-vault": "tsx --tsconfig tsconfig.test.json tests/demo-vault.ts"
+    "demo-vault": "tsx --tsconfig tsconfig.test.json tests/demo-vault.ts",
+    "record-sync": "npm run build && node scripts/record-sync.mjs"
   },
   "keywords": [
     "obsidian",

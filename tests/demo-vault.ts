@@ -66,7 +66,11 @@ const demos: Demo[] = [
 ];
 
 const dir = process.argv[2];
-if (!dir) throw new Error("Usage: npm run demo-vault -- <folder>");
+if (!dir) throw new Error("Usage: npm run demo-vault -- <folder> [--readest <folder>]");
+const flag = process.argv.indexOf("--readest");
+const readestDir = flag > 0 ? process.argv[flag + 1] : undefined;
+if (flag > 0 && !readestDir) throw new Error("--readest needs a folder");
+const library: ReadestLibraryBook[] = [];
 const built = ["main.js", "manifest.json", "styles.css"];
 if (!existsSync("main.js")) throw new Error("main.js is missing; run npm run build first");
 
@@ -103,7 +107,16 @@ for (const [title, author, published, subject, quotes] of demos) {
   }));
   const name = bookFilename(book, settings.filenameTemplate);
   writeFileSync(join(notes, name), renderBookNote({ book, annotations }, options));
+  if (readestDir) {
+    library.push(book);
+    mkdirSync(join(readestDir, hash), { recursive: true });
+    writeFileSync(
+      join(readestDir, hash, "config.json"),
+      JSON.stringify({ schemaVersion: 3, bookHash: hash, booknotes: annotations }),
+    );
+  }
 }
+if (readestDir) writeFileSync(join(readestDir, "library.json"), JSON.stringify(library));
 
 // A new vault has no configured config folder yet, so Obsidian's default is
 // the one it will read.
