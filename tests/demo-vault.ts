@@ -107,7 +107,6 @@ for (const [title, author, published, subject, quotes] of demos) {
 
 // A new vault has no configured config folder yet, so Obsidian's default is
 // the one it will read.
-// eslint-disable-next-line obsidianmd/hardcoded-config-path
 const config = join(dir, ".obsidian");
 const plugin = join(config, "plugins", "readest-highlights");
 mkdirSync(plugin, { recursive: true });
