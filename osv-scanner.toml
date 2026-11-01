@@ -1,4 +1,4 @@
-# Read by the CI dependency gate (bjorn/ci-actions osv-scan).
+# Read by the CI dependency gate (osv-scanner).
 
 # A crafted glob pattern can slow minimatch down. It comes in only through
 # eslint and its plugins, which match this repo's own file patterns and never

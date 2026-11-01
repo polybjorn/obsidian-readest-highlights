@@ -20,8 +20,3 @@ data.json
 
 # Exclude macOS Finder (System Explorer) View States
 .DS_Store
-
-# Per-machine assistant context (not part of the plugin source)
-CLAUDE.md
-reference.md
-AGENTS.md
