@@ -18,9 +18,15 @@ The build writes `main.js` next to `manifest.json` and `styles.css`. Symlink the
 ln -s "$(pwd)" /path/to/your/vault/.obsidian/plugins/readest-highlights
 ```
 
+A vault synced to other machines needs real files there, since a symlink does not sync. Name the plugin folder in a `.env` in the main checkout instead, and every build, from a worktree too, copies `main.js`, `manifest.json` and `styles.css` into it:
+
+```sh
+echo 'OBSIDIAN_PLUGIN_DIR=/path/to/your/vault/.obsidian/plugins/readest-highlights' > .env
+```
+
 Enable the plugin in Settings -> Community plugins. To load a rebuild, toggle it off and on there, or install [Hot Reload](https://github.com/pjeby/hot-reload), which reloads it whenever `main.js` changes.
 
-In a git worktree, `npm run preview` builds and copies the result into the main checkout, the folder Obsidian loads. `npm run build` in the main checkout switches back.
+With the symlink, `npm run preview` in a git worktree builds and copies the result into the main checkout, the folder Obsidian loads. `npm run build` in the main checkout switches back.
 
 ## Scripts
 

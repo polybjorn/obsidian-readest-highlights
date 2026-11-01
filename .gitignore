@@ -18,5 +18,8 @@ main.js
 # obsidian
 data.json
 
+# OBSIDIAN_PLUGIN_DIR, a path on your machine
+.env
+
 # Exclude macOS Finder (System Explorer) View States
 .DS_Store

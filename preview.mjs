@@ -1,15 +1,15 @@
 import { copyFileSync, readFileSync, realpathSync } from "fs";
-import { execFileSync } from "child_process";
-import { join, resolve } from "path";
+import { join } from "path";
+import { mainCheckout as target, pluginDir } from "./scripts/plugin-dir.mjs";
 
-// Obsidian loads the plugin from the main checkout (the folder symlinked into
-// the vault), so a build made in a git worktree is invisible until copied there.
-const commonDir = execFileSync(
-  "git",
-  ["rev-parse", "--path-format=absolute", "--git-common-dir"],
-  { encoding: "utf8" },
-).trim();
-const target = resolve(commonDir, "..");
+if (pluginDir()) {
+  console.log("The build already copied itself into OBSIDIAN_PLUGIN_DIR.");
+  process.exit(0);
+}
+
+// Without OBSIDIAN_PLUGIN_DIR Obsidian loads the plugin from the main checkout
+// (the folder symlinked into the vault), so a build made in a git worktree is
+// invisible until copied there.
 
 if (realpathSync(target) === realpathSync(".")) {
   console.log("Built in the main checkout, so Obsidian already sees it.");
