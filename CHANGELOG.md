@@ -4,6 +4,8 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ## [Unreleased]
 
+## [1.10.0-beta.2] - 2026-11-02
+
 ### Fixed
 
 - A comment typed between a highlight and its block ID line stays with that highlight on re-sync, instead of moving to the highlight above or to the end of the section. (#60)
@@ -210,7 +212,8 @@ Requires Obsidian 1.13.0 or later. Users on older Obsidian versions stay on plug
 
 - Initial release.
 
-[Unreleased]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.10.0-beta.1...HEAD
+[Unreleased]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.10.0-beta.2...HEAD
+[1.10.0-beta.2]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.10.0-beta.1...1.10.0-beta.2
 [1.10.0-beta.1]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.9.0...1.10.0-beta.1
 [1.9.0]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.8.0...1.9.0
 [1.8.0]: https://github.com/polybjorn/obsidian-readest-highlights/compare/1.7.0...1.8.0
