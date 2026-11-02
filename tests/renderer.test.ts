@@ -1248,6 +1248,23 @@ void test("a comment whose highlight is gone is kept under its own heading", () 
   assert.equal(replaceHighlightsSection(pruned, book, [annos[1]!], commentOpts), pruned);
 });
 
+void test("a comment typed above its highlight's block ID line stays with that highlight", () => {
+  const annos = [
+    makeAnnotation("a", { page: 1, text: "first" }),
+    makeAnnotation("b", { page: 2, text: "second" }),
+  ];
+  const synced = replaceHighlightsSection("", book, annos, commentOpts);
+  const lines = synced.split("\n");
+  const at = lines.indexOf("> second");
+  const idLine = lines.findIndex((l, i) => i > at && l.startsWith("^rdst-"));
+  lines.splice(idLine, 0, "> [!comment] Title", "> one", "", "> [!comment]", "> two", "");
+
+  const out = replaceHighlightsSection(lines.join("\n"), book, annos, commentOpts);
+  const below = `> second\n\n${lines[idLine + 6]}\n\n> [!comment] Title\n> one\n\n> [!comment]\n> two\n`;
+  assert.ok(out.endsWith(below), out);
+  assert.equal(replaceHighlightsSection(out, book, annos, commentOpts), out);
+});
+
 void test("with block IDs off, comment callouts are kept but unattached", () => {
   const annos = [makeAnnotation("a", { page: 1, text: "first" })];
   const o = { ...commentOpts, highlightBlockIds: false };

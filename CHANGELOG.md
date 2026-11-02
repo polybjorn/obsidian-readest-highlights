@@ -4,6 +4,10 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ## [Unreleased]
 
+### Fixed
+
+- A comment typed between a highlight and its block ID line stays with that highlight on re-sync, instead of moving to the highlight above or to the end of the section. (#60)
+
 ## [1.10.0-beta.1] - 2026-11-01
 
 ### Added

@@ -947,10 +947,35 @@ export function renderBookNote(
 const COMMENT_CALLOUT_RE = /^>\s*\[!comment\][+-]?(\s|$)/i;
 const BLOCK_ID_LINE_RE = /^\^(rdst-[a-z0-9]+(?:-\d+)?)\s*$/;
 
+const calloutEnd = (lines: string[], start: number): number => {
+  let end = start + 1;
+  while (end < lines.length && (lines[end] ?? "").startsWith(">")) end++;
+  return end;
+};
+
+// A comment typed between a highlight and its block ID line belongs to that
+// highlight, while the running anchor still holds the previous highlight's ID.
+// Returns the ID that follows the comments starting at `from`, past blank
+// lines and further comments, or null when anything else comes first.
+function blockIdAhead(
+  lines: string[],
+  masked: boolean[],
+  from: number,
+): string | null {
+  let j = from;
+  while (j < lines.length && !masked[j]) {
+    const line = lines[j] ?? "";
+    if (line.trim() === "") j++;
+    else if (COMMENT_CALLOUT_RE.test(line)) j = calloutEnd(lines, j);
+    else return BLOCK_ID_LINE_RE.exec(line)?.[1] ?? null;
+  }
+  return null;
+}
+
 // Collects the `> [!comment]` callouts in the old sync section, keyed by the
-// block ID of the highlight above them. A heading resets the key, so comments
-// under a group heading with no highlight yet, or under the heading for
-// comments whose highlight is gone, stay unattached (key "").
+// block ID of the highlight they belong to. A heading resets the key, so
+// comments under a group heading with no highlight yet, or under the heading
+// for comments whose highlight is gone, stay unattached (key "").
 function extractComments(
   lines: string[],
   masked: boolean[],
@@ -970,10 +995,10 @@ function extractComments(
       continue;
     }
     if (!COMMENT_CALLOUT_RE.test(line)) continue;
-    let end = i + 1;
-    while (end < lines.length && (lines[end] ?? "").startsWith(">")) end++;
+    const end = calloutEnd(lines, i);
     const block = lines.slice(i, end).map((l) => l.trimEnd()).join("\n");
-    comments.set(anchor, [...(comments.get(anchor) ?? []), block]);
+    const key = blockIdAhead(lines, masked, end) ?? anchor;
+    comments.set(key, [...(comments.get(key) ?? []), block]);
     i = end - 1;
   }
   return comments;
