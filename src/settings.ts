@@ -9,9 +9,9 @@ import {
 } from "obsidian";
 import type { SettingDefinitionItem, SettingGroupItem } from "obsidian";
 import { baseSettingTabMethod, renderFallback } from "./settings-compat";
-import { access } from "fs/promises";
+import { access, readFile } from "fs/promises";
 import { homedir } from "os";
-import { join } from "path";
+import { join, normalize } from "path";
 import type ReadestHighlightsPlugin from "./main";
 import type { AnnotationFilter } from "./filters";
 
@@ -74,7 +74,8 @@ export interface ReadestSettings {
   extraFrontmatter: string;
 }
 
-const READEST_SUBPATH = join("com.bilingify.readest", "Readest", "Books");
+const READEST_APP_ID = "com.bilingify.readest";
+const READEST_SUBPATH = join(READEST_APP_ID, "Readest", "Books");
 
 function defaultMacPath(): string {
   return join(homedir(), "Library", "Application Support", READEST_SUBPATH);
@@ -101,6 +102,41 @@ export function defaultActivePath(): string {
   }
 }
 
+// Tauri's app config directory for Readest, where it keeps settings.json.
+function readestConfigDir(): string {
+  switch (process.platform) {
+    case "darwin":
+      return join(homedir(), "Library", "Application Support", READEST_APP_ID);
+    case "win32":
+      return join(
+        process.env.APPDATA ?? join(homedir(), "AppData", "Roaming"),
+        READEST_APP_ID,
+      );
+    default:
+      return join(
+        process.env.XDG_CONFIG_HOME ?? join(homedir(), ".config"),
+        READEST_APP_ID,
+      );
+  }
+}
+
+// Readest's settings.json stays in its config directory when the data location
+// is moved, and records where the books folder went. Any failure returns null
+// so a missing or changed settings file falls through to the default path.
+export async function readestRecordedBooksDir(
+  configDir: string = readestConfigDir(),
+): Promise<string | null> {
+  try {
+    const raw = await readFile(join(configDir, "settings.json"), "utf-8");
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== "object" || parsed === null) return null;
+    const dir = (parsed as { localBooksDir?: unknown }).localBooksDir;
+    return typeof dir === "string" && dir.length > 0 ? normalize(dir) : null;
+  } catch {
+    return null;
+  }
+}
+
 async function pathHasLibrary(p: string): Promise<boolean> {
   try {
     await access(join(p, "library.json"));
@@ -110,18 +146,21 @@ async function pathHasLibrary(p: string): Promise<boolean> {
   }
 }
 
-export async function resolveBooksDir(s: ReadestSettings): Promise<string> {
+export async function resolveBooksDir(
+  s: ReadestSettings,
+  recorded: Promise<string | null> = readestRecordedBooksDir(),
+): Promise<string> {
   const userPaths = s.booksDirs.filter((p) => p.length > 0);
-  const fallback = defaultActivePath();
-  const candidates = userPaths.includes(fallback)
-    ? userPaths
-    : [...userPaths, fallback];
+  const fallbacks = [await recorded, defaultActivePath()].filter(
+    (p): p is string => p !== null,
+  );
+  const candidates = [...new Set([...userPaths, ...fallbacks])];
 
   for (const candidate of candidates) {
     if (await pathHasLibrary(candidate)) return candidate;
   }
   throw new Error(
-    `No Readest library.json found. Checked: ${candidates.join(", ")}`,
+    `No Readest library.json found. Checked: ${candidates.join(", ")}. Add the folder that contains library.json under Source in the plugin settings.`,
   );
 }
 

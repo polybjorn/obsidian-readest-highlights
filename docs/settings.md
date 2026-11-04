@@ -46,7 +46,7 @@ Empty tokens collapse cleanly: surrounding whitespace, separators (`-`, `_`), a 
 
 ### Source
 
-One or more paths to Readest's Books folder. The plugin tries each in order and uses the first one that contains `library.json`. If none of your listed paths match (or if the list is empty), the platform default is tried as a fallback. When the fallback succeeds and you had at least one explicit entry, the discovered path is appended to your list so the next sync skips the lookup. Useful for vaults synced across devices where the same Readest data lives at different absolute paths.
+One or more paths to Readest's Books folder, the one that contains `library.json`. The plugin tries each in order and uses the first one that has it. If none of your listed paths match (or if the list is empty), it tries the Books folder recorded in Readest's own `settings.json`, then the platform default. The recorded folder covers a data location moved in Readest's settings: Readest keeps `settings.json` in its config folder and updates the path there, so a moved library is found without adding it here. A portable Readest keeps `settings.json` next to the program instead, so add its Books folder by hand. When a fallback succeeds and you had at least one explicit entry, the discovered path is appended to your list so the next sync skips the lookup. Useful for vaults synced across devices where the same Readest data lives at different absolute paths.
 
 Default location per platform:
 

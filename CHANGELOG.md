@@ -4,6 +4,10 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ## [Unreleased]
 
+### Fixed
+
+- Sync finds the library after Readest's data location has been moved to another folder or drive, by reading the new location from Readest's settings, so the path no longer has to be added under Source. When no library is found, the error now says to add the folder that contains `library.json` under Source. (#62)
+
 ## [1.10.0-beta.2] - 2026-11-02
 
 ### Fixed
