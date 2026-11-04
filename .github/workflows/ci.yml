@@ -33,6 +33,11 @@ jobs:
         # Installed in a throwaway directory to leave the repo's lockfile alone.
         # Scoped to src/ because that is all esbuild bundles and ships.
         runs-on: ubuntu-latest
+        env:
+            # The obsidian API types the review rules resolve against, exact so
+            # a run is reproducible; Renovate reads the line above the pin.
+            # renovate: datasource=npm depName=obsidian
+            OBSIDIAN_VERSION: 1.13.1
 
         steps:
             - uses: actions/checkout@v7
@@ -48,5 +53,5 @@ jobs:
                   echo '{"name":"review-lint","private":true,"type":"module","version":"1.0.0"}' > package.json
                   npm install --no-audit --no-fund -D \
                       eslint@9 typescript-eslint@8 eslint-plugin-obsidianmd@latest \
-                      typescript@5 obsidian@1.13.1 globals jiti
+                      typescript@5 obsidian@"$OBSIDIAN_VERSION" globals jiti
                   npx eslint src/
