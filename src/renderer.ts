@@ -10,6 +10,7 @@ import type {
   LinkFormat,
   MetadataPlacement,
   NoteStyle,
+  ReadestLinkPlacement,
   ReadestLinkType,
   ReadestSettings,
 } from "./settings";
@@ -49,6 +50,7 @@ export interface RenderOptions {
   noteStyle: NoteStyle;
   highlightBlockIds: boolean;
   readestLink: ReadestLinkType;
+  readestLinkPlacement: ReadestLinkPlacement;
   filenameTemplate: string;
   syncHeadingTemplate: string;
   syncHeadingLevel: HeadingLevel;
@@ -79,6 +81,7 @@ export function optionsFromSettings(s: ReadestSettings): RenderOptions {
     noteStyle: s.noteStyle,
     highlightBlockIds: s.highlightBlockIds,
     readestLink: s.readestLink,
+    readestLinkPlacement: s.readestLinkPlacement,
     filenameTemplate: s.filenameTemplate,
     syncHeadingTemplate: s.syncHeadingTemplate,
     syncHeadingLevel: s.syncHeadingLevel,
@@ -487,18 +490,28 @@ function readestLinkUrl(
   return g.cfi ? `${base}?cfi=${encodeURIComponent(g.cfi)}` : base;
 }
 
+// Given a link URL, the page label becomes the Readest link. pageLinked says
+// whether it did, so a highlight with no page label keeps its own link line.
 function metadataParts(
   g: GroupedAnnotation,
   opts: RenderOptions,
-): string[] {
+  pageLinkUrl: string | null = null,
+): { parts: string[]; pageLinked: boolean } {
   const meta: string[] = [];
+  let pageLinked = false;
   if (opts.showPage && g.page !== undefined && opts.grouping !== "page") {
-    meta.push(`page ${g.page}`);
+    const label = `page ${g.page}`;
+    if (pageLinkUrl) {
+      meta.push(`[${label}](${pageLinkUrl})`);
+      pageLinked = true;
+    } else {
+      meta.push(label);
+    }
   }
   if (opts.showColor) {
     for (const c of g.colors) meta.push(c);
   }
-  return meta;
+  return { parts: meta, pageLinked };
 }
 
 // Readest's predefined highlight colors (DEFAULT_HIGHLIGHT_COLORS in its
@@ -569,7 +582,12 @@ function renderGroup(
         ? `<u class="readest-squiggly">${g.text}</u>`
         : g.text;
   const textLines = text.split("\n");
-  const parts = metadataParts(g, opts);
+  const linkUrl = readestLinkUrl(g, opts.readestLink);
+  const { parts, pageLinked } = metadataParts(
+    g,
+    opts,
+    opts.readestLinkPlacement === "page" ? linkUrl : null,
+  );
   const metaBelow = parts.length ? `*${parts.join(" · ")}*` : null;
   const metaInline = parts.length ? ` *(${parts.join(" · ")})*` : "";
 
@@ -587,8 +605,7 @@ function renderGroup(
   if (notesText && opts.noteStyle === "attached") {
     innerExtras.push(`**Note:** ${notesText}`);
   }
-  const linkUrl = readestLinkUrl(g, opts.readestLink);
-  if (linkUrl) innerExtras.push(`[Open in Readest](${linkUrl})`);
+  if (linkUrl && !pageLinked) innerExtras.push(`[Open in Readest](${linkUrl})`);
 
   const highlight = wrapStyle(
     textLines,

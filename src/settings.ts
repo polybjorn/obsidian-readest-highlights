@@ -27,6 +27,7 @@ export type NoteStyle = "attached" | "separated" | "callout";
 export type HighlightSortOrder = "page" | "date";
 export type MetadataPlacement = "below" | "inline";
 export type ReadestLinkType = "off" | "web" | "app";
+export type ReadestLinkPlacement = "line" | "page";
 export type { AnnotationFilter };
 
 export interface ReadestSettings {
@@ -55,6 +56,7 @@ export interface ReadestSettings {
   noteStyle: NoteStyle;
   highlightBlockIds: boolean;
   readestLink: ReadestLinkType;
+  readestLinkPlacement: ReadestLinkPlacement;
   annotationFilter: AnnotationFilter;
   includeFrontmatter: boolean;
   frontmatterTags: string;
@@ -208,6 +210,7 @@ export const DEFAULT_SETTINGS: ReadestSettings = {
   noteStyle: "attached",
   highlightBlockIds: false,
   readestLink: "off",
+  readestLinkPlacement: "line",
   annotationFilter: "all",
   includeFrontmatter: true,
   frontmatterTags: "book",
@@ -370,7 +373,8 @@ export class ReadestSettingTab extends PluginSettingTab {
       key === "syncHeadingLevel" ||
       key === "highlightStyle" ||
       key === "includeFrontmatter" ||
-      key === "includeGenre"
+      key === "includeGenre" ||
+      key === "readestLink"
     ) {
       this.refreshDomState();
     }
@@ -970,6 +974,19 @@ export class ReadestSettingTab extends PluginSettingTab {
                 off: "Off",
                 web: "Web link (web.readest.com)",
                 app: "App link (readest://)",
+              },
+            },
+          },
+          {
+            name: "Readest link placement",
+            desc: "Put the link on its own line, or on the page label. A highlight with no page label keeps the link on its own line.",
+            visible: () => this.plugin.settings.readestLink !== "off",
+            control: {
+              type: "dropdown",
+              key: "readestLinkPlacement",
+              options: {
+                line: "Own line",
+                page: "Page label",
               },
             },
           },

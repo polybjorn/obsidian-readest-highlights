@@ -301,6 +301,16 @@ Off by default. Adds an `Open in Readest` link under each highlight that opens t
 
 Both mirror the link formats Readest itself uses for markdown export. Of the two, the web form is the safer choice.
 
+#### Readest link placement
+
+Shown when Readest link is on. **Own line** (the default) puts the `Open in Readest` link on a line under the highlight. **Page label** makes the page label the link instead, saving that line:
+
+```markdown
+> The highlighted text *([page 24](readest://book/{hash}/annotation/{id}?cfi=...))*
+```
+
+A highlight with no page label (Page number off, grouping by page, or no page number in Readest) keeps the link on its own line, so it is never dropped. Works with both link forms and both metadata placements.
+
 ### Metadata
 
 Per-highlight metadata (page, color).

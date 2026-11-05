@@ -46,6 +46,7 @@ const opts: RenderOptions = {
   noteStyle: "attached",
   highlightBlockIds: false,
   readestLink: "off",
+  readestLinkPlacement: "line",
   filenameTemplate: "{title} - {author}",
   syncHeadingTemplate: "Highlights",
   syncHeadingLevel: 2,
@@ -694,6 +695,111 @@ void test("readestLink off renders no link", () => {
     { ...opts, style: "plain", showPage: false },
   );
   assert.doesNotMatch(out, /Open in Readest/);
+});
+
+void test("readestLinkPlacement page links the page label below, web link", () => {
+  const out = renderHighlightsBody(
+    [makeAnnotation("note1", { cfi: "cfi/1", text: "quote", page: 24 })],
+    { ...opts, style: "plain", readestLink: "web", readestLinkPlacement: "page" },
+  );
+  assert.equal(
+    out,
+    "quote\n\n*[page 24](https://web.readest.com/o/book/abc123/annotation/note1?cfi=cfi%2F1)*",
+  );
+});
+
+void test("readestLinkPlacement page links the page label inline, app link", () => {
+  const out = renderHighlightsBody(
+    [makeAnnotation("note1", { cfi: "cfi/1", text: "quote", page: 24 })],
+    {
+      ...opts,
+      metadataPlacement: "inline",
+      readestLink: "app",
+      readestLinkPlacement: "page",
+    },
+  );
+  assert.equal(
+    out,
+    "> quote *([page 24](readest://book/abc123/annotation/note1?cfi=cfi%2F1))*",
+  );
+});
+
+void test("readestLinkPlacement page keeps other metadata next to the linked label", () => {
+  const out = renderHighlightsBody(
+    [makeAnnotation("note1", { text: "quote", page: 24, color: "yellow" })],
+    {
+      ...opts,
+      style: "plain",
+      showColor: true,
+      readestLink: "web",
+      readestLinkPlacement: "page",
+    },
+  );
+  assert.match(
+    out,
+    /^quote\n\n\*\[page 24\]\(https:\/\/web\.readest\.com\/o\/book\/abc123\/annotation\/note1\) · yellow\*$/,
+  );
+});
+
+for (const [label, overrides] of [
+  ["Show page off", { showPage: false }],
+  ["grouping by page", { grouping: "page" }],
+] as const) {
+  void test(`readestLinkPlacement page keeps the link line with ${label}`, () => {
+    const out = renderHighlightsBody(
+      [makeAnnotation("note1", { text: "quote", page: 24 })],
+      {
+        ...opts,
+        style: "plain",
+        readestLink: "app",
+        readestLinkPlacement: "page",
+        ...overrides,
+      },
+    );
+    assert.match(
+      out,
+      /\[Open in Readest\]\(readest:\/\/book\/abc123\/annotation\/note1\)/,
+    );
+    assert.doesNotMatch(out, /\[page 24\]/);
+  });
+}
+
+for (const placement of ["below", "inline"] as const) {
+  void test(`readestLinkPlacement page keeps the link line with no page number, ${placement}`, () => {
+    const out = renderHighlightsBody(
+      [makeAnnotation("note1", { text: "quote", page: undefined })],
+      {
+        ...opts,
+        metadataPlacement: placement,
+        readestLink: "web",
+        readestLinkPlacement: "page",
+      },
+    );
+    assert.equal(
+      out,
+      "> quote\n>\n> [Open in Readest](https://web.readest.com/o/book/abc123/annotation/note1)",
+    );
+  });
+}
+
+void test("readestLinkPlacement page with the link off leaves the page label plain", () => {
+  const out = renderHighlightsBody(
+    [makeAnnotation("note1", { text: "quote", page: 24 })],
+    { ...opts, style: "plain", readestLinkPlacement: "page" },
+  );
+  assert.equal(out, "quote\n\n*page 24*");
+});
+
+void test("readestLinkPlacement line, the default, keeps the page label plain", () => {
+  assert.equal(DEFAULT_SETTINGS.readestLinkPlacement, "line");
+  const out = renderHighlightsBody(
+    [makeAnnotation("note1", { text: "quote", page: 24 })],
+    { ...opts, style: "plain", readestLink: "web" },
+  );
+  assert.equal(
+    out,
+    "quote\n\n*page 24*\n[Open in Readest](https://web.readest.com/o/book/abc123/annotation/note1)",
+  );
 });
 
 // --- highlight style variants ---

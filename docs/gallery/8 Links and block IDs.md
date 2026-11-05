@@ -131,3 +131,33 @@ Block IDs make each highlight linkable as `[[note#^id]]`; the Readest link opens
   **Note:** A note over two lines.
   The second line.
   [Open in Readest](readest://book/gallery0book0hash/annotation/g8?cfi=epubcfi(%2F6%2F16!%2F4%2F2))
+
+## Readest link on the page label
+
+- Tea began as a medicine and grew into a beverage.
+  *[page 3](https://web.readest.com/o/book/gallery0book0hash/annotation/g1?cfi=epubcfi(%2F6%2F2!%2F4%2F2))*
+
+- Teaism is a cult founded on the adoration of the beautiful among the sordid facts of everyday existence.
+  *[page 3](https://web.readest.com/o/book/gallery0book0hash/annotation/g2?cfi=epubcfi(%2F6%2F4!%2F4%2F2))*
+
+- the queen of the Camelias
+  *[page 4](https://web.readest.com/o/book/gallery0book0hash/annotation/g3?cfi=epubcfi(%2F6%2F6!%2F4%2F2))*
+  **Note:** A short note on a yellow highlight.
+
+- <u>Perhaps we reveal ourselves too much in small things because we have so little of the great to hide.</u>
+  *[page 5](https://web.readest.com/o/book/gallery0book0hash/annotation/g4?cfi=epubcfi(%2F6%2F8!%2F4%2F2))*
+
+- the ethereal aroma
+  *[page 6](https://web.readest.com/o/book/gallery0book0hash/annotation/g5?cfi=epubcfi(%2F6%2F10!%2F4%2F2))*
+
+- <u class="readest-squiggly">The tea-plant, a native of southern China, was known from very early times to Chinese botany and medicine.</u>
+  *[page 10](https://web.readest.com/o/book/gallery0book0hash/annotation/g6?cfi=epubcfi(%2F6%2F12!%2F4%2F2))*
+
+- Tea is a work of art and needs a master hand to bring out its noblest qualities.
+  We have good and bad tea, as we have good and bad paintings.
+  *[page 12](https://web.readest.com/o/book/gallery0book0hash/annotation/g7?cfi=epubcfi(%2F6%2F14!%2F4%2F2))*
+
+- the gentle arts of peace
+  *[page 13](https://web.readest.com/o/book/gallery0book0hash/annotation/g8?cfi=epubcfi(%2F6%2F16!%2F4%2F2))*
+  **Note:** A note over two lines.
+  The second line.

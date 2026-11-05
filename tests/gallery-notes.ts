@@ -187,6 +187,10 @@ export function galleryNotes(): Record<string, string> {
         ["Block IDs", { highlightBlockIds: true }],
         ["Readest link, web", { readestLink: "web" }],
         ["Readest link, app", { readestLink: "app" }],
+        [
+          "Readest link on the page label",
+          { readestLink: "web", readestLinkPlacement: "page" },
+        ],
       ],
     ),
     "9 Frontmatter plain.md": fullNote({
