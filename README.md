@@ -23,6 +23,8 @@
 
 Desktop Obsidian with access to a Readest Books folder. Readest's built-in sync is the easiest way to collect annotations from other devices into one folder, but any setup that exposes the folder to Obsidian works.
 
+Readest's sync downloads a book's highlights only when that book is opened, so highlights made on another device reach the plugin after the book has been opened once in Readest on the computer Obsidian runs on. Each book needs this once per batch of new highlights: open it, let Readest finish syncing, and close it again.
+
 ## What the plugin accesses
 
 - **Readest folder, read-only.** The plugin reads `library.json`, each book's `config.json` and, if Cover folder is set, its `cover.png`, and never writes there. The folder is set in Settings, and if left empty the [platform default](https://github.com/polybjorn/obsidian-readest-highlights/blob/main/docs/settings.md#source) is used. Because this folder is outside the vault, the plugin uses Node's `fs` module to read it.
