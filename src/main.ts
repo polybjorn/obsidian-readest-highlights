@@ -82,7 +82,7 @@ export default class ReadestHighlightsPlugin extends Plugin {
     // Each popout window has its own body, so the class goes on every open
     // window and each one opened later.
     if (!requireApiVersion("1.13.0")) {
-      const docs = new Set<Document>([document]);
+      const docs = new Set<Document>([this.app.workspace.containerEl.doc]);
       this.app.workspace.iterateAllLeaves((leaf) => {
         docs.add(leaf.view.containerEl.doc);
       });
