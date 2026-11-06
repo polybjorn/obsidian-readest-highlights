@@ -53,5 +53,5 @@ jobs:
                   echo '{"name":"review-lint","private":true,"type":"module","version":"1.0.0"}' > package.json
                   npm install --no-audit --no-fund -D \
                       eslint@9 typescript-eslint@8 eslint-plugin-obsidianmd@latest \
-                      typescript@5 obsidian@"$OBSIDIAN_VERSION" globals jiti
+                      typescript@5 obsidian@"$OBSIDIAN_VERSION" @types/node globals jiti
                   npx eslint src/
