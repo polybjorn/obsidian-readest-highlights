@@ -89,6 +89,30 @@ jobs:
       - name: Check for a changelog entry
         run: node scripts/changelog.ts check-pr
 
+  # The denylist gate github-sync runs after the merge, run on the PR instead,
+  # while a hit is still fixed by a force-push to the branch rather than a
+  # rewrite of main.
+  commit-gate:
+    if: github.event_name == 'pull_request'
+    runs-on: docker
+    timeout-minutes: 5
+    steps:
+      - name: Fetch ci-actions
+        run: git clone -q --depth 1 --branch v1 "$GITHUB_SERVER_URL/bjorn/ci-actions.git" "${RUNNER_TEMP:-/tmp}/ci-actions"
+      - name: Checkout
+        env:
+          TOKEN: ${{ github.token }}
+          # Full depth puts origin/main and the merge-base in the checkout
+          DEPTH: "0"
+        run: bash "${RUNNER_TEMP:-/tmp}/ci-actions/checkout/checkout.sh"
+      - name: Self-test commit-gate
+        run: bash "${RUNNER_TEMP:-/tmp}/ci-actions/commit-gate/selftest.sh"
+      - name: Gate the PR's commits
+        env:
+          DENYLIST: ${{ secrets.DEPLOY_DENYLIST }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: bash "${RUNNER_TEMP:-/tmp}/ci-actions/commit-gate/commit-gate.sh"
+
   github-sync:
     if: github.event_name == 'push'
     needs: [attribution, test]
