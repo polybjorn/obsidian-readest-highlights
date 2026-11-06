@@ -34,7 +34,9 @@ export interface ReadestLibraryBook {
 export type LocalizedString = string | { [lang: string]: string };
 
 export interface ReadestAnnotation {
-  bookHash: string;
+  // Readest doesn't always write it; loadBooksWithAnnotations fills it from
+  // the book's hash when missing.
+  bookHash?: string;
   id: string;
   type: string;
   cfi?: string;

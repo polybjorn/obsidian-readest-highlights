@@ -4,6 +4,8 @@ import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { loadBooksWithAnnotations } from "../src/readest";
+import { optionsFromSettings, renderHighlightsBody } from "../src/renderer";
+import { DEFAULT_SETTINGS } from "../src/settings";
 
 async function tempDir(t: TestContext): Promise<string> {
   const dir = await mkdtemp(join(tmpdir(), "readest-test-"));
@@ -543,4 +545,60 @@ void test("annotations get chapters from nav.json; missing cache leaves them uns
     undefined,
   );
   assert.equal(noNav?.annotations[0]?.chapter, undefined);
+});
+
+// --- bookHash fill (Readest sometimes omits it on a booknote) ---
+
+void test("an annotation with no bookHash takes the book's hash and gets a Readest link", async (t) => {
+  const dir = await makeBooksDir(
+    t,
+    {
+      h1: {
+        bookHash: "h1",
+        booknotes: [
+          { ...baseAnnotation, id: "missing", page: 3, cfi: "cfi/1" },
+          { ...baseAnnotation, bookHash: "", id: "empty", page: 4 },
+          { ...baseAnnotation, bookHash: "own", id: "kept", page: 5 },
+        ],
+      },
+    },
+    [libraryEntry("h1")],
+  );
+  const books = await loadBooksWithAnnotations(dir);
+  const annotations = books[0]?.annotations ?? [];
+  assert.deepEqual(
+    annotations.map((a) => [a.id, a.bookHash]),
+    [
+      ["missing", "h1"],
+      ["empty", "h1"],
+      ["kept", "own"],
+    ],
+  );
+
+  const missing = annotations.filter((a) => a.id === "missing");
+  const render = (readestLink: "web" | "app", readestLinkPlacement: "line" | "page") =>
+    renderHighlightsBody(
+      missing,
+      optionsFromSettings({
+        ...DEFAULT_SETTINGS,
+        readestLink,
+        readestLinkPlacement,
+      }),
+    );
+  assert.match(
+    render("web", "line"),
+    /\[Open in Readest\]\(https:\/\/web\.readest\.com\/o\/book\/h1\/annotation\/missing\?cfi=cfi%2F1\)/,
+  );
+  assert.match(
+    render("app", "line"),
+    /\[Open in Readest\]\(readest:\/\/book\/h1\/annotation\/missing\?cfi=cfi%2F1\)/,
+  );
+  assert.match(
+    render("web", "page"),
+    /\[page 3\]\(https:\/\/web\.readest\.com\/o\/book\/h1\/annotation\/missing\?cfi=cfi%2F1\)/,
+  );
+  assert.match(
+    render("app", "page"),
+    /\[page 3\]\(readest:\/\/book\/h1\/annotation\/missing\?cfi=cfi%2F1\)/,
+  );
 });

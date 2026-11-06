@@ -172,6 +172,12 @@ export async function loadBooksWithAnnotations(
     const live = (config?.booknotes ?? []).filter(
       (a): a is ReadestAnnotation => a.deletedAt == null,
     );
+    // Readest sometimes writes a booknote with no bookHash, which leaves it
+    // without a Readest link. The config sits in the folder named after the
+    // book's hash, so that hash is the right one to fill in.
+    for (const a of live) {
+      if (!a.bookHash) a.bookHash = book.hash;
+    }
     // Drop highlights we can't render (no text, no note) rather than emit
     // blank entries; their presence is what raises the format-change warning.
     let annotations = live.filter((a) => !isUnrenderable(a));
