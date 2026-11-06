@@ -18,6 +18,8 @@ on:
     tags: ['[0-9]*']
   pull_request:
     branches: [main]
+    # The two label types rerun the changelog check when no-changelog changes
+    types: [opened, synchronize, reopened, labeled, unlabeled]
 
 defaults:
   run:
@@ -66,6 +68,26 @@ jobs:
       - run: npm run build
       - run: npm run lint
       - run: npm test
+      # Ahead of github-sync, so a tag with no notes can still be deleted here
+      # before GitHub sees it
+      - name: Release notes for the tag
+        if: startsWith(github.ref, 'refs/tags/')
+        run: node scripts/changelog.ts notes "$GITHUB_REF_NAME" > /dev/null
+
+  changelog:
+    if: github.event_name == 'pull_request'
+    runs-on: docker
+    timeout-minutes: 5
+    steps:
+      - name: Fetch ci-actions
+        run: git clone -q --depth 1 --branch v1 "$GITHUB_SERVER_URL/bjorn/ci-actions.git" "${RUNNER_TEMP:-/tmp}/ci-actions"
+      - name: Checkout
+        env:
+          TOKEN: ${{ github.token }}
+          DEPTH: "0"
+        run: bash "${RUNNER_TEMP:-/tmp}/ci-actions/checkout/checkout.sh"
+      - name: Check for a changelog entry
+        run: node scripts/changelog.ts check-pr
 
   github-sync:
     if: github.event_name == 'push'

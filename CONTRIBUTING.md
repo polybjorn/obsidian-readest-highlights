@@ -51,7 +51,7 @@ With the symlink, `npm run preview` in a git worktree builds and copies the resu
 - Fill in the test plan in the PR template. A screenshot helps for UI changes.
 - Add tests for new or changed behavior. Tests live in `tests/`, named after the `src/` module they cover.
 - Update `docs/settings.md` when a setting or the output changes, and `README.md` when a command or requirement does.
-- Add a line under `## [Unreleased]` in `CHANGELOG.md` for anything users will notice. It becomes the release notes, so write it for them.
+- Add a line under `## [Unreleased]` in `CHANGELOG.md` for anything users will notice. It becomes the release notes, so write it for them. CI requires one for a `feat` or `fix` PR that changes `src/` or `styles.css`. The `no-changelog` label skips that check, for a fix to something no release has shipped yet.
 - Keep the plugin working on the Obsidian version in `minAppVersion`. Feature-detect a newer API instead of raising it.
 - Test in a real vault before opening the PR. CI runs lint, tests and build, but never loads the plugin in Obsidian.
 
@@ -59,7 +59,7 @@ With the symlink, `npm run preview` in a git worktree builds and copies the resu
 
 A tag like `1.10.0-beta.1` publishes a GitHub pre-release that only [BRAT](https://github.com/TfTHacker/obsidian42-brat) users see. Obsidian's updater reads `manifest.json` on `main` and fetches the release it names, so a beta reaches nobody else as long as `main` stays at the last stable version.
 
-1. Add a `## [1.10.0-beta.1]` section to `CHANGELOG.md` above the last release. It becomes the release notes; without it GitHub generates them.
-2. Tag the commit to test, on `main` or on a branch not merged yet, without bumping the version: `git tag 1.10.0-beta.1 && git push origin 1.10.0-beta.1`. Don't run `npm version`, which writes `manifest.json` and `versions.json`.
-3. The release workflow sets the version in the uploaded `manifest.json` to the tag and marks the release as a pre-release.
-4. For the stable release, fold the beta sections into one `## [1.10.0]` section and release as usual.
+1. Tag the commit to test, on `main` or on a branch not merged yet, without bumping the version: `git tag 1.10.0-beta.1 && git push origin 1.10.0-beta.1`. Don't run `npm version`, which writes `manifest.json` and `versions.json`.
+2. The release workflow sets the version in the uploaded `manifest.json` to the tag, marks the release as a pre-release, and takes the notes from `## [Unreleased]` at that commit. A beta gets no section of its own, and the tag fails if `## [Unreleased]` is empty.
+
+For the stable release, rename `## [Unreleased]` to `## [1.10.0]` and release as usual.

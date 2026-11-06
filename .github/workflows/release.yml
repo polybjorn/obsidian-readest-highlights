@@ -74,27 +74,13 @@ jobs:
                       *) prerelease=(); tags=$(git tag | grep -v -- - || true) ;;
                   esac
 
-                  notes=$(awk -v ver="$TAG" '
-                    $0 ~ "^## \\[" ver "\\]" { found=1; next }
-                    found && /^## \[/ { exit }
-                    found && /^\[.*\]:/ { exit }
-                    found { print }
-                  ' CHANGELOG.md | awk 'NF{found=1} found' | tac | awk 'NF{found=1} found' | tac)
-
-                  if [ -n "$notes" ]; then
-                      prev=$(printf '%s\n' "$tags" "$TAG" | sort -uV | grep -B1 -x -- "$TAG" | grep -vx -- "$TAG" | head -1 || true)
-                      if [ -n "$prev" ]; then
-                          notes="${notes}"$'\n\n'"**Full Changelog**: https://github.com/${REPO}/compare/${prev}...${TAG}"
-                      fi
-                      gh release create "$TAG" \
-                          --title "$TAG" \
-                          "${prerelease[@]}" \
-                          --notes "$notes" \
-                          main.js manifest.json styles.css
-                  else
-                      gh release create "$TAG" \
-                          --title "$TAG" \
-                          "${prerelease[@]}" \
-                          --generate-notes \
-                          main.js manifest.json styles.css
+                  notes=$(node scripts/changelog.ts notes "$TAG")
+                  prev=$(printf '%s\n' "$tags" "$TAG" | sort -uV | grep -B1 -x -- "$TAG" | grep -vx -- "$TAG" | head -1 || true)
+                  if [ -n "$prev" ]; then
+                      notes="${notes}"$'\n\n'"**Full Changelog**: https://github.com/${REPO}/compare/${prev}...${TAG}"
                   fi
+                  gh release create "$TAG" \
+                      --title "$TAG" \
+                      "${prerelease[@]}" \
+                      --notes "$notes" \
+                      main.js manifest.json styles.css
