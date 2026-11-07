@@ -12,6 +12,8 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ### Changed
 
+- Requires Obsidian 1.13 or later. Obsidian 1.12 keeps offering 1.9.0.
+- Reset to defaults asks in Obsidian's own confirmation dialog.
 - A sync no longer leaves warnings in the developer console. Details that no notice reports are debug messages now, and duplicate book hashes in the output folder log as an error, since their notice points to the console.
 
 ### Fixed

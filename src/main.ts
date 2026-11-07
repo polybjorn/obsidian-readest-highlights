@@ -8,7 +8,6 @@ import {
   TFolder,
   loadPdfJs,
   normalizePath,
-  requireApiVersion,
 } from "obsidian";
 import { syncCover } from "./covers";
 import { loadBooksWithAnnotations } from "./readest";
@@ -79,27 +78,6 @@ export default class ReadestHighlightsPlugin extends Plugin {
 
     this.settingTab = new ReadestSettingTab(this.app, this);
     this.addSettingTab(this.settingTab);
-
-    // The per-color callout CSS changes convention at 1.13 (see styles.css);
-    // no CSS feature query can tell the two apart, so the version picks it.
-    // Each popout window has its own body, so the class goes on every open
-    // window and each one opened later.
-    if (!requireApiVersion("1.13.0")) {
-      const docs = new Set<Document>([this.app.workspace.containerEl.doc]);
-      this.app.workspace.iterateAllLeaves((leaf) => {
-        docs.add(leaf.view.containerEl.doc);
-      });
-      docs.forEach((doc) => doc.body.addClass("readest-legacy-callouts"));
-      this.registerEvent(
-        this.app.workspace.on("window-open", (win) => {
-          docs.add(win.doc);
-          win.doc.body.addClass("readest-legacy-callouts");
-        }),
-      );
-      this.register(() => {
-        docs.forEach((doc) => doc.body.removeClass("readest-legacy-callouts"));
-      });
-    }
 
     if (this.settings.autoSyncOnStartup) {
       // The hash index that re-finds renamed notes reads frontmatter from

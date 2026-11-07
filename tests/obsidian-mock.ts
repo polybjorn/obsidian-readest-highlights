@@ -4,7 +4,7 @@
 // here; tsc and eslint still resolve it to the real declarations, which is
 // why the tests cast at the boundary.
 //
-// Only the surface settings.ts and settings-compat.ts actually touch is
+// Only the surface the plugin's tested modules actually touch is
 // modelled. Anything missing should fail loudly rather than silently no-op.
 
 export class FakeEl {
@@ -128,12 +128,18 @@ export class ButtonComponent {
     this.disabled = d;
     return this;
   }
+  destructive = false;
+  setDestructive(): this {
+    this.destructive = true;
+    return this;
+  }
   onClick(cb: () => unknown): this {
     this.clickCb = cb;
     return this;
   }
-  click(): void {
-    this.clickCb?.();
+  // Returns the handler's result so a test can await an async click.
+  click(): unknown {
+    return this.clickCb?.();
   }
 }
 
@@ -225,38 +231,23 @@ export class Setting {
   }
 }
 
-// Obsidian < 1.13 has neither update() nor refreshDomState() on the prototype;
-// baseSettingTabMethod() keys off exactly that. Tests flip this to exercise
-// both branches.
+// Records the base-class calls the tab makes, since on 1.13 update() and
+// refreshDomState() are how a change reaches the rendered page.
+export const superCalls: string[] = [];
+
 export class PluginSettingTab {
   containerEl = new FakeEl();
   constructor(
     public app: unknown,
     public plugin: unknown,
   ) {}
-  display(): void {}
-}
-
-export const superCalls: string[] = [];
-
-export function setDeclarativeSupport(supported: boolean): void {
-  const proto = PluginSettingTab.prototype as unknown as Record<
-    string,
-    unknown
-  >;
-  if (supported) {
-    proto.update = function update(): void {
-      superCalls.push("update");
-    };
-    proto.refreshDomState = function refreshDomState(): void {
-      superCalls.push("refreshDomState");
-    };
-  } else {
-    delete proto.update;
-    delete proto.refreshDomState;
+  update(): void {
+    superCalls.push("update");
+  }
+  refreshDomState(): void {
+    superCalls.push("refreshDomState");
   }
 }
-setDeclarativeSupport(false);
 
 // Modals record themselves while open so a test can reach their buttons.
 export const openModals: Modal[] = [];
@@ -274,8 +265,39 @@ export class Modal {
     if (i >= 0) openModals.splice(i, 1);
     this.onClose();
   }
+  setTitle(t: string): this {
+    this.titleEl.setText(t);
+    return this;
+  }
+  setContent(t: string): this {
+    this.contentEl.setText(t);
+    return this;
+  }
   onOpen(): void {}
   onClose(): void {}
+}
+
+// Real Obsidian semantics: a button closes the modal once its handler
+// settles, unless the handler returns a truthy value.
+export class ConfirmationModal extends Modal {
+  buttons: ButtonComponent[] = [];
+  addButton(cb: (b: ButtonComponent) => unknown): this {
+    const button = new ButtonComponent();
+    const close = () => this.close();
+    button.onClick = (handler: () => unknown) => {
+      button.clickCb = async () => {
+        if (!(await handler())) close();
+      };
+      return button;
+    };
+    button.onClick(() => false);
+    this.buttons.push(button);
+    cb(button);
+    return this;
+  }
+  addCancelButton(text = "Cancel"): this {
+    return this.addButton((b) => b.setButtonText(text));
+  }
 }
 
 export const notices: string[] = [];

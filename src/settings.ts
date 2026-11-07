@@ -1,14 +1,13 @@
 import {
   App,
+  ConfirmationModal,
   debounce,
-  Modal,
   Notice,
   parseYaml,
   PluginSettingTab,
   Setting,
 } from "obsidian";
 import type { SettingDefinitionItem, SettingGroupItem } from "obsidian";
-import { baseSettingTabMethod, renderFallback } from "./settings-compat";
 import { access, readFile } from "fs/promises";
 import { homedir } from "os";
 import { isAbsolute, join, normalize, relative } from "path";
@@ -283,35 +282,22 @@ async function pickDirectory(defaultPath?: string): Promise<PickResult> {
   return { available: true, path: result.filePaths[0] ?? null };
 }
 
-// Built on Modal rather than ConfirmationModal, which arrived in 1.13, so the
-// pre-1.13 fallback gets the same confirmation.
-export class ResetSettingsModal extends Modal {
-  constructor(
-    app: App,
-    private readonly onConfirm: () => Promise<void>,
-  ) {
-    super(app);
-  }
-
-  onOpen(): void {
-    this.titleEl.setText("Reset settings to defaults?");
-    this.contentEl.createEl("p", {
-      text: "This can't be undone. Your book notes stay as they are until the next sync, which rewrites them with the default formatting.",
-    });
-    new Setting(this.contentEl)
-      .addButton((b) => b.setButtonText("Cancel").onClick(() => this.close()))
-      .addButton((b) => {
-        b.setButtonText("Reset").onClick(async () => {
-          this.close();
-          await this.onConfirm();
-        });
-        b.buttonEl.addClass("mod-warning");
-      });
-  }
-
-  onClose(): void {
-    this.contentEl.empty();
-  }
+export function confirmReset(app: App, onConfirm: () => Promise<void>): void {
+  new ConfirmationModal(app)
+    .setTitle("Reset settings to defaults?")
+    .setContent(
+      "This can't be undone. Your book notes stay as they are until the next sync, which rewrites them with the default formatting.",
+    )
+    .addButton((b) =>
+      b
+        .setButtonText("Reset")
+        .setDestructive()
+        .onClick(async () => {
+          await onConfirm();
+        }),
+    )
+    .addCancelButton()
+    .open();
 }
 
 export class ReadestSettingTab extends PluginSettingTab {
@@ -393,15 +379,6 @@ export class ReadestSettingTab extends PluginSettingTab {
     if (key === "autoSyncIntervalMinutes") {
       this.plugin.applyAutoSyncInterval();
     }
-    if (
-      key === "syncHeadingLevel" ||
-      key === "highlightStyle" ||
-      key === "includeFrontmatter" ||
-      key === "includeGenre" ||
-      key === "readestLink"
-    ) {
-      this.refreshDomState();
-    }
   }
 
   // Keeps the source paths and the output folder: a reset that moved the
@@ -417,39 +394,6 @@ export class ReadestSettingTab extends PluginSettingTab {
     await this.plugin.saveSettings();
     this.plugin.applyAutoSyncInterval();
     this.update();
-  }
-
-  private renderCompat(): void {
-    renderFallback(this, this.containerEl, this.getSettingDefinitions());
-  }
-
-  // Obsidian < 1.13 ignores getSettingDefinitions() and calls display(), so
-  // the same definitions are rendered with the classic Setting API. Never
-  // reached on 1.13+. See settings-compat.ts.
-  display(): void {
-    this.renderCompat();
-  }
-
-  // Both helpers arrived with the declarative API in 1.13; the render callbacks
-  // below call them. Resolve them off the base prototype rather than through
-  // super, so that on older builds, where they do not exist, the whole tab is
-  // re-rendered instead.
-  update(): void {
-    const base = baseSettingTabMethod("update");
-    if (base) {
-      base.call(this);
-      return;
-    }
-    this.renderCompat();
-  }
-
-  refreshDomState(): void {
-    const base = baseSettingTabMethod("refreshDomState");
-    if (base) {
-      base.call(this);
-      return;
-    }
-    this.renderCompat();
   }
 
   getSettingDefinitions(): SettingDefinitionItem[] {
@@ -494,12 +438,11 @@ export class ReadestSettingTab extends PluginSettingTab {
                 "Restore every setting to its default. Source paths and the output folder are kept.",
               );
               setting.addButton((b) => {
-                b.setButtonText("Reset").onClick(() => {
-                  new ResetSettingsModal(this.app, () =>
-                    this.resetToDefaults(),
-                  ).open();
-                });
-                b.buttonEl.addClass("mod-warning");
+                b.setButtonText("Reset")
+                  .setDestructive()
+                  .onClick(() => {
+                    confirmReset(this.app, () => this.resetToDefaults());
+                  });
               });
             },
           },

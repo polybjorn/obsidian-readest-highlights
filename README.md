@@ -21,7 +21,7 @@
 
 ## Requirements
 
-Desktop Obsidian with access to a Readest Books folder. Readest's built-in sync is the easiest way to collect annotations from other devices into one folder, but any setup that exposes the folder to Obsidian works.
+Desktop Obsidian 1.13 or later, with access to a Readest Books folder. Readest's built-in sync is the easiest way to collect annotations from other devices into one folder, but any setup that exposes the folder to Obsidian works.
 
 Readest's sync downloads a book's highlights only when that book is opened, so highlights made on another device reach the plugin after the book has been opened once in Readest on the computer Obsidian runs on. Each book needs this once per batch of new highlights: open it, let Readest finish syncing, and close it again.
 
