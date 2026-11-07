@@ -3,7 +3,7 @@
 # assets from GitHub, and GitHub Actions build and attest those releases from
 # the synced tag. Nothing is forced, so a commit made on GitHub stops the sync
 # until it is pulled into the forge. The sync waits for the attribution check
-# and the tests.
+# and both test jobs.
 #
 # ci-actions is cloned through $GITHUB_SERVER_URL and its scripts run directly,
 # not through `uses:`. That form needs the CI host written out, this file goes
@@ -74,6 +74,24 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         run: node scripts/changelog.ts notes "$GITHUB_REF_NAME" > /dev/null
 
+  # The plugin in Obsidian itself, under a virtual display. The runner keeps
+  # no cache between jobs, so each run downloads both Obsidian versions.
+  e2e:
+    runs-on: docker
+    timeout-minutes: 15
+    steps:
+      - name: Fetch ci-actions
+        run: git clone -q --depth 1 --branch v1 "$GITHUB_SERVER_URL/bjorn/ci-actions.git" "${RUNNER_TEMP:-/tmp}/ci-actions"
+      - name: Checkout
+        env:
+          TOKEN: ${{ github.token }}
+        run: bash "${RUNNER_TEMP:-/tmp}/ci-actions/checkout/checkout.sh"
+      - name: Virtual display and the libraries Obsidian links against
+        run: apt-get update -qq && xargs -a tests/e2e/apt-packages.txt apt-get install -y -qq --no-install-recommends
+      - run: npm ci
+        timeout-minutes: 5
+      - run: xvfb-run -a npm run test:e2e:display
+
   changelog:
     if: github.event_name == 'pull_request'
     runs-on: docker
@@ -115,7 +133,7 @@ jobs:
 
   github-sync:
     if: github.event_name == 'push'
-    needs: [attribution, test]
+    needs: [attribution, test, e2e]
     runs-on: docker
     timeout-minutes: 10
     steps:

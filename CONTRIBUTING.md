@@ -37,7 +37,8 @@ With the symlink, `npm run preview` in a git worktree builds and copies the resu
 | `npm run preview` | Build, then copy it into the main checkout |
 | `npm run lint` | ESLint with the Obsidian plugin rules |
 | `npm test` | Run the tests |
-| `npm run test:e2e` | Run the plugin in a sandboxed Obsidian, on the oldest release `minAppVersion` allows and on the latest. Needs a desktop session; the first run downloads both versions into `.obsidian-cache`. `OBSIDIAN_VERSIONS="1.15.0/1.15.0"` picks others |
+| `npm run test:e2e` | Run the plugin in a sandboxed Obsidian, on the oldest release `minAppVersion` allows and on the latest. Needs Docker: it runs in a Linux container against a virtual display, so no window opens. The first run downloads both versions. `OBSIDIAN_VERSIONS="1.15.0/1.15.0"` picks others |
+| `npm run test:e2e:display` | The same on this machine's own display, where the Obsidian windows show |
 | `npm run gallery` | Regenerate `docs/gallery` (or a folder given after `--`); `npm test` fails while it is out of date |
 | `npm run demo-vault -- <folder>` | Write a demo vault of public-domain books for the screenshots in `docs/`; run `npm run build` first. `--readest <folder>` also writes the books as a Readest Books folder to sync from |
 | `npm run record-sync` | Record `docs/sync.gif`, the README's sync GIF, from the demo vault in a separate Obsidian instance. Needs [ffmpeg](https://ffmpeg.org) and Obsidian in `/Applications` |
@@ -54,7 +55,7 @@ With the symlink, `npm run preview` in a git worktree builds and copies the resu
 - Update `docs/settings.md` when a setting or the output changes, and `README.md` when a command or requirement does.
 - Add a line under `## [Unreleased]` in `CHANGELOG.md` for anything users will notice. It becomes the release notes, so write it for them. CI requires one for a `feat` or `fix` PR that changes `src/` or `styles.css`. The `no-changelog` label skips that check, for a fix to something no release has shipped yet.
 - Keep the plugin working on the Obsidian version in `minAppVersion`. Feature-detect a newer API instead of raising it.
-- Run `npm run test:e2e` and test in a real vault before opening the PR. CI runs lint, tests and build, but never loads the plugin in Obsidian.
+- Run `npm run test:e2e` and test in a real vault before opening the PR. CI runs the end-to-end tests too, but only against the fixture library in `tests/e2e/fixtures`.
 
 ## Beta releases
 

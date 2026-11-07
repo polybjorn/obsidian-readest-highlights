@@ -1,4 +1,5 @@
-// End-to-end tests in a real, sandboxed Obsidian: `npm run test:e2e`. Runs the
+// End-to-end tests in a real, sandboxed Obsidian: `npm run test:e2e` runs this
+// in Docker (tests/e2e/docker.sh), `npm run test:e2e:display` here. Runs the
 // oldest public release the manifest's minAppVersion allows and the latest
 // stable one, each on the oldest installer that app version supports, the
 // setup most users who never reinstall have. OBSIDIAN_VERSIONS="1.15.0/1.15.0"
