@@ -119,7 +119,9 @@ Inside the sync section, a callout of type `comment` is yours and survives re-sy
 > Your thoughts, #tags and links.
 ```
 
-Sync puts each comment back under the highlight it followed, after that highlight's Readest note if it has one. A comment typed above the highlight's block ID line also counts as following it, and moves below that line. This works with any [Heading level](#heading-level), None included, but needs [Block IDs](#block-ids) on, since the block ID is what ties a comment to its highlight. Comments it can't place, because the highlight was removed in Readest or Block IDs are off, move to a `Comments without a highlight` heading at the end of the section instead of being dropped. Any other text you type inside the section, or anywhere in the note with Heading level None, is still replaced on the next sync.
+Sync puts each comment back under the highlight it followed, after that highlight's Readest note if it has one. A comment typed above the highlight's block ID line also counts as following it, and moves below that line. This works with any [Heading level](#heading-level), None included, but needs [Block IDs](#block-ids) on, since the block ID is what ties a comment to its highlight. A comment can run to several paragraphs, as long as each one is quoted with `>`.
+
+Comments it can't place move to a `Comments without a highlight` heading at the end of the section instead of being dropped. If the highlight was removed in Readest, its text stays above the comment, marked `Removed from Readest`, along with its block ID. Should the highlight return, or Block IDs be turned back on, the comment goes back under it. Append one book to current note keeps comments the same way, when Heading level is set. Any other text you type inside the section, or anywhere in the note with Heading level None, is still replaced on the next sync.
 
 ## Frontmatter
 

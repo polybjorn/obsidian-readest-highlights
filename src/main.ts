@@ -317,16 +317,15 @@ export default class ReadestHighlightsPlugin extends Plugin {
   async appendHighlights(file: TFile, parsed: ParsedBook) {
     try {
       const opts = optionsFromSettings(this.settings);
-      const body = renderHighlightsBody(parsed.annotations, opts);
-      const level = this.settings.syncHeadingLevel;
       await this.app.vault.process(file, (current) => {
-        if (level === 0) {
+        if (this.settings.syncHeadingLevel === 0) {
+          const body = renderHighlightsBody(parsed.annotations, opts);
           return current.trimEnd() + `\n\n${body}\n`;
         }
         const heading =
           applyTemplate(this.settings.appendHeadingTemplate, parsed.book) ||
           "Highlights";
-        return upsertAppendedSection(current, heading, body, level);
+        return upsertAppendedSection(current, heading, parsed.annotations, opts);
       });
       new Notice(
         `Readest: appended ${parsed.annotations.length} highlights from "${parsed.book.title}"`,
@@ -373,10 +372,10 @@ export default class ReadestHighlightsPlugin extends Plugin {
       10000,
     );
     this.settings.booksDirs = [...userPaths, dir];
+    await this.saveSettings();
     // The settings page renders a stored copy of its definitions, which a
     // change made outside the page leaves stale until update() rebuilds it.
     this.settingTab?.update();
-    await this.saveSettings();
   }
 
   private buildHashIndex(): {

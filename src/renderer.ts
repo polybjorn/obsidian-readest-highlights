@@ -673,27 +673,41 @@ function groupHeadingHashes(opts: RenderOptions): string {
   return "#".repeat(Math.max(3, opts.syncHeadingLevel + 1));
 }
 
-// `comments` maps a block ID to the user's comment callouts kept from the
-// previous sync. Each one placed under its highlight is deleted from the map,
-// so what is left belongs to highlights that are gone.
+// The user's comment callouts kept from the previous sync, and the lines that
+// showed their highlight then, which outlive the highlight if Readest drops it.
+export interface KeptComment {
+  blocks: string[];
+  source: string[];
+}
+
+// `comments` maps a block ID to what was kept from the previous sync. Each one
+// placed under its highlight is deleted from the map, so what is left has no
+// highlight to sit under.
 export function renderHighlightsBody(
   annotations: ReadestAnnotation[],
   opts: RenderOptions,
-  comments?: Map<string, string[]>,
+  comments?: Map<string, KeptComment>,
 ): string {
   const groups = groupAnnotations(annotations, opts);
   if (groups.length === 0) return "";
 
-  const ids = opts.highlightBlockIds ? buildBlockIds(groups) : null;
+  const ids =
+    opts.highlightBlockIds || comments?.size ? buildBlockIds(groups) : null;
   const groupHashes = groupHeadingHashes(opts);
 
   const renderPart = (g: GroupedAnnotation) => {
     const id = ids?.get(g);
-    const part = renderGroup(g, opts, id);
+    const part = renderGroup(g, opts, opts.highlightBlockIds ? id : undefined);
     const own = id ? comments?.get(id) : undefined;
     if (!id || !own) return part;
+    if (!opts.highlightBlockIds) {
+      // No ID to anchor to, but the highlight is still here, so its comment
+      // moves down without being reported as removed.
+      own.source = [];
+      return part;
+    }
     comments?.delete(id);
-    return [part, ...own].join("\n\n");
+    return [part, ...own.blocks].join("\n\n");
   };
 
   const renderRun = (gs: GroupedAnnotation[]) =>
@@ -928,13 +942,20 @@ function prependHighlightCount(
   return body ? `${line}\n\n${body}` : line;
 }
 
+const REMOVED_MARK = "*Removed from Readest*";
+
 // Whatever renderHighlightsBody did not place has lost its highlight (or block
-// IDs are off). It is kept under its own heading rather than dropped.
+// IDs are off). It is kept under its own heading rather than dropped, with its
+// block ID, which is what puts it back if the highlight returns.
 function unattachedComments(
-  comments: Map<string, string[]> | undefined,
+  comments: Map<string, KeptComment> | undefined,
   opts: RenderOptions,
 ): string {
-  const left = [...(comments?.values() ?? [])].flat();
+  const left = [...(comments?.entries() ?? [])].flatMap(([id, kept]) => [
+    ...(kept.source.length ? [REMOVED_MARK, kept.source.join("\n")] : []),
+    ...(id ? [`^${id}`] : []),
+    ...kept.blocks,
+  ]);
   return left.length
     ? `${groupHeadingHashes(opts)} Comments without a highlight\n\n${left.join("\n\n")}`
     : "";
@@ -943,7 +964,7 @@ function unattachedComments(
 export function renderBookNote(
   parsed: ParsedBook,
   opts: RenderOptions,
-  comments?: Map<string, string[]>,
+  comments?: Map<string, KeptComment>,
 ): string {
   const { book, annotations, cover } = parsed;
   const frontmatter = renderFrontmatter(book, opts.frontmatter, cover);
@@ -964,11 +985,54 @@ export function renderBookNote(
 const COMMENT_CALLOUT_RE = /^>\s*\[!comment\][+-]?(\s|$)/i;
 const BLOCK_ID_LINE_RE = /^\^(rdst-[a-z0-9]+(?:-\d+)?)\s*$/;
 
+const RULE_RE = /^-{3,}\s*$/;
+const HEADING_RE = /^#{1,6}\s/;
+const TYPED_CALLOUT_RE = /^>\s*\[!/;
+const READEST_NOTE_RE = /^(>\s*\[!note\]|\*\*Note:\*\*)/i;
+const HIGHLIGHT_COUNT_RE = /^Total highlights: \d+\s*$/;
+
+// A line with no `>` directly under a callout still renders inside it, unless
+// it starts a block of its own.
+const continuesCallout = (line: string): boolean =>
+  line.trim() !== "" &&
+  !BLOCK_ID_LINE_RE.test(line) &&
+  !HEADING_RE.test(line) &&
+  !RULE_RE.test(line) &&
+  !/^\s*[-*+]\s/.test(line);
+
 const calloutEnd = (lines: string[], start: number): number => {
   let end = start + 1;
-  while (end < lines.length && (lines[end] ?? "").startsWith(">")) end++;
+  while (end < lines.length) {
+    const line = lines[end] ?? "";
+    if (!line.startsWith(">") && !continuesCallout(line)) break;
+    end++;
+  }
   return end;
 };
+
+const skipBlank = (lines: string[], from: number): number => {
+  let i = from;
+  while (i < lines.length && (lines[i] ?? "").trim() === "") i++;
+  return i;
+};
+
+// A quote block after a comment is either the comment's next paragraph or the
+// next highlight, and only a highlight is followed by a block ID. Typed
+// callouts are never paragraphs: a Readest note sits there too.
+function commentEnd(lines: string[], masked: boolean[], from: number): number {
+  let end = from;
+  for (;;) {
+    const next = skipBlank(lines, end);
+    const line = lines[next] ?? "";
+    if (masked[next] || !line.startsWith(">") || TYPED_CALLOUT_RE.test(line)) {
+      return end;
+    }
+    const blockEnd = calloutEnd(lines, next);
+    const after = lines[skipBlank(lines, blockEnd)] ?? "";
+    if (BLOCK_ID_LINE_RE.test(after)) return end;
+    end = blockEnd;
+  }
+}
 
 // A comment typed between a highlight and its block ID line belongs to that
 // highlight, while the running anchor still holds the previous highlight's ID.
@@ -989,36 +1053,75 @@ function blockIdAhead(
   return null;
 }
 
+const trimBlankLines = (lines: string[]): string[] => {
+  const start = skipBlank(lines, 0);
+  let end = lines.length;
+  while (end > start && (lines[end - 1] ?? "").trim() === "") end--;
+  return lines.slice(start, end);
+};
+
 // Collects the `> [!comment]` callouts in the old sync section, keyed by the
-// block ID of the highlight they belong to. A heading resets the key, so
-// comments under a group heading with no highlight yet, or under the heading
-// for comments whose highlight is gone, stay unattached (key "").
+// block ID of the highlight they belong to, with the lines above that ID. A
+// heading resets the key, so comments under a group heading with no highlight
+// yet stay unattached (key ""). Under the heading for comments without a
+// highlight, the kept block ID sets the key again, so a highlight that returns
+// gets its comments back.
 function extractComments(
   lines: string[],
   masked: boolean[],
-): Map<string, string[]> {
-  const comments = new Map<string, string[]>();
+): Map<string, KeptComment> {
+  const blocks = new Map<string, string[]>();
+  const sources = new Map<string, string[]>();
   let anchor = "";
+  // The lines since the last block ID: a highlight still waiting for its own.
+  let pending: string[] = [];
   for (let i = 0; i < lines.length; i++) {
     if (masked[i]) continue;
     const line = lines[i] ?? "";
-    if (/^#{1,6}\s/.test(line)) {
+    if (HEADING_RE.test(line)) {
       anchor = "";
+      pending = [];
+      continue;
+    }
+    if (
+      RULE_RE.test(line) ||
+      line === REMOVED_MARK ||
+      HIGHLIGHT_COUNT_RE.test(line)
+    ) {
+      pending = [];
       continue;
     }
     const id = BLOCK_ID_LINE_RE.exec(line);
     if (id) {
       anchor = id[1] ?? "";
+      sources.set(anchor, trimBlankLines(pending));
+      pending = [];
       continue;
     }
-    if (!COMMENT_CALLOUT_RE.test(line)) continue;
-    const end = calloutEnd(lines, i);
+    if (READEST_NOTE_RE.test(line)) {
+      // A separate note sits below its highlight's ID, so without this it would
+      // count as part of the next highlight.
+      while ((lines[i + 1] ?? "").trim() !== "") i++;
+      continue;
+    }
+    if (!COMMENT_CALLOUT_RE.test(line)) {
+      pending.push(line);
+      continue;
+    }
+    const first = calloutEnd(lines, i);
+    const above = trimBlankLines(pending).length > 0;
+    const key = (above ? blockIdAhead(lines, masked, first) : null) ?? anchor;
+    const end = key ? commentEnd(lines, masked, first) : first;
     const block = lines.slice(i, end).map((l) => l.trimEnd()).join("\n");
-    const key = blockIdAhead(lines, masked, end) ?? anchor;
-    comments.set(key, [...(comments.get(key) ?? []), block]);
+    blocks.set(key, [...(blocks.get(key) ?? []), block]);
     i = end - 1;
   }
-  return comments;
+  return new Map(
+    [...blocks].map(([key, kept]) => [
+      key,
+      { blocks: kept, source: sources.get(key) ?? [] },
+    ]),
+  );
 }
 
 export function replaceHighlightsSection(
@@ -1059,7 +1162,7 @@ export function replaceHighlightsSection(
 
   const comments =
     startLineIdx === -1
-      ? new Map<string, string[]>()
+      ? new Map<string, KeptComment>()
       : extractComments(
           lines.slice(startLineIdx + 1, endLineIdx),
           masked.slice(startLineIdx + 1, endLineIdx),
@@ -1085,29 +1188,40 @@ export function replaceHighlightsSection(
 export function upsertAppendedSection(
   existing: string,
   heading: string,
-  body: string,
-  level: 1 | 2 | 3 | 4,
+  annotations: ReadestAnnotation[],
+  opts: RenderOptions,
 ): string {
-  const hashes = "#".repeat(level);
-  const headingLine = `${hashes} ${heading}`;
-  const section = `${headingLine}\n\n${body}`.trimEnd();
+  const level = opts.syncHeadingLevel;
+  const headingLine = `${"#".repeat(level)} ${heading}`;
   const lines = existing.split("\n");
   const masked = fenceMask(lines);
   const startLineIdx = lines.findIndex(
     (l, i) => !masked[i] && l.trim() === headingLine,
   );
 
-  if (startLineIdx === -1) {
-    return existing.trimEnd() + `\n\n${section}\n`;
-  }
-
   const boundaryRe = new RegExp(`^#{1,${level}}\\s+`);
   let endLineIdx = lines.length;
-  for (let i = startLineIdx + 1; i < lines.length; i++) {
+  for (let i = startLineIdx + 1; startLineIdx !== -1 && i < lines.length; i++) {
     if (!masked[i] && boundaryRe.test(lines[i] ?? "")) {
       endLineIdx = i;
       break;
     }
+  }
+
+  const comments =
+    startLineIdx === -1
+      ? new Map<string, KeptComment>()
+      : extractComments(
+          lines.slice(startLineIdx + 1, endLineIdx),
+          masked.slice(startLineIdx + 1, endLineIdx),
+        );
+  const body = renderHighlightsBody(annotations, opts, comments);
+  const section = [headingLine, body.trimEnd(), unattachedComments(comments, opts)]
+    .filter(Boolean)
+    .join("\n\n");
+
+  if (startLineIdx === -1) {
+    return existing.trimEnd() + `\n\n${section}\n`;
   }
 
   const before = lines.slice(0, startLineIdx).join("\n").trimEnd();

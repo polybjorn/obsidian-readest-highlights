@@ -124,14 +124,17 @@ void test("bookFilename caps the name to a safe byte length", () => {
 
 void test("upsertAppendedSection is idempotent", () => {
   const existing = "Intro\n";
-  const body = "- quote one";
-  const once = upsertAppendedSection(existing, "Highlights - Book", body, 2);
-  const twice = upsertAppendedSection(once, "Highlights - Book", body, 2);
+  const annos = [makeAnnotation("1", { text: "quote one" })];
+  const once = upsertAppendedSection(existing, "Highlights - Book", annos, opts);
+  const twice = upsertAppendedSection(once, "Highlights - Book", annos, opts);
   assert.equal(once, twice);
 });
 
 void test("upsertAppendedSection respects heading level", () => {
-  const out = upsertAppendedSection("Intro\n", "Sub", "body", 3);
+  const out = upsertAppendedSection("Intro\n", "Sub", [makeAnnotation("1", { text: "body" })], {
+    ...opts,
+    syncHeadingLevel: 3,
+  });
   assert.match(out, /^### Sub$/m);
 });
 
@@ -1038,10 +1041,10 @@ void test("replaceHighlightsSection does not end the section at a fenced heading
 
 void test("upsertAppendedSection ignores a heading inside a code fence", () => {
   const existing = "```\n## Book\n```\n\nprose\n";
-  const out = upsertAppendedSection(existing, "Book", "- quote", 2);
+  const out = upsertAppendedSection(existing, "Book", [makeAnnotation("1", { text: "quote" })], opts);
   assert.match(out, /```\n## Book\n```/);
   assert.match(out, /prose/);
-  assert.match(out, /## Book\n\n- quote/);
+  assert.match(out, /## Book\n\n> quote/);
 });
 
 // --- sort order ---
@@ -1348,8 +1351,10 @@ void test("a comment whose highlight is gone is kept under its own heading", () 
   const edited = addComment(synced, "first", "> [!comment] Title\n> keep me");
 
   const pruned = replaceHighlightsSection(edited, book, [annos[1]!], commentOpts);
-  assert.doesNotMatch(pruned, /> first/);
-  assert.match(pruned, /### Comments without a highlight\n\n> \[!comment\] Title\n> keep me\n$/);
+  assert.match(
+    pruned,
+    /### Comments without a highlight\n\n\*Removed from Readest\*\n\n> first\n\n\^rdst-[a-z0-9]+\n\n> \[!comment\] Title\n> keep me\n$/,
+  );
   // It stays there, and does not attach to the highlight above the heading.
   assert.equal(replaceHighlightsSection(pruned, book, [annos[1]!], commentOpts), pruned);
 });
@@ -1419,6 +1424,104 @@ void test("comments survive with Heading level None, where the whole note is rew
   assert.equal(replaceHighlightsSection(edited, book, annos, o), edited);
 
   const pruned = replaceHighlightsSection(edited, book, [annos[1]!], o);
-  assert.match(pruned, /### Comments without a highlight\n\n> \[!comment\]\n> kept\n$/);
+  assert.match(pruned, /\*Removed from Readest\*\n\n> first\n\n\^rdst-[a-z0-9]+\n\n> \[!comment\]\n> kept\n$/);
   assert.equal(replaceHighlightsSection(pruned, book, [annos[1]!], o), pruned);
+});
+
+void test("a comment returns to its highlight when the highlight comes back", () => {
+  const annos = [
+    makeAnnotation("a", { page: 1, text: "first" }),
+    makeAnnotation("b", { page: 2, text: "second" }),
+  ];
+  const synced = replaceHighlightsSection("", book, annos, commentOpts);
+  const edited = addComment(synced, "first", "> [!comment]\n> keep me");
+  const pruned = replaceHighlightsSection(edited, book, [annos[1]!], commentOpts);
+  assert.equal(replaceHighlightsSection(pruned, book, annos, commentOpts), edited);
+});
+
+void test("turning block IDs off and on keeps a comment, and never calls its highlight removed", () => {
+  const annos = [
+    makeAnnotation("a", { page: 1, text: "first" }),
+    makeAnnotation("b", { page: 2, text: "second" }),
+  ];
+  const off = { ...commentOpts, highlightBlockIds: false };
+  const synced = replaceHighlightsSection("", book, annos, commentOpts);
+  const edited = addComment(
+    addComment(synced, "first", "> [!comment]\n> one"),
+    "second",
+    "> [!comment]\n> two",
+  );
+  const moved = replaceHighlightsSection(edited, book, annos, off);
+  assert.doesNotMatch(moved, /Removed from Readest/);
+  assert.equal(replaceHighlightsSection(moved, book, annos, off), moved);
+  assert.equal(replaceHighlightsSection(moved, book, annos, commentOpts), edited);
+});
+
+void test("a kept highlight leaves out the Readest note of the highlight above it", () => {
+  const annos = [
+    makeAnnotation("a", { page: 1, text: "first", note: "from readest" }),
+    makeAnnotation("b", { page: 2, text: "second" }),
+  ];
+  for (const noteStyle of ["callout", "separated"] as const) {
+    const o = { ...commentOpts, noteStyle };
+    const synced = replaceHighlightsSection("", book, annos, o);
+    const edited = addComment(synced, "second", "> [!comment]\n> mine");
+    const pruned = replaceHighlightsSection(edited, book, [annos[0]!], o);
+    const kept = pruned.slice(pruned.indexOf("Removed from Readest"));
+    assert.match(kept, /> second/);
+    assert.doesNotMatch(kept, /from readest/);
+  }
+});
+
+void test("a comment keeps its later paragraphs and lines without a quote marker", () => {
+  const annos = [
+    makeAnnotation("a", { page: 1, text: "first" }),
+    makeAnnotation("b", { page: 2, text: "second" }),
+  ];
+  for (const style of ["blockquote", "callout", "bullet", "plain"] as const) {
+    const o = { ...commentOpts, style };
+    const synced = replaceHighlightsSection("", book, annos, o);
+    const comment = "> [!comment]\n> one\nlazy line\n\n> two\n\n> three";
+    const edited = addComment(synced, "first", comment);
+    assert.equal(replaceHighlightsSection(edited, book, annos, o), edited, style);
+  }
+});
+
+void test("the next highlight or a Readest note is not taken for a comment's paragraph", () => {
+  const annos = [
+    makeAnnotation("a", { page: 1, text: "first", note: "from readest" }),
+    makeAnnotation("b", { page: 2, text: "second" }),
+  ];
+  const o = { ...commentOpts, noteStyle: "callout" as const };
+  const synced = replaceHighlightsSection("", book, annos, o);
+  const edited = addComment(synced, "first", "> [!comment]\n> mine");
+  const out = replaceHighlightsSection(edited, book, annos, o);
+  assert.equal(out.match(/from readest/g)?.length, 1);
+  assert.equal(out.match(/> second/g)?.length, 1);
+  assert.match(out, /> from readest\n\n> \[!comment\]\n> mine\n\n> second/);
+});
+
+void test("with no block ID to go by, a following quote stays out of the comment", () => {
+  const annos = [
+    makeAnnotation("a", { page: 1, text: "first" }),
+    makeAnnotation("b", { page: 2, text: "second" }),
+  ];
+  const o = { ...commentOpts, highlightBlockIds: false };
+  const synced = replaceHighlightsSection("", book, annos, o);
+  const edited = synced.replace("> first\n", "> first\n\n> [!comment]\n> note\n");
+  const out = replaceHighlightsSection(edited, book, annos, o);
+  assert.match(out, /### Comments without a highlight\n\n> \[!comment\]\n> note\n$/);
+});
+
+void test("re-running append keeps comments in the appended section", () => {
+  const annos = [
+    makeAnnotation("a", { page: 1, text: "first" }),
+    makeAnnotation("b", { page: 2, text: "second" }),
+  ];
+  const once = upsertAppendedSection("Intro\n", "Book", annos, commentOpts);
+  const edited = addComment(once, "first", "> [!comment]\n> kept");
+  assert.equal(upsertAppendedSection(edited, "Book", annos, commentOpts), edited);
+
+  const pruned = upsertAppendedSection(edited, "Book", [annos[1]!], commentOpts);
+  assert.match(pruned, /\*Removed from Readest\*\n\n> first\n\n\^rdst-[a-z0-9]+\n\n> \[!comment\]\n> kept\n$/);
 });
