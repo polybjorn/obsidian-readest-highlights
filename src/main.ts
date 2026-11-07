@@ -412,7 +412,7 @@ export default class ReadestHighlightsPlugin extends Plugin {
 
   private warnIfDuplicateHashes(duplicateHashes: string[]) {
     if (duplicateHashes.length === 0) return;
-    console.warn(
+    console.error(
       "Readest: duplicate readest-hash values in output folder:",
       duplicateHashes,
     );

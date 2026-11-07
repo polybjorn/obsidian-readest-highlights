@@ -122,7 +122,7 @@ export async function loadBooksWithAnnotations(
   );
   const skipped = eligible.length - usable.length;
   if (skipped > 0) {
-    console.warn(
+    console.debug(
       `[readest-highlights] ${skipped} Readest library entr(ies) had no usable hash and were skipped.`,
     );
   }
@@ -137,7 +137,7 @@ export async function loadBooksWithAnnotations(
     else seenHashes.add(book.hash);
   }
   if (duplicateHashes.size > 0) {
-    console.warn(
+    console.debug(
       `[readest-highlights] ${duplicateHashes.size} duplicate book hash(es) in library.json; those books may import more than once.`,
     );
   }
@@ -222,14 +222,14 @@ export async function loadBooksWithAnnotations(
 
   if (newerVersionsSeen.size > 0 && newerVersionReadable === 0) {
     const newerVersions = [...newerVersionsSeen].sort((a, b) => a - b);
-    console.warn(
+    console.debug(
       `[readest-highlights] Readest config schemaVersion ${newerVersions.join(", ")} is newer than this plugin supports (${KNOWN_SCHEMA_VERSION}) and no highlights could be read from it; the booknote format may have changed. Update the plugin if highlights are missing.`,
     );
     onNewerSchemaVersion?.(newerVersions);
   }
 
   if (unreadable > 0) {
-    console.warn(
+    console.debug(
       `[readest-highlights] ${unreadable} Readest highlight(s) had no text or note; the booknote format may have changed. Update the plugin if highlights are missing.`,
     );
     onUnreadableHighlights?.(unreadable);

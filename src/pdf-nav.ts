@@ -118,7 +118,11 @@ export async function readPdfChapters(
   } catch (e) {
     console.debug(`[readest-highlights] Could not read the PDF outline of ${path}`, e);
   } finally {
-    await doc?.destroy().catch(() => {});
+    try {
+      await doc?.destroy();
+    } catch {
+      // The outline is already read; a failed cleanup changes nothing here
+    }
   }
   cache.set(path, { key, entries });
   return entries;

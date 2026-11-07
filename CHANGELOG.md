@@ -10,6 +10,10 @@ All notable changes to this project are documented here. Format based on [Keep a
 - Readest link placement: the Readest link can go on the page label, as in *([page 24](...))*, instead of an `Open in Readest` line under each highlight. A highlight with no page label keeps the link on its own line. Own line stays the default. (#61)
 - A comment whose highlight was removed in Readest keeps that highlight's text, marked `Removed from Readest`, and goes back under the highlight if it returns. (#60)
 
+### Changed
+
+- A sync no longer leaves warnings in the developer console. Details that no notice reports are debug messages now, and duplicate book hashes in the output folder log as an error, since their notice points to the console.
+
 ### Fixed
 
 - A Source path can stop at Readest's data folder: the plugin also looks in `Books` and `Readest/Books` under each listed path. (#62)
