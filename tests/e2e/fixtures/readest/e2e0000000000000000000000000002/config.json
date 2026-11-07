@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 3,
+  "bookHash": "e2e0000000000000000000000000002",
+  "booknotes": [
+    { "id": "sx-1", "type": "annotation", "cfi": "epubcfi(/6/2!/4/2,/1:0,/1:10)", "page": 5, "text": "Only highlight of the second book", "style": "highlight", "color": "violet", "createdAt": 1, "updatedAt": 1, "deletedAt": null }
+  ]
+}

@@ -23,3 +23,6 @@ data.json
 
 # Exclude macOS Finder (System Explorer) View States
 .DS_Store
+# End-to-end runs: downloaded Obsidian versions and the staged plugin build
+.obsidian-cache
+.e2e

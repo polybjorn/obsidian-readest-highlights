@@ -28,5 +28,8 @@
 	"include": [
 		"src/**/*.ts",
 		"tests/**/*.ts"
+	],
+	"exclude": [
+		"tests/e2e"
 	]
 }

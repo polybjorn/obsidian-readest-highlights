@@ -1,0 +1,18 @@
+[
+  {
+    "hash": "e2e0000000000000000000000000001",
+    "format": "EPUB",
+    "title": "Fixture Book",
+    "author": "Ada Example",
+    "createdAt": 1,
+    "metadata": { "published": "2001", "language": "en" }
+  },
+  {
+    "hash": "e2e0000000000000000000000000002",
+    "format": "EPUB",
+    "title": "Second Book",
+    "author": "Ben Example",
+    "createdAt": 2,
+    "metadata": { "published": "2002", "language": "en" }
+  }
+]

@@ -40,6 +40,21 @@ export default defineConfig(
 			"obsidianmd/prefer-window-timers": "off",
 		},
 	},
+	{
+		// The end-to-end tests have their own tsconfig, for the wdio types the
+		// plugin build must not see.
+		files: ["tests/e2e/**/*.ts", "wdio.conf.mts"],
+		languageOptions: {
+			parserOptions: {
+				projectService: false,
+				project: "./tests/e2e/tsconfig.json",
+			},
+		},
+		rules: {
+			"obsidianmd/hardcoded-config-path": "off",
+			"obsidianmd/prefer-window-timers": "off",
+		},
+	},
 	globalIgnores([
 		"node_modules",
 		"dist",
@@ -49,5 +64,7 @@ export default defineConfig(
 		"version-bump.mjs",
 		"versions.json",
 		"main.js",
+		".e2e",
+		".obsidian-cache",
 	]),
 );

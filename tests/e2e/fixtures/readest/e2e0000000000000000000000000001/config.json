@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 3,
+  "bookHash": "e2e0000000000000000000000000001",
+  "booknotes": [
+    { "id": "fx-1", "type": "annotation", "cfi": "epubcfi(/6/2!/4/2,/1:0,/1:10)", "page": 10, "text": "First fixture highlight", "style": "highlight", "color": "yellow", "note": "A note on the first", "createdAt": 1, "updatedAt": 1, "deletedAt": null },
+    { "id": "fx-2", "type": "annotation", "cfi": "epubcfi(/6/4!/4/2,/1:0,/1:10)", "page": 20, "text": "Second fixture highlight", "style": "underline", "color": "blue", "createdAt": 2, "updatedAt": 2, "deletedAt": null },
+    { "id": "fx-3", "type": "annotation", "cfi": "epubcfi(/6/6!/4/2,/1:0,/1:10)", "page": 30, "text": "Third fixture highlight", "style": "highlight", "color": "green", "createdAt": 3, "updatedAt": 3, "deletedAt": null },
+    { "id": "fx-deleted", "type": "annotation", "cfi": "epubcfi(/6/8!/4/2,/1:0,/1:10)", "page": 40, "text": "Deleted in Readest", "style": "highlight", "color": "red", "createdAt": 4, "updatedAt": 5, "deletedAt": 5 },
+    { "id": "fx-bookmark", "type": "bookmark", "cfi": "epubcfi(/6/10!/4/2)", "page": 50, "text": "", "style": null, "color": null, "createdAt": 6, "updatedAt": 6, "deletedAt": null }
+  ]
+}
