@@ -18,6 +18,7 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ### Fixed
 
+- Settings changed on another device and brought in by Obsidian Sync take effect while Obsidian is open, instead of being overwritten by the next setting changed here.
 - A Source path can stop at Readest's data folder: the plugin also looks in `Books` and `Readest/Books` under each listed path. (#62)
 - When none of the Source paths has a library, a notice names the folder sync used instead. (#62)
 - A Source path with no library on this device shows a warning under it in settings. (#62)

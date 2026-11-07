@@ -1,5 +1,12 @@
 import { browser, expect } from "@wdio/globals";
-import { freshLibrary, openSettings, pluginSettings, startTest } from "./helpers";
+import {
+  freshLibrary,
+  openSettings,
+  pluginSettings,
+  savedSettings,
+  settingsArrive,
+  startTest,
+} from "./helpers";
 
 const MISSING = "No Readest library here on this device, so sync skips this path.";
 
@@ -57,5 +64,48 @@ describe("Settings", function () {
       outputFolder: "Books/Readest",
       booksDirs: [library],
     });
+  });
+});
+
+describe("Settings changed on another device", function () {
+  it("takes them up while running, and keeps them through the next save", async function () {
+    const library = freshLibrary();
+    const other = freshLibrary();
+    await startTest(library);
+    await openSettings("Setup");
+
+    await settingsArrive({ booksDirs: [library, other], highlightStyle: "callout" });
+    const rows = await browser.$$(".readest-books-dir-row");
+    expect(rows.length).toBe(2);
+    expect(await pluginSettings()).toMatchObject({
+      booksDirs: [library, other],
+      highlightStyle: "callout",
+    });
+
+    // Any edit saves every setting, which is where stale ones used to win.
+    await rows[0]!.$("input").setValue(` ${library} `);
+    // A save from the plugin, which writes every key, once typing is done.
+    await browser.waitUntil(async () => {
+      const saved = await savedSettings();
+      return saved.syncHeadingLevel !== undefined && (saved.booksDirs as string[])[0] === library;
+    });
+    expect(await savedSettings()).toMatchObject({
+      booksDirs: [library, other],
+      highlightStyle: "callout",
+    });
+  });
+
+  it("reloads from clean defaults after a path was added on a fresh install", async function () {
+    const library = freshLibrary();
+    await startTest(null);
+    await openSettings("Setup");
+    await browser.$('[aria-label="Add path"]').click();
+    await browser.$(".readest-books-dir-row input").setValue(library);
+    await browser.waitUntil(
+      async () => String((await pluginSettings()).booksDirs) === library,
+    );
+
+    await settingsArrive({});
+    expect((await pluginSettings()).booksDirs).toEqual([]);
   });
 });

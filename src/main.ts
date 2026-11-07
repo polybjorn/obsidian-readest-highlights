@@ -117,9 +117,19 @@ export default class ReadestHighlightsPlugin extends Plugin {
     );
   }
 
+  // Obsidian Sync can replace data.json while the plugin runs; without a
+  // reload the settings in memory win, and the next save overwrites them.
+  async onExternalSettingsChange() {
+    await this.loadSettings();
+    this.applyAutoSyncInterval();
+    this.settingTab?.update();
+  }
+
   async loadSettings() {
     const saved = ((await this.loadData()) ?? {}) as Partial<ReadestSettings>;
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, saved);
+    // A copy, so editing a setting the saved data lacks (Add path on a fresh
+    // install) never changes the defaults a later reload starts from.
+    this.settings = Object.assign(structuredClone(DEFAULT_SETTINGS), saved);
     // The "marked" filter (any styled annotation, i.e. everything but bookmarks)
     // was removed; "all" is the closest surviving behavior.
     if ((this.settings.annotationFilter as string) === "marked") {

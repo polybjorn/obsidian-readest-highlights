@@ -11,10 +11,12 @@ export const FIXTURE_NOTE = "Readest/Fixture Book (2001).md";
 export const SECOND_NOTE = "Readest/Second Book (2002).md";
 
 interface ReadestPlugin {
+  manifest: { dir: string };
   settings: Record<string, unknown>;
   settingTab: { update(): void } | null;
   saveData(data: unknown): Promise<void>;
   loadSettings(): Promise<void>;
+  onExternalSettingsChange?(): Promise<void>;
 }
 
 // Obsidian's internal settings window, which has no public API.
@@ -60,10 +62,11 @@ export function editBooknotes(
 
 // Resets the vault files and the plugin's settings for a test, starting from
 // the defaults plus the given Source paths, which are the test's own library
-// unless it says otherwise. Settings go through the plugin's own load, so its
-// migrations and defaults apply as on startup.
+// unless it says otherwise; null saves none, as on a fresh install. Settings
+// go through the plugin's own load, so its migrations and defaults apply as on
+// startup.
 export async function startTest(
-  library: string | string[],
+  library: string | string[] | null,
   settings: Record<string, unknown> = {},
 ): Promise<void> {
   rmSync(readestDefaultDir(), { recursive: true, force: true });
@@ -82,7 +85,9 @@ export async function startTest(
       document.querySelectorAll(".notice").forEach((n) => n.remove());
       document.querySelectorAll(".modal-container").forEach((m) => m.remove());
     },
-    { ...settings, booksDirs: typeof library === "string" ? [library] : library },
+    library === null
+      ? settings
+      : { ...settings, booksDirs: typeof library === "string" ? [library] : library },
   );
 }
 
@@ -90,6 +95,40 @@ export async function pluginSettings(): Promise<Record<string, unknown>> {
   return browser.executeObsidian(
     ({ plugins }) => (plugins.readestHighlights as unknown as ReadestPlugin).settings,
   );
+}
+
+// Replaces the plugin's data.json the way Obsidian Sync does when another
+// device changed a setting, and waits until Obsidian has told the plugin.
+// Calling the hook here as well would reload twice, and the late reload
+// redraws the settings tab under a test that is already typing in it.
+export async function settingsArrive(data: Record<string, unknown>): Promise<void> {
+  await browser.executeObsidian(
+    async ({ app, plugins }, d) => {
+      const plugin = plugins.readestHighlights as unknown as ReadestPlugin;
+      const own = plugin.onExternalSettingsChange?.bind(plugin);
+      const told = new Promise<void>((resolve, reject) => {
+        window.setTimeout(() => reject(new Error("Obsidian never reported the change")), 10_000);
+        plugin.onExternalSettingsChange = async () => {
+          // Back to the class's own method, or none, as before the fix.
+          delete plugin.onExternalSettingsChange;
+          if (own) await own();
+          resolve();
+        };
+      });
+      await app.vault.adapter.write(`${plugin.manifest.dir}/data.json`, JSON.stringify(d));
+      await told;
+    },
+    data,
+  );
+}
+
+// What the plugin last wrote to its data.json, as opposed to what it holds.
+export async function savedSettings(): Promise<Record<string, unknown>> {
+  return browser.executeObsidian(async ({ app, plugins }) => {
+    const plugin = plugins.readestHighlights as unknown as ReadestPlugin;
+    const raw = await app.vault.adapter.read(`${plugin.manifest.dir}/data.json`);
+    return JSON.parse(raw) as Record<string, unknown>;
+  });
 }
 
 export async function readNote(path: string): Promise<string> {
