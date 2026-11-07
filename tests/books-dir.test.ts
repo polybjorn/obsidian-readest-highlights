@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   DEFAULT_SETTINGS,
+  pathIsListed,
   readestRecordedBooksDir,
   resolveBooksDir,
 } from "../src/settings";
@@ -93,4 +94,33 @@ void test("the error lists every path tried and points at Source", async (t) => 
       err.message.includes(recorded) &&
       err.message.includes("under Source"),
   );
+});
+
+void test("a listed folder finds the library one or two levels down", async (t) => {
+  await isolateHome(t);
+  const data = await tempDir(t);
+  const library = join(data, "Readest", "Books");
+  await mkdir(library, { recursive: true });
+  await writeFile(join(library, "library.json"), "[]");
+  for (const listed of [data, join(data, "Readest"), library]) {
+    const settings = { ...DEFAULT_SETTINGS, booksDirs: [listed] };
+    assert.equal(await resolveBooksDir(settings, Promise.resolve(null)), library);
+  }
+});
+
+void test("a library in the listed folder itself wins over one below it", async (t) => {
+  await isolateHome(t);
+  const listed = await booksDir(t);
+  await mkdir(join(listed, "Books"));
+  await writeFile(join(listed, "Books", "library.json"), "[]");
+  const settings = { ...DEFAULT_SETTINGS, booksDirs: [listed] };
+  assert.equal(await resolveBooksDir(settings, Promise.resolve(null)), listed);
+});
+
+void test("pathIsListed covers a listed path and folders inside it only", () => {
+  const base = join(tmpdir(), "data");
+  assert.equal(pathIsListed(base, [base]), true);
+  assert.equal(pathIsListed(join(base, "Readest", "Books"), [base]), true);
+  assert.equal(pathIsListed(join(tmpdir(), "database"), [base]), false);
+  assert.equal(pathIsListed(base, []), false);
 });

@@ -46,7 +46,7 @@ Empty tokens collapse cleanly: surrounding whitespace, separators (`-`, `_`), a 
 
 ### Source
 
-One or more paths to Readest's Books folder, the one that contains `library.json`. The plugin tries each in order and uses the first one that has it. If none of your listed paths match (or if the list is empty), it tries the Books folder recorded in Readest's own `settings.json`, then the platform default. The recorded folder covers a data location moved in Readest's settings: Readest keeps `settings.json` in its config folder and updates the path there, so a moved library is found without adding it here. A portable Readest keeps `settings.json` next to the program instead, so add its Books folder by hand. When a fallback succeeds and you had at least one explicit entry, the discovered path is appended to your list so the next sync skips the lookup. Useful for vaults synced across devices where the same Readest data lives at different absolute paths.
+One or more paths to Readest's Books folder, the one that contains `library.json`. The plugin tries each in order and uses the first one that has it. A path can also stop at Readest's data folder, since the plugin looks in `Books` and `Readest/Books` under each one. If none of your listed paths match (or if the list is empty), it tries the Books folder recorded in Readest's own `settings.json`, then the platform default. The recorded folder covers a data location moved in Readest's settings: Readest keeps `settings.json` in its config folder and updates the path there, so a moved library is found without adding it here. A portable Readest keeps `settings.json` next to the program instead, so add its Books folder by hand. When a fallback succeeds and you had at least one explicit entry, the discovered path is appended to your list so the next sync skips the lookup, and a notice names it. Useful for vaults synced across devices where the same Readest data lives at different absolute paths.
 
 Default location per platform:
 
@@ -56,7 +56,7 @@ Default location per platform:
 | Windows | `%APPDATA%\com.bilingify.readest\Readest\Books` |
 | Linux | `$XDG_DATA_HOME/com.bilingify.readest/Readest/Books` (or `~/.local/share/...`) |
 
-The `+` button in the Source header adds a path row; the `X` on a row removes it, and the drag handle reorders rows (order matters, since the first path that resolves wins). The folder icon opens a directory picker, or type the path manually.
+The `+` button in the Source header adds a path row; the `X` on a row removes it, and the drag handle reorders rows (order matters, since the first path that resolves wins). The folder icon opens a directory picker, or type the path manually. A path with no `library.json` on this device, directly or in `Books` or `Readest/Books` under it, shows a warning under its row. It stays in the list, since the settings are shared by every device the vault syncs to and the path may be right on another one.
 
 ### Output
 

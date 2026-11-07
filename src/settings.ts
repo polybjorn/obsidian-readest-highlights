@@ -11,7 +11,7 @@ import type { SettingDefinitionItem, SettingGroupItem } from "obsidian";
 import { baseSettingTabMethod, renderFallback } from "./settings-compat";
 import { access, readFile } from "fs/promises";
 import { homedir } from "os";
-import { join, normalize } from "path";
+import { isAbsolute, join, normalize, relative } from "path";
 import type ReadestHighlightsPlugin from "./main";
 import type { AnnotationFilter } from "./filters";
 
@@ -148,6 +148,26 @@ async function pathHasLibrary(p: string): Promise<boolean> {
   }
 }
 
+// Readest's data folder holds its library in Readest/Books, and a folder picked
+// by hand may stop one level short of it, so a listed path need not be exact.
+const LIBRARY_SUBFOLDERS = ["", "Books", join("Readest", "Books")];
+
+async function findLibraryUnder(p: string): Promise<string | null> {
+  for (const sub of LIBRARY_SUBFOLDERS) {
+    const dir = sub ? join(p, sub) : p;
+    if (await pathHasLibrary(dir)) return dir;
+  }
+  return null;
+}
+
+// True when `dir` is one of the listed paths or a folder inside one.
+export function pathIsListed(dir: string, listed: string[]): boolean {
+  return listed.some((p) => {
+    const rel = relative(p, dir);
+    return !rel.startsWith("..") && !isAbsolute(rel);
+  });
+}
+
 export async function resolveBooksDir(
   s: ReadestSettings,
   recorded: Promise<string | null> = readestRecordedBooksDir(),
@@ -158,7 +178,11 @@ export async function resolveBooksDir(
   );
   const candidates = [...new Set([...userPaths, ...fallbacks])];
 
-  for (const candidate of candidates) {
+  for (const path of userPaths) {
+    const found = await findLibraryUnder(path);
+    if (found) return found;
+  }
+  for (const candidate of fallbacks) {
     if (await pathHasLibrary(candidate)) return candidate;
   }
   throw new Error(
@@ -490,6 +514,23 @@ export class ReadestSettingTab extends PluginSettingTab {
       searchable: false,
       render: (setting: Setting) => {
         setting.settingEl.addClass("readest-books-dir-row");
+        // The list is shared by every device the vault syncs to, so a path
+        // with no library here may be right elsewhere: mark it, never drop it.
+        const missingEl = setting.settingEl.createDiv({
+          cls: "readest-inline-error",
+        });
+        let latest = "";
+        const markMissing = async (path: string) => {
+          latest = path;
+          missingEl.setText("");
+          if (!path) return;
+          const found = await findLibraryUnder(path);
+          // A slow check for an earlier keystroke must not overwrite a newer one.
+          if (latest !== path || found) return;
+          missingEl.setText(
+            "No Readest library here on this device, so sync skips this path.",
+          );
+        };
         setting.addText((text) =>
           text
             .setPlaceholder("Path to Readest's books folder")
@@ -497,8 +538,10 @@ export class ReadestSettingTab extends PluginSettingTab {
             .onChange(async (v) => {
               this.plugin.settings.booksDirs[index] = v.trim();
               await this.plugin.saveSettings();
+              await markMissing(v.trim());
             }),
         );
+        void markMissing(this.plugin.settings.booksDirs[index] ?? "");
         setting.addExtraButton((b) =>
           b
             .setIcon("folder")
@@ -528,7 +571,7 @@ export class ReadestSettingTab extends PluginSettingTab {
       {
         type: "list",
         heading: "Source",
-        emptyState: "Using the platform default location.",
+        emptyState: "No paths: the plugin finds Readest's library itself.",
         items: this.plugin.settings.booksDirs.map((_, index) =>
           this.booksDirRow(index),
         ),
@@ -558,16 +601,6 @@ export class ReadestSettingTab extends PluginSettingTab {
             await this.plugin.saveSettings();
             this.update();
           })();
-        },
-      },
-      {
-        name: "",
-        searchable: false,
-        render: (setting: Setting) => {
-          setting.setDesc(
-            "Where Readest stores books. Leave empty to use the platform default; add alternatives for vaults synced across devices, first valid path is used.",
-          );
-          setting.settingEl.addClass("readest-info-row");
         },
       },
       {

@@ -242,7 +242,7 @@ void test("source list wires add, remove and reorder to backing-array indices", 
 void test("empty source list shows its empty state", () => {
   const rows = render(makeTab(makePlugin({ booksDirs: [] })));
   assert.ok(
-    rows.some((r) => r.desc === "Using the platform default location."),
+    rows.some((r) => r.desc === "No paths: the plugin finds Readest's library itself."),
   );
 });
 

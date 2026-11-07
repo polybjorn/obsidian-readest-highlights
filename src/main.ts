@@ -26,6 +26,7 @@ import {
   DEFAULT_SETTINGS,
   ReadestSettings,
   ReadestSettingTab,
+  pathIsListed,
   resolveBooksDir,
 } from "./settings";
 import type { ParsedBook } from "./types";
@@ -39,6 +40,7 @@ function errorMessage(e: unknown): string {
 export default class ReadestHighlightsPlugin extends Plugin {
   declare settings: ReadestSettings;
   private syncing = false;
+  private settingTab: ReadestSettingTab | null = null;
   private autoSyncIntervalId: number | null = null;
   // A quiet (auto) sync must not re-announce the same persistent failure
   // every interval tick; these remember what was already reported.
@@ -75,7 +77,8 @@ export default class ReadestHighlightsPlugin extends Plugin {
       void this.syncAll();
     });
 
-    this.addSettingTab(new ReadestSettingTab(this.app, this));
+    this.settingTab = new ReadestSettingTab(this.app, this);
+    this.addSettingTab(this.settingTab);
 
     // The per-color callout CSS changes convention at 1.13 (see styles.css);
     // no CSS feature query can tell the two apart, so the version picks it.
@@ -363,8 +366,16 @@ export default class ReadestHighlightsPlugin extends Plugin {
   private async rememberBooksDir(dir: string) {
     const userPaths = this.settings.booksDirs.filter((p) => p.length > 0);
     if (userPaths.length === 0) return;
-    if (userPaths.includes(dir)) return;
+    if (pathIsListed(dir, userPaths)) return;
+    // Added to the list, so this tells the user once, not on every sync.
+    new Notice(
+      `Readest: no library in your Source paths, so this sync used ${dir}. It has been added to Source.`,
+      10000,
+    );
     this.settings.booksDirs = [...userPaths, dir];
+    // The settings page renders a stored copy of its definitions, which a
+    // change made outside the page leaves stale until update() rebuilds it.
+    this.settingTab?.update();
     await this.saveSettings();
   }
 

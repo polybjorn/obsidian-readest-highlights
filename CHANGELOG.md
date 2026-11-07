@@ -11,6 +11,9 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ### Fixed
 
+- A Source path can stop at Readest's data folder: the plugin also looks in `Books` and `Readest/Books` under each listed path. (#62)
+- When none of the Source paths has a library, a notice names the folder sync used instead. (#62)
+- A Source path with no library on this device shows a warning under it in settings. (#62)
 - Highlights that Readest saved without a book hash get a Readest link too, instead of none. (#57)
 - Sync finds the library after Readest's data location has been moved to another folder or drive, by reading the new location from Readest's settings, so the path no longer has to be added under Source. When no library is found, the error now says to add the folder that contains `library.json` under Source. (#62)
 - A comment typed between a highlight and its block ID line stays with that highlight on re-sync, instead of moving to the highlight above or to the end of the section. (#60)

@@ -4,8 +4,16 @@
   border-left: 3px solid var(--interactive-accent);
 }
 
+.readest-books-dir-row {
+  flex-wrap: wrap;
+}
+
 .readest-books-dir-row .setting-item-info {
   display: none;
+}
+
+.readest-books-dir-row > .readest-inline-error {
+  flex-basis: 100%;
 }
 
 .readest-books-dir-row .setting-item-control {
