@@ -37,7 +37,7 @@ jobs:
             # The obsidian API types the review rules resolve against, exact so
             # a run is reproducible; Renovate reads the line above the pin.
             # renovate: datasource=npm depName=obsidian
-            OBSIDIAN_VERSION: 1.13.1
+            OBSIDIAN_VERSION: 1.14.4
 
         steps:
             - uses: actions/checkout@v7
