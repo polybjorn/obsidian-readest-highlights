@@ -65,6 +65,10 @@ export const config: WebdriverIO.Config = {
       plugins: [stage],
       vault: "tests/e2e/fixtures/vault",
     },
+    // A container's /dev/shm is 64 MB, which two Obsidian windows fill: both
+    // renderers then crash at once, mid-test ("session deleted because of
+    // page crash"). Shared memory from the temp folder has no such limit.
+    "goog:chromeOptions": { args: ["--disable-dev-shm-usage"] },
   })),
   services: ["obsidian"],
   reporters: ["obsidian"],
