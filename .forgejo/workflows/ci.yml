@@ -2,8 +2,8 @@
 # because Obsidian's plugin directory reads manifest.json and the release
 # assets from GitHub, and GitHub Actions build and attest those releases from
 # the synced tag. Nothing is forced, so a commit made on GitHub stops the sync
-# until it is pulled into the forge. The sync waits for the attribution check
-# and both test jobs.
+# until it is pulled into the forge. The sync waits for the attribution and
+# prose checks and both test jobs.
 #
 # ci-actions is cloned through $GITHUB_SERVER_URL and its scripts run directly,
 # not through `uses:`. That form needs the CI host written out, this file goes
@@ -45,6 +45,25 @@ jobs:
           # or none. `Closes #N` goes in the PR description instead.
           NO_FORGE_REFS: "true"
         run: GITHUB_ACTION_PATH="${RUNNER_TEMP:-/tmp}/ci-actions/attribution" bash "${RUNNER_TEMP:-/tmp}/ci-actions/attribution/run.sh"
+
+  prose:
+    runs-on: docker
+    timeout-minutes: 5
+    steps:
+      - name: Fetch ci-actions
+        run: git clone -q --depth 1 --branch v1 "$GITHUB_SERVER_URL/bjorn/ci-actions.git" "${RUNNER_TEMP:-/tmp}/ci-actions"
+      - name: Fetch the prose engine
+        run: bash "${RUNNER_TEMP:-/tmp}/ci-actions/prose/fetch-engine.sh"
+      - name: Self-test the engine and the check
+        run: bash "${RUNNER_TEMP:-/tmp}/ci-actions/prose/selftest.sh"
+      - name: Check the commits and the PR description
+        env:
+          TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          HEAD_SHA: ${{ github.sha }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          BEFORE: ${{ github.event.before }}
+        run: GITHUB_ACTION_PATH="${RUNNER_TEMP:-/tmp}/ci-actions/prose" bash "${RUNNER_TEMP:-/tmp}/ci-actions/prose/run.sh"
 
   test:
     runs-on: docker
@@ -133,7 +152,7 @@ jobs:
 
   github-sync:
     if: github.event_name == 'push'
-    needs: [attribution, test, e2e]
+    needs: [attribution, prose, test, e2e]
     runs-on: docker
     timeout-minutes: 10
     steps:
