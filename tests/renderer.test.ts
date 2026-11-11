@@ -1080,6 +1080,31 @@ void test("sortOrder page keeps book-position order", () => {
   assert.ok(out.indexOf("page one") < out.indexOf("page nine"));
 });
 
+void test("sortOrder page orders highlights on one page by their place in the text", () => {
+  const at = (step: number) => `epubcfi(/6/4!/4/${step},/1:0,/1:5)`;
+  const annos = [
+    makeAnnotation("c", { text: "third", cfi: at(12), createdAt: 100 }),
+    makeAnnotation("a", { text: "first", cfi: at(2), createdAt: 300 }),
+    makeAnnotation("b", { text: "second", cfi: at(10), createdAt: 200 }),
+  ];
+  for (const sortOrder of ["page", "date"] as const) {
+    const out = renderHighlightsBody(annos, { ...opts, sortOrder, showPage: false });
+    const order = ["first", "second", "third"].map((t) => out.indexOf(t));
+    const expected = sortOrder === "page" ? [...order].sort((x, y) => x - y) : [...order].sort((x, y) => y - x);
+    assert.deepEqual(order, expected, `${sortOrder}:\n${out}`);
+  }
+});
+
+void test("sortOrder date breaks a tie in creation time by place in the text", () => {
+  const at = (step: number) => `epubcfi(/6/4!/4/${step},/1:0,/1:5)`;
+  const annos = [
+    makeAnnotation("b", { text: "second", cfi: at(10), createdAt: 100 }),
+    makeAnnotation("a", { text: "first", cfi: at(2), createdAt: 100 }),
+  ];
+  const out = renderHighlightsBody(annos, { ...opts, sortOrder: "date", showPage: false });
+  assert.ok(out.indexOf("first") < out.indexOf("second"), out);
+});
+
 // --- publisher and language frontmatter ---
 
 void test("renderFrontmatter writes publisher and language when enabled", () => {

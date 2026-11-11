@@ -62,6 +62,16 @@ function compareSteps(a: number[], b: number[]): number {
   return a.length === b.length ? 0 : a.length < b.length ? -1 : 1;
 }
 
+// Orders two annotations by where they sit in the book. One whose CFI does
+// not parse sorts after one that does, so the order stays consistent when a
+// page mixes the two.
+export function compareCfi(a: string | undefined, b: string | undefined): number {
+  const sa = a ? parseCfiSteps(a) : null;
+  const sb = b ? parseCfiSteps(b) : null;
+  if (sa && sb) return compareSteps(sa, sb);
+  return sa ? -1 : sb ? 1 : 0;
+}
+
 interface NavTocItem {
   label?: unknown;
   cfi?: unknown;

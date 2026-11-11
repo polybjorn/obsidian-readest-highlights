@@ -53,6 +53,21 @@ describe("Sync all books", function () {
     expect(note).not.toContain("Deleted in Readest");
   });
 
+  it("lists highlights on one page in reading order, not the order they were made", async function () {
+    editBooknotes(library, FIXTURE_BOOK, (notes) =>
+      notes.map((n) => {
+        const made = { "fx-1": 30, "fx-2": 20, "fx-3": 10 }[n.id];
+        return made === undefined ? n : { ...n, page: 10, createdAt: made, updatedAt: made };
+      }),
+    );
+    await runCommand("sync-all-books");
+    await waitForNotice("Readest: 2 created");
+
+    const note = await readNote(FIXTURE_NOTE);
+    const at = ["First", "Second", "Third"].map((t) => note.indexOf(`${t} fixture highlight`));
+    expect(at).toEqual([...at].sort((a, b) => a - b));
+  });
+
   it("leaves notes alone when nothing changed in Readest", async function () {
     await runCommand("sync-all-books");
     await waitForNotice("Readest: 2 created");

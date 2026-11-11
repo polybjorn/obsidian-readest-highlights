@@ -1,7 +1,9 @@
 // Round-trip properties of re-sync, checked across every combination of the
 // settings that change how a section is laid out. Each combination runs the
 // same story: sync, the user types a comment under a highlight, re-sync, the
-// highlight is deleted in Readest, re-sync twice, it comes back. Any setting
+// highlight is deleted in Readest, re-sync twice, it comes back. It runs once
+// with the highlights on pages of their own and once with all three on one
+// page, where only their place in the text orders them. Any setting
 // that shifts a line the comment parser keys on breaks one of the checks
 // below for that combination, and the failure names it.
 import { test } from "node:test";
@@ -45,12 +47,20 @@ function ann(
   };
 }
 
-const all = [
-  ann(1, { note: "Note one" }),
-  ann(2, { note: "Note two", color: "blue" }),
-  ann(3),
-];
-const withoutSecond = [all[0], all[2]] as ReadestAnnotation[];
+interface Highlights {
+  all: ReadestAnnotation[];
+  withoutSecond: ReadestAnnotation[];
+}
+
+function highlights(samePage: boolean): Highlights {
+  const page = samePage ? { page: 10 } : {};
+  const all = [
+    ann(1, { note: "Note one", ...page }),
+    ann(2, { note: "Note two", color: "blue", ...page }),
+    ann(3, page),
+  ];
+  return { all, withoutSecond: [all[0], all[2]] as ReadestAnnotation[] };
+}
 
 // A title line, a lazy continuation line and a second paragraph: the three
 // shapes a comment parser has to carry through.
@@ -107,8 +117,8 @@ function* layouts(): Generator<Layout> {
                   };
 }
 
-function label(layout: Layout, level: number): string {
-  return [...Object.values(layout), `h${level}`].join(" ");
+function label(layout: Layout, level: number, samePage: boolean): string {
+  return [...Object.values(layout), `h${level}`, samePage ? "same page" : "own pages"].join(" ");
 }
 
 const count = (s: string, t: string) => s.split(t).length - 1;
@@ -116,10 +126,20 @@ const count = (s: string, t: string) => s.split(t).length - 1;
 type Sync = (existing: string, annotations: ReadestAnnotation[]) => string;
 
 // Returns what went wrong for one combination, empty when it holds.
-function story(sync: Sync, start: string, bounded: boolean): string[] {
+function story(
+  sync: Sync,
+  start: string,
+  bounded: boolean,
+  { all, withoutSecond }: Highlights,
+  byDate: boolean,
+): string[] {
   const fails: string[] = [];
   const fresh = sync(start, all);
   if (sync(start, all) !== fresh) fails.push("first sync not deterministic");
+  const at = [1, 2, 3].map((n) => fresh.indexOf(`Highlight ${n}`));
+  // ann() creates them in reverse of their place in the book.
+  const inOrder = byDate ? at[2]! < at[1]! && at[1]! < at[0]! : at[0]! < at[1]! && at[1]! < at[2]!;
+  if (!inOrder) fails.push(`highlights out of ${byDate ? "date" : "book"} order`);
 
   const idMatch = /\^(rdst-[a-z0-9-]+)/.exec(
     fresh.slice(fresh.indexOf("Highlight 2")),
@@ -175,12 +195,20 @@ function runMatrix(
 ): void {
   const failures: string[] = [];
   let combinations = 0;
-  for (const layout of layouts()) {
-    for (const level of levels) {
-      combinations++;
-      const { sync, start } = make(layout, level);
-      for (const fail of story(sync, start, level > 0)) {
-        failures.push(`${label(layout, level)}: ${fail}`);
+  for (const samePage of [false, true]) {
+    const set = highlights(samePage);
+    for (const layout of layouts()) {
+      for (const level of levels) {
+        combinations++;
+        const { sync, start } = make(layout, level);
+        // Page headings stay in page order under date sort, so date order
+        // shows only among highlights that share one.
+        const byDate =
+          layout.highlightSortOrder === "date" &&
+          (samePage || layout.highlightGrouping !== "page");
+        for (const fail of story(sync, start, level > 0, set, byDate)) {
+          failures.push(`${label(layout, level, samePage)}: ${fail}`);
+        }
       }
     }
   }

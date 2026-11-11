@@ -1,3 +1,4 @@
+import { compareCfi } from "./nav";
 import type { ParsedBook, ReadestAnnotation, ReadestLibraryBook } from "./types";
 import type {
   GenreDestination,
@@ -433,12 +434,13 @@ function groupAnnotations(
         if (x.earliestCreatedAt !== y.earliestCreatedAt) {
           return x.earliestCreatedAt - y.earliestCreatedAt;
         }
-        return (x.page ?? 0) - (y.page ?? 0);
+        return (x.page ?? 0) - (y.page ?? 0) || compareCfi(x.cfi, y.cfi);
       }
       const pa = x.page ?? 0;
       const pb = y.page ?? 0;
       if (pa !== pb) return pa - pb;
-      return x.earliestCreatedAt - y.earliestCreatedAt;
+      // A page holds several highlights; the CFI gives their order in the text.
+      return compareCfi(x.cfi, y.cfi) || x.earliestCreatedAt - y.earliestCreatedAt;
     });
 }
 
