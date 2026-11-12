@@ -32,8 +32,8 @@ jobs:
     steps:
       - name: Fetch ci-actions
         run: git clone -q --depth 1 --branch v1 "$GITHUB_SERVER_URL/bjorn/ci-actions.git" "${RUNNER_TEMP:-/tmp}/ci-actions"
-      - name: Self-test the pattern
-        run: bash "${RUNNER_TEMP:-/tmp}/ci-actions/attribution/check-attribution.sh" selftest
+      - name: Self-test the engine and this action
+        run: bash "${RUNNER_TEMP:-/tmp}/ci-actions/attribution/selftest.sh"
       - name: Check the commits and the PR description
         env:
           TOKEN: ${{ github.token }}
