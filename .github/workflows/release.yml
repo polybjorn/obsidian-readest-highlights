@@ -84,3 +84,21 @@ jobs:
                       "${prerelease[@]}" \
                       --notes "$notes" \
                       main.js manifest.json styles.css
+            - name: Delete superseded beta releases
+              if: ${{ !contains(github.ref_name, '-') }}
+              env:
+                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                GH_REPO: ${{ github.repository }}
+                TAG: ${{ github.ref_name }}
+              run: |
+                # BRAT moves testers to the stable version on its own, so every beta at or
+                # below it only crowds the releases page. The tags stay.
+                gh release list --limit 200 --json tagName,isPrerelease \
+                  --jq '.[] | select(.isPrerelease) | .tagName' |
+                while read -r beta; do
+                  case "$beta" in *-beta.*) ;; *) continue ;; esac
+                  if [ "$(printf '%s\n' "${beta%%-*}" "$TAG" | sort -V | tail -1)" = "$TAG" ]; then
+                    echo "delete $beta"
+                    gh release delete "$beta" --yes
+                  fi
+                done
