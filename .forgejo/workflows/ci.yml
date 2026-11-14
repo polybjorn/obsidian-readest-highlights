@@ -80,7 +80,19 @@ jobs:
       # A finding to live with goes in osv-scanner.toml as [[IgnoredVulns]].
       - name: Self-test the OSV gate
         run: bash "${RUNNER_TEMP:-/tmp}/ci-actions/osv-scan/selftest.sh"
+      # A pull request fails only on findings its base commit lacks, so an
+      # advisory on a dependency it did not touch leaves it green. Other events
+      # have no base here and still scan as a full gate.
+      - name: Base commit for the OSV gate
+        if: github.event_name == 'pull_request'
+        env:
+          TOKEN: ${{ github.token }}
+          REF: ${{ github.event.pull_request.base.sha }}
+          TARGET_PATH: ${{ runner.temp }}/osv-base
+        run: bash "${RUNNER_TEMP:-/tmp}/ci-actions/checkout/checkout.sh"
       - name: Known vulnerabilities in dependencies
+        env:
+          BASE_PATH: ${{ github.event_name == 'pull_request' && format('{0}/osv-base', runner.temp) || '' }}
         run: bash "${RUNNER_TEMP:-/tmp}/ci-actions/osv-scan/scan.sh"
       - run: npm ci
         timeout-minutes: 5
