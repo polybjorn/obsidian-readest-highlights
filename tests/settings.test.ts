@@ -246,7 +246,7 @@ void test("empty source list shows its empty state", () => {
   assert.equal(list.items?.length, 0);
   assert.equal(
     list.emptyState,
-    "No paths: the plugin finds Readest's library itself.",
+    "No paths: the plugin finds Readest's library itself. If sync can't find it, click + to add the folder that contains library.json.",
   );
 });
 

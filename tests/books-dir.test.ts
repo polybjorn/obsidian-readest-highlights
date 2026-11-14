@@ -92,7 +92,7 @@ void test("the error lists every path tried and points at Source", async (t) => 
     (err: Error) =>
       err.message.includes(empty) &&
       err.message.includes(recorded) &&
-      err.message.includes("under Source"),
+      err.message.includes("+ next to Source"),
   );
 });
 

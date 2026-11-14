@@ -185,7 +185,7 @@ export async function resolveBooksDir(
     if (await pathHasLibrary(candidate)) return candidate;
   }
   throw new Error(
-    `No Readest library.json found. Checked: ${candidates.join(", ")}. Add the folder that contains library.json under Source in the plugin settings.`,
+    `No Readest library.json found. Checked: ${candidates.join(", ")}. In the plugin settings, click + next to Source and add the folder that contains library.json.`,
   );
 }
 
@@ -514,7 +514,8 @@ export class ReadestSettingTab extends PluginSettingTab {
       {
         type: "list",
         heading: "Source",
-        emptyState: "No paths: the plugin finds Readest's library itself.",
+        emptyState:
+          "No paths: the plugin finds Readest's library itself. If sync can't find it, click + to add the folder that contains library.json.",
         items: this.plugin.settings.booksDirs.map((_, index) =>
           this.booksDirRow(index),
         ),
