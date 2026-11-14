@@ -15,6 +15,12 @@ jobs:
     analyze:
         name: Analyze
         runs-on: ubuntu-latest
+        timeout-minutes: 15
+        # Overlay analysis saves a base database to the Actions cache on every
+        # push to main, for pull requests to build on, and PRs are rare on this
+        # copy, so none is ever read back.
+        env:
+            CODEQL_OVERLAY_DATABASE_MODE: none
         permissions:
             security-events: write
             actions: read

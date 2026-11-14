@@ -13,14 +13,16 @@ permissions:
 jobs:
     release:
         runs-on: ubuntu-latest
+        timeout-minutes: 10
         steps:
             - uses: actions/checkout@v7
               with:
                   fetch-depth: 0
+            # No npm cache: the job signs build attestations, so it installs from
+            # nothing another run could have written.
             - uses: actions/setup-node@v7
               with:
                   node-version: 26.x
-                  cache: "npm"
             # A stable tag is what Obsidian's updater installs, so it has to be code
             # main carries and name the version manifest.json names. A beta reaches
             # only BRAT users and may test a branch before it merges.
