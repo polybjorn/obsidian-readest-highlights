@@ -1,0 +1,12 @@
+# Read by the CI dependency gate (bjorn/ci-actions osv-scan).
+
+# A crafted extglob can make picomatch backtrack for a long time. Every
+# release up to 4.0.7, the latest, is affected and none is fixed yet. It comes
+# in only through dev tooling (typescript-eslint via tinyglobby, and the wdio
+# e2e runner), which match this repo's own file patterns and never ship in
+# main.js. The date makes the gate fail again, so the ignore is rechecked
+# rather than kept for good.
+[[IgnoredVulns]]
+id = "GHSA-fc5q-39xc-vjpf"
+ignoreUntil = 2027-02-01
+reason = "picomatch <= 4.0.7 is dev-only, through typescript-eslint and wdio, which glob this repo's own files; no fixed picomatch release exists yet"
