@@ -8,28 +8,23 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ### Added
 
-- Your own comments on a highlight: a `> [!comment]` callout typed below a highlight survives re-sync and stays under that highlight, so notes and tags written in Obsidian sit next to the passage. Needs Preserve manual edits and Block IDs on, and works with any heading level. A comment whose highlight is removed in Readest moves to a heading at the end of the section instead of being lost. (#60, thanks @a-rock-lobster)
+- Your own comments on a highlight: a `> [!comment]` callout typed below a highlight survives re-sync and stays under that highlight, so notes and tags written in Obsidian sit next to the passage. A comment can run several paragraphs, including lines typed without `>`, and Append one book to current note keeps comments too. Needs Preserve manual edits and Block IDs on, and works with any heading level. If a highlight is removed in Readest, its comment moves to a heading at the end of the section with the highlight's text, marked `Removed from Readest`, and goes back under the highlight if it returns. (#60, thanks @a-rock-lobster)
 - Readest link placement: the Readest link can go on the page label, as in *([page 24](...))*, instead of an `Open in Readest` line under each highlight. A highlight with no page label keeps the link on its own line. Own line stays the default. (#61)
-- A comment whose highlight was removed in Readest keeps that highlight's text, marked `Removed from Readest`, and goes back under the highlight if it returns. (#60)
 
 ### Changed
 
-- Requires Obsidian 1.13 or later. Obsidian 1.12 keeps offering 1.9.0.
+- Requires Obsidian 1.13 or later. Users on Obsidian 1.12 stay on 1.9.0.
 - Reset to defaults asks in Obsidian's own confirmation dialog.
-- A sync no longer leaves warnings in the developer console. Details that no notice reports are debug messages now, and duplicate book hashes in the output folder log as an error, since their notice points to the console.
+- A sync no longer leaves warnings in the developer console: details no notice reports are logged at debug level. Notes in the output folder that share a book hash log an error, since their notice points to the console.
 
 ### Fixed
 
 - Highlights on the same page are listed in the order they appear in the text, instead of the order they were made.
 - Settings changed on another device and brought in by Obsidian Sync take effect while Obsidian is open, instead of being overwritten by the next setting changed here.
-- A Source path can stop at Readest's data folder: the plugin also looks in `Books` and `Readest/Books` under each listed path. (#62)
-- When none of the Source paths has a library, a notice names the folder sync used instead. (#62)
-- A Source path with no library on this device shows a warning under it in settings. (#62)
-- Append one book to current note keeps comments when it runs again on the same note. (#60)
-- A comment keeps its later paragraphs and any line typed without `>`, instead of losing them on re-sync. (#60)
+- Sync finds the library after Readest's data location has been moved to another folder or drive, by reading the new location from Readest's settings, so the path no longer has to be added under Source. (#62)
+- A Source path can stop at Readest's data folder: the plugin also looks in `Books` and `Readest/Books` under each listed path. A path with no library on this device shows a warning under it in settings. (#62)
+- When none of the Source paths has a library, a notice names the folder sync used instead and adds it to Source. When no library is found at all, the error says to add the folder that contains `library.json` under Source. (#62)
 - Highlights that Readest saved without a book hash get a Readest link too, instead of none. (#57)
-- Sync finds the library after Readest's data location has been moved to another folder or drive, by reading the new location from Readest's settings, so the path no longer has to be added under Source. When no library is found, the error now says to add the folder that contains `library.json` under Source. (#62)
-- A comment typed between a highlight and its block ID line stays with that highlight on re-sync, instead of moving to the highlight above or to the end of the section. (#60)
 
 ## [1.9.0] - 2026-10-29
 
